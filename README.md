@@ -39,19 +39,29 @@ npm install
 ```
 
 3. Set up environment variables:
-```bash
-# Pull from Vercel (if linked)
-vercel env pull .env.local
 
-# Or create .env.local manually with:
-DATABASE_URL=your_neon_database_url_here
+First, install and configure Vercel CLI:
+```bash
+npm i -g vercel
+vercel login
+vercel link
+```
+
+Then pull environment variables:
+```bash
+vercel env pull .env.local
+```
+
+Or create `.env.local` manually with:
+```
+DATABASE_URL=postgresql://user:password@host/database?sslmode=require
 ```
 
 4. Initialize the database:
 ```bash
 node init-db.mjs
 ```
-This creates the necessary tables and adds sample data.
+This creates the necessary tables and adds sample data (Alex and Sam with example chores).
 
 5. Start the development server:
 ```bash
@@ -101,10 +111,31 @@ app/
 ## Development
 
 ```bash
-npm run dev       # Start development server
-npm run build     # Build for production
-npm run lint      # Run linter
+# Development
+npm run dev          # Start development server (with Turbopack)
+npm run build        # Build for production
+npm start            # Start production server
+
+# Code Quality
+npm run check        # Run all checks (type + lint + format)
+npm run typecheck    # Check TypeScript types
+npm run lint         # Run ESLint
+npm run lint:fix     # Auto-fix linting issues
+npm run format       # Format code with Prettier
+npm run format:check # Check formatting
+
+# Database
+node init-db.mjs     # Initialize/reset database with sample data
 ```
+
+### Code Quality
+
+This project uses automated code quality tools:
+- **TypeScript**: Strict type checking
+- **ESLint**: Code quality and consistency rules
+- **Prettier**: Automatic code formatting (2 spaces, double quotes)
+
+Run `npm run check` before committing to ensure code quality.
 
 ## Deployment
 

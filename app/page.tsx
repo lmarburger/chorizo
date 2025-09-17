@@ -3,28 +3,24 @@ import Link from "next/link";
 export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-md mx-auto px-4 py-16">
-        <h1 className="text-4xl font-bold text-center mb-12 text-gray-900 dark:text-white">
-          Chorizo
-        </h1>
-        
+      <div className="mx-auto max-w-md px-4 py-16">
+        <h1 className="mb-12 text-center text-4xl font-bold text-gray-900 dark:text-white">Chorizo</h1>
+
         <div className="space-y-4">
           <Link
             href="/kids"
-            className="block w-full bg-blue-500 text-white text-center py-4 px-6 rounded-lg text-lg font-semibold hover:bg-blue-600 transition-colors"
-          >
+            className="block w-full rounded-lg bg-blue-500 px-6 py-4 text-center text-lg font-semibold text-white transition-colors hover:bg-blue-600">
             Kid View
           </Link>
-          
+
           <Link
             href="/parents"
-            className="block w-full bg-green-500 text-white text-center py-4 px-6 rounded-lg text-lg font-semibold hover:bg-green-600 transition-colors"
-          >
+            className="block w-full rounded-lg bg-green-500 px-6 py-4 text-center text-lg font-semibold text-white transition-colors hover:bg-green-600">
             Parent View
           </Link>
         </div>
-        
-        <p className="text-center text-gray-600 dark:text-gray-400 mt-8 text-sm">
+
+        <p className="mt-8 text-center text-sm text-gray-600 dark:text-gray-400">
           Track chores, screen time, and practice time
         </p>
       </div>

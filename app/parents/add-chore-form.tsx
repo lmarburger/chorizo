@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useState } from "react";
 import { addChoreAction } from "./actions";
@@ -10,16 +10,14 @@ interface AddChoreFormProps {
 export function AddChoreForm({ kidNames }: AddChoreFormProps) {
   const [kidName, setKidName] = useState("");
   const [isNewKid, setIsNewKid] = useState(false);
-  
+
   return (
-    <form action={addChoreAction} className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-      <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
-        Add New Chore
-      </h2>
-      
+    <form action={addChoreAction} className="rounded-lg bg-white p-4 shadow dark:bg-gray-800">
+      <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Add New Chore</h2>
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label htmlFor="name" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
             Chore Name
           </label>
           <input
@@ -27,21 +25,20 @@ export function AddChoreForm({ kidNames }: AddChoreFormProps) {
             id="name"
             name="name"
             required
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
             placeholder="e.g., Make bed"
           />
         </div>
-        
+
         <div>
-          <label htmlFor="day_of_week" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label htmlFor="day_of_week" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
             Day of Week
           </label>
           <select
             id="day_of_week"
             name="day_of_week"
             required
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-          >
+            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
             <option value="">Select a day</option>
             <option value="monday">Monday</option>
             <option value="tuesday">Tuesday</option>
@@ -52,9 +49,9 @@ export function AddChoreForm({ kidNames }: AddChoreFormProps) {
             <option value="sunday">Sunday</option>
           </select>
         </div>
-        
+
         <div className="sm:col-span-2">
-          <label htmlFor="kid_name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label htmlFor="kid_name" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
             Kid's Name
           </label>
           <div className="flex gap-2">
@@ -65,11 +62,10 @@ export function AddChoreForm({ kidNames }: AddChoreFormProps) {
                   name="kid_name"
                   required
                   value={kidName}
-                  onChange={(e) => setKidName(e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                >
+                  onChange={e => setKidName(e.target.value)}
+                  className="flex-1 rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
                   <option value="">Select a kid</option>
-                  {kidNames.map((name) => (
+                  {kidNames.map(name => (
                     <option key={name} value={name}>
                       {name}
                     </option>
@@ -81,8 +77,7 @@ export function AddChoreForm({ kidNames }: AddChoreFormProps) {
                     setIsNewKid(true);
                     setKidName("");
                   }}
-                  className="px-3 py-2 text-sm bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500"
-                >
+                  className="rounded-md bg-gray-200 px-3 py-2 text-sm text-gray-700 hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-300 dark:hover:bg-gray-500">
                   New Kid
                 </button>
               </>
@@ -94,8 +89,8 @@ export function AddChoreForm({ kidNames }: AddChoreFormProps) {
                   name="kid_name"
                   required
                   value={kidName}
-                  onChange={(e) => setKidName(e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                  onChange={e => setKidName(e.target.value)}
+                  className="flex-1 rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                   placeholder="Enter kid's name"
                 />
                 {kidNames.length > 0 && (
@@ -105,8 +100,7 @@ export function AddChoreForm({ kidNames }: AddChoreFormProps) {
                       setIsNewKid(false);
                       setKidName("");
                     }}
-                    className="px-3 py-2 text-sm bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500"
-                  >
+                    className="rounded-md bg-gray-200 px-3 py-2 text-sm text-gray-700 hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-300 dark:hover:bg-gray-500">
                     Select Existing
                   </button>
                 )}
@@ -114,25 +108,24 @@ export function AddChoreForm({ kidNames }: AddChoreFormProps) {
             )}
           </div>
         </div>
-        
+
         <div className="sm:col-span-2">
-          <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label htmlFor="description" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
             Description (Optional)
           </label>
           <textarea
             id="description"
             name="description"
             rows={2}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
             placeholder="e.g., Make your bed neatly with pillows arranged"
           />
         </div>
       </div>
-      
+
       <button
         type="submit"
-        className="mt-4 w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 font-medium"
-      >
+        className="mt-4 w-full rounded-md bg-blue-500 px-4 py-2 font-medium text-white hover:bg-blue-600">
         Add Chore
       </button>
     </form>

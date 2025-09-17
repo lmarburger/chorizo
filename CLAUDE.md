@@ -41,14 +41,65 @@ Chorizo is a family chore tracking web application designed primarily for mobile
 - **Styling**: Tailwind CSS v4
 - **Deployment**: Vercel
 - **Language**: TypeScript
+- **Package Manager**: npm
+- **Node Version**: 18+
 
 ## Development Commands
 ```bash
-npm run dev       # Start development server
+# Development
+npm run dev       # Start development server (with Turbopack)
 npm run build     # Build for production
-npm run lint      # Run linter
+npm start         # Start production server
+
+# Code Quality (IMPORTANT: Run before committing!)
+npm run check     # Run all checks (typecheck + lint + format check)
+npm run typecheck # Check TypeScript types
+npm run lint      # Run ESLint
+npm run lint:fix  # Run ESLint and auto-fix issues
+npm run format    # Format code with Prettier
+npm run format:check # Check if code is formatted
+
+# Database
 node init-db.mjs  # Initialize/reset database with sample data
 ```
+
+## Code Quality Tools
+- **ESLint**: Configured for Next.js and TypeScript with React rules
+- **Prettier**: Auto-formatting with consistent style (2 spaces, 120 line width, double quotes)
+- **TypeScript**: Strict mode enabled for type safety
+- **Auto-formatting hooks**: Files are automatically formatted on save via PostToolUse hooks
+
+### Prettier Configuration
+- **Indentation**: 2 spaces for all file types
+- **Line width**: 120 characters
+- **Quotes**: Double quotes
+- **Semicolons**: Required
+- **Trailing commas**: ES5 style
+- **Bracket same line**: Yes (JSX brackets on same line as last prop)
+- **Arrow parens**: Avoid when possible
+- **Tailwind CSS**: Classes automatically sorted
+
+### Linting Configuration
+- ESLint v9 with flat config (`eslint.config.mjs`)
+- TypeScript strict mode enabled
+- React hooks rules enforced
+- Prettier integration (ESLint won't conflict with formatting)
+- Files excluded: `next-env.d.ts`, `next-dev.d.ts`, init scripts
+
+### Important for Claude
+When checking work, always run:
+```bash
+npm run check
+```
+This ensures:
+1. TypeScript types are correct (`npm run typecheck`)
+2. ESLint rules pass (`npm run lint`)
+3. Code is properly formatted (`npm run format:check`)
+
+### Hooks Configuration (for Claude Code CLI)
+The project has PostToolUse hooks configured to auto-format files after editing:
+- Formats `.ts`, `.tsx`, `.js`, `.jsx`, `.json`, `.css`, `.mjs` files
+- Runs `npm run check` on Stop to validate the entire codebase
 
 ## Database Management
 - Database URL is stored in `.env.local` (pulled from Vercel)

@@ -1,6 +1,6 @@
 import { neon } from "@neondatabase/serverless";
 
-export type DayOfWeek = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
+export type DayOfWeek = "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday";
 
 export interface Chore {
   id: number;
@@ -71,16 +71,18 @@ export async function getChoresForKid(kidName: string): Promise<Chore[]> {
 
 export async function getTodayAndOverdueChores(): Promise<ChoreWithCompletion[]> {
   const sql = getDb();
-  const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD format
-  const currentDay = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase() as DayOfWeek;
-  const currentDayNumber = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'].indexOf(currentDay);
-  
+  // const today = new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD format - unused for now
+  const currentDay = new Date().toLocaleDateString("en-US", { weekday: "long" }).toLowerCase() as DayOfWeek;
+  const currentDayNumber = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"].indexOf(
+    currentDay
+  );
+
   // Get the Monday of current week
   const mondayDate = new Date();
   const daysSinceMonday = (mondayDate.getDay() + 6) % 7; // Convert Sunday=0 to Monday=0
   mondayDate.setDate(mondayDate.getDate() - daysSinceMonday);
-  const mondayStr = mondayDate.toLocaleDateString('en-CA');
-  
+  const mondayStr = mondayDate.toLocaleDateString("en-CA");
+
   const result = await sql`
     WITH week_chores AS (
       SELECT 
@@ -115,14 +117,14 @@ export async function getTodayAndOverdueChores(): Promise<ChoreWithCompletion[]>
     LEFT JOIN chore_completions cc 
       ON wc.id = cc.chore_id 
       AND cc.completed_date = wc.chore_date
-    WHERE wc.day_number <= ${(currentDayNumber === 0 ? 7 : currentDayNumber)}
+    WHERE wc.day_number <= ${currentDayNumber === 0 ? 7 : currentDayNumber}
     ORDER BY wc.kid_name, wc.day_number
   `;
-  
+
   return result as ChoreWithCompletion[];
 }
 
-export async function addChore(chore: Omit<Chore, 'id' | 'created_at' | 'updated_at'>): Promise<Chore> {
+export async function addChore(chore: Omit<Chore, "id" | "created_at" | "updated_at">): Promise<Chore> {
   const sql = getDb();
   const result = await sql`
     INSERT INTO chores (name, description, kid_name, day_of_week)
