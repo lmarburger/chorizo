@@ -32,12 +32,14 @@ interface KidStatus {
   outstandingTasks: Task[];
   allIncompleteTasks: Task[]; // All incomplete tasks including future ones
   allComplete: boolean;
+  upcomingTasks: Task[]; // Future tasks not due yet
 }
 
 export function Dashboard() {
   const [kidStatuses, setKidStatuses] = useState<KidStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
+  const [expandedKids, setExpandedKids] = useState<Set<string>>(new Set());
   const [editForm, setEditForm] = useState({
     title: "",
     description: "",
@@ -131,15 +133,41 @@ export function Dashboard() {
       {kidStatuses.map(kid => (
         <div
           key={kid.name}
+          onClick={
+            kid.allComplete && kid.upcomingTasks.length > 0
+              ? () => {
+                  const newExpanded = new Set(expandedKids);
+                  if (expandedKids.has(kid.name)) {
+                    newExpanded.delete(kid.name);
+                  } else {
+                    newExpanded.add(kid.name);
+                  }
+                  setExpandedKids(newExpanded);
+                }
+              : undefined
+          }
           className={`rounded-lg p-4 ${
             kid.allComplete
-              ? "border-2 border-green-500 bg-green-50 dark:bg-green-900/20"
+              ? kid.upcomingTasks.length > 0
+                ? "cursor-pointer border-2 border-green-500 bg-green-50 transition-opacity hover:opacity-90 dark:bg-green-900/20"
+                : "border-2 border-green-500 bg-green-50 dark:bg-green-900/20"
               : "border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800"
           }`}>
           <div className={`flex items-center justify-between ${!kid.allComplete ? "mb-3" : ""}`}>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{kid.name}</h3>
-            {kid.allComplete && (
-              <span className="rounded-full bg-green-500 px-3 py-1 text-sm font-medium text-white">✓ All Done!</span>
+            {kid.allComplete && kid.upcomingTasks.length > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="rounded-full bg-green-500 px-2 py-0.5 text-xs font-medium text-white">
+                  {kid.upcomingTasks.length} upcoming
+                </span>
+                <svg
+                  className={`h-4 w-4 text-gray-600 transition-transform dark:text-gray-400 ${expandedKids.has(kid.name) ? "rotate-180" : ""}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
             )}
           </div>
 
@@ -316,6 +344,93 @@ export function Dashboard() {
                   }
                 });
               })()}
+            </div>
+          )}
+
+          {/* Expanded view for completed kids showing upcoming tasks */}
+          {kid.allComplete && expandedKids.has(kid.name) && kid.upcomingTasks.length > 0 && (
+            <div className="mt-3 space-y-1">
+              <div className="mb-2 text-xs font-medium text-gray-600 dark:text-gray-400">Upcoming Tasks:</div>
+              {kid.upcomingTasks.map(task => {
+                const dueDate = parseISO(task.due_date);
+
+                // If this task is being edited, show the edit form
+                if (editingTaskId === task.id) {
+                  return (
+                    <div
+                      key={`task-${task.id}`}
+                      onClick={e => e.stopPropagation()}
+                      className="rounded-lg border-2 border-blue-400 bg-white p-3 dark:bg-gray-800">
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">Title</label>
+                          <input
+                            type="text"
+                            value={editForm.title}
+                            onChange={e => setEditForm({ ...editForm, title: e.target.value })}
+                            className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">
+                            Description
+                          </label>
+                          <textarea
+                            value={editForm.description}
+                            onChange={e => setEditForm({ ...editForm, description: e.target.value })}
+                            rows={2}
+                            className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">Due Date</label>
+                          <input
+                            type="date"
+                            value={editForm.due_date}
+                            onChange={e => setEditForm({ ...editForm, due_date: e.target.value })}
+                            className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                          />
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <button
+                            onClick={() => handleDeleteTask(task.id)}
+                            className="rounded px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20">
+                            Delete
+                          </button>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => setEditingTaskId(null)}
+                              className="rounded-md bg-gray-200 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+                              Cancel
+                            </button>
+                            <button
+                              onClick={handleUpdateTask}
+                              className="rounded-md bg-blue-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-600">
+                              Save
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+
+                // Otherwise show the normal task display (clickable)
+                return (
+                  <div
+                    key={`task-${task.id}`}
+                    onClick={e => {
+                      e.stopPropagation();
+                      handleEditTask(task);
+                    }}
+                    className="flex cursor-pointer items-center justify-between rounded bg-gray-100 px-2 py-1 text-sm transition-opacity hover:opacity-80 dark:bg-gray-700/30 dark:text-gray-300">
+                    <span className="font-medium">{task.title}</span>
+                    <span className="rounded bg-purple-100 px-1.5 py-0.5 text-xs font-medium text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                      Task (due {format(dueDate, "MMM d")})
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

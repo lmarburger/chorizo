@@ -14,7 +14,9 @@ A simple, mobile-first web app for tracking family chores, screen time, and inst
 - **Parent Dashboard**:
   - Combined view of all kids' outstanding items
   - Kids sorted alphabetically, completed kids shown last
-  - Green border and "✓ All Done!" badge for kids with no outstanding work
+  - Green border for kids with no outstanding work (clean, minimal design)
+  - Shows upcoming task count when kids are caught up
+  - Click green box to expand and view/edit upcoming tasks
   - Click any task to edit inline (title, description, due date, delete)
   - Auto-refresh pauses during editing
   
@@ -22,6 +24,7 @@ A simple, mobile-first web app for tracking family chores, screen time, and inst
   - Single chore can be assigned to multiple kids on different days
   - Flexible scheduling (e.g., "Do dishes" alternates between kids)
   - Visual weekly schedule grid sorted alphabetically
+  - Kids sorted alphabetically in edit forms
   - Icon-based controls (edit/delete) for cleaner UI
   
 - **One-Off Tasks**:
@@ -125,7 +128,8 @@ When you first open the app, you'll see a selection screen:
 ### For Parents
 Navigate to `/parents` to:
 - View dashboard showing each kid's outstanding chores and tasks
-- See at a glance who's done (green border with checkmark)
+- See at a glance who's done (green border indicates completion)
+- Click green box to expand and see upcoming tasks (if any exist)
 - Click any task in dashboard to edit inline
 - Create recurring chores with flexible scheduling
 - Add one-off tasks with expanded form (always visible)

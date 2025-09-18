@@ -28,8 +28,10 @@ export function EditChoreForm({ chore, kidNames: existingKidNames, onCancel, onS
     scheduleMap.get(schedule.kid_name)!.push(schedule.day_of_week);
   });
 
-  scheduleMap.forEach((days, kid_name) => {
-    initialSchedules.push({ kid_name, days });
+  // Sort kid names alphabetically before creating schedule entries
+  const sortedKidNames = Array.from(scheduleMap.keys()).sort((a, b) => a.localeCompare(b));
+  sortedKidNames.forEach(kid_name => {
+    initialSchedules.push({ kid_name, days: scheduleMap.get(kid_name)! });
   });
 
   const [schedules, setSchedules] = useState<ScheduleEntry[]>(initialSchedules);
@@ -49,7 +51,10 @@ export function EditChoreForm({ chore, kidNames: existingKidNames, onCancel, onS
 
   const addExistingKidSchedule = (kidName: string) => {
     if (!schedules.some(s => s.kid_name === kidName)) {
-      setSchedules([...schedules, { kid_name: kidName, days: [] }]);
+      const newSchedules = [...schedules, { kid_name: kidName, days: [] }];
+      // Sort alphabetically by kid name
+      newSchedules.sort((a, b) => a.kid_name.localeCompare(b.kid_name));
+      setSchedules(newSchedules);
     }
   };
 

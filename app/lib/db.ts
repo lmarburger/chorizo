@@ -256,7 +256,13 @@ export async function uncompleteChore(scheduleId: number, date: string): Promise
 export async function getUniqueKidNames(): Promise<string[]> {
   const sql = getDb();
   const result = await sql`
-    SELECT DISTINCT kid_name FROM chore_schedules ORDER BY kid_name
+    SELECT DISTINCT kid_name FROM (
+      SELECT kid_name FROM chore_schedules
+      UNION
+      SELECT kid_name FROM tasks
+    ) AS all_kids
+    WHERE kid_name IS NOT NULL
+    ORDER BY kid_name
   `;
   return result.map(r => r.kid_name) as string[];
 }

@@ -24,14 +24,16 @@ Chorizo is a family chore tracking web application designed primarily for mobile
    - **Dashboard:**
      - Combined view of all kids' outstanding chores and tasks
      - Kids sorted alphabetically, with completed kids shown last
-     - Green border and "✓ All Done!" badge for kids with no outstanding items
+     - Green border for kids with no outstanding items (no "All Done" text)
+     - Shows upcoming task count badge when kids are caught up and have future tasks
+     - Click entire green box to expand and show upcoming tasks (when they exist)
      - Click on any task to edit inline (rename, change description/date, delete)
      - Auto-refresh pauses during task editing
    - **Chore Management:**
      - View all chores in "Schedule" section sorted alphabetically
      - Icon-based edit/delete buttons (no text labels)
      - Single chore can be assigned to multiple kids on different days
-     - Edit existing chores and their complete schedules
+     - Edit existing chores and their complete schedules (kids sorted alphabetically)
      - Delete chores with confirmation (cascades to schedules and completions)
    - **Task Management:**
      - "Add One-Time Task" form (always expanded)

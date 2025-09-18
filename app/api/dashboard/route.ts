@@ -51,11 +51,18 @@ export async function GET() {
       // All incomplete tasks (including future ones) for display in dashboard
       const allIncompleteTasks = kidTasks.filter(task => !task.completed_at);
 
+      // Upcoming tasks (future tasks not due yet)
+      const upcomingTasks = kidTasks.filter(task => {
+        const dueDate = typeof task.due_date === "string" ? parseISO(task.due_date) : new Date(task.due_date);
+        return !task.completed_at && isAfter(dueDate, todayStart);
+      });
+
       return {
         name: kidName,
         outstandingChores,
         outstandingTasks,
         allIncompleteTasks, // Add all incomplete tasks for dashboard display
+        upcomingTasks, // Add upcoming tasks for green box display
         allComplete: outstandingChores.length === 0 && outstandingTasks.length === 0,
       };
     });
