@@ -82,7 +82,7 @@ export function AddChoreForm({ onSuccess }: AddChoreFormProps = {}) {
             name="name"
             required
             className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-            placeholder="e.g., Do the dishes"
+            placeholder="Do the dishes"
           />
         </div>
 
@@ -95,7 +95,7 @@ export function AddChoreForm({ onSuccess }: AddChoreFormProps = {}) {
             name="description"
             rows={2}
             className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-            placeholder="e.g., Wash, dry, and put away all dishes"
+            placeholder="Wash, dry, and put away all dishes"
           />
         </div>
 

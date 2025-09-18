@@ -63,7 +63,7 @@ export function AddTaskForm({ onSuccess }: AddTaskFormProps = {}) {
     <div className="rounded-lg bg-white p-4 shadow dark:bg-gray-800">
       <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="title" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label htmlFor="title" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
             Task Title
           </label>
           <input
@@ -71,33 +71,33 @@ export function AddTaskForm({ onSuccess }: AddTaskFormProps = {}) {
             name="title"
             id="title"
             required
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
-            placeholder="e.g., Pack for trip"
+            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            placeholder="Pack for trip"
           />
         </div>
 
         <div>
-          <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label htmlFor="description" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
             Description (optional)
           </label>
           <textarea
             name="description"
             id="description"
             rows={2}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
-            placeholder="Any details about the task..."
+            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            placeholder="Any details about the task"
           />
         </div>
 
         <div>
-          <label htmlFor="kid_name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label htmlFor="kid_name" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
             Assign to
           </label>
           <select
             name="kid_name"
             id="kid_name"
             required
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700">
+            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
             <option value="">Select a kid</option>
             {existingKidNames.map(name => (
               <option key={name} value={name}>
@@ -108,7 +108,7 @@ export function AddTaskForm({ onSuccess }: AddTaskFormProps = {}) {
         </div>
 
         <div>
-          <label htmlFor="due_date" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label htmlFor="due_date" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
             Due Date
           </label>
           <input
@@ -117,7 +117,7 @@ export function AddTaskForm({ onSuccess }: AddTaskFormProps = {}) {
             id="due_date"
             required
             defaultValue={defaultDueDate}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
           />
         </div>
 
