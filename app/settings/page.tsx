@@ -93,29 +93,16 @@ export default function SettingsPage() {
     }
 
     try {
-      // Delete all chores for this kid
-      const choresResponse = await fetch(`/api/kids/${encodeURIComponent(kidName)}/chores`);
-      const choresData = await choresResponse.json();
-      const chores = choresData.chores || [];
+      // Use the new DELETE endpoint that handles cascading deletes
+      const response = await fetch(`/api/kids/${encodeURIComponent(kidName)}`, {
+        method: "DELETE",
+      });
 
-      // Delete each chore schedule for this kid
-      for (const chore of chores) {
-        await fetch(`/api/chore-schedules/${chore.id}`, {
-          method: "DELETE",
-        });
+      if (!response.ok) {
+        throw new Error("Failed to delete kid");
       }
 
-      // Delete all tasks for this kid
-      const tasksResponse = await fetch(`/api/kids/${encodeURIComponent(kidName)}/tasks`);
-      const tasksData = await tasksResponse.json();
-      const tasks = tasksData.tasks || [];
-
-      for (const task of tasks) {
-        await fetch(`/api/tasks/${task.id}`, {
-          method: "DELETE",
-        });
-      }
-
+      // Refresh the list
       fetchKids();
     } catch (err) {
       console.error("Failed to delete kid:", err);

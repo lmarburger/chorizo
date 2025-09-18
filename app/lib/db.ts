@@ -389,3 +389,14 @@ export async function toggleTaskComplete(id: number): Promise<Task> {
   `;
   return result[0] as Task;
 }
+
+// Delete a kid and all their associated data
+export async function deleteKid(kidName: string): Promise<void> {
+  const sql = getDb();
+
+  // Delete all tasks for this kid
+  await sql`DELETE FROM tasks WHERE kid_name = ${kidName}`;
+
+  // Delete all chore schedules for this kid (will cascade delete completions)
+  await sql`DELETE FROM chore_schedules WHERE kid_name = ${kidName}`;
+}
