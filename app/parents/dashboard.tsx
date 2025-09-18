@@ -150,12 +150,6 @@ export function Dashboard() {
               )}
             </>
           )}
-
-          {kid.allComplete && (
-            <p className="text-sm text-green-600 dark:text-green-400">
-              {kid.name} has completed all chores and tasks for today and past days! 🎉
-            </p>
-          )}
         </div>
       ))}
     </div>
