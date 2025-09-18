@@ -30,8 +30,7 @@ export function getRelativeTime(date: Date): string {
 export function getDaysUntilDue(dueDate: string): number {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const due = new Date(dueDate);
-  due.setHours(0, 0, 0, 0);
+  const due = parseLocalDate(dueDate);
   const diffMs = due.getTime() - today.getTime();
   return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 }
@@ -127,9 +126,10 @@ export function formatDateDisplay(date: string | Date): string {
 export function getDayAbbreviation(date: string | Date): string {
   let dateObj: Date;
   if (typeof date === "string") {
-    // For date-only strings (YYYY-MM-DD), parse as local date to avoid timezone issues
-    if (date.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      const [year, month, day] = date.split("-").map(Number);
+    // Extract just the date portion if it's an ISO string
+    const dateOnlyMatch = date.match(/^(\d{4}-\d{2}-\d{2})/);
+    if (dateOnlyMatch) {
+      const [year, month, day] = dateOnlyMatch[1].split("-").map(Number);
       dateObj = new Date(year, month - 1, day);
     } else {
       dateObj = new Date(date);

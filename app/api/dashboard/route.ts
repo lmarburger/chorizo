@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentWeekChores, getAllTasks, getUniqueKidNames, ChoreScheduleWithCompletion } from "@/app/lib/db";
-import { startOfDay, isAfter, parseISO } from "date-fns";
+import { parseLocalDate } from "@/app/lib/utils";
+import { startOfDay, isAfter } from "date-fns";
 
 // Extend the type to include day_number which is returned by the SQL query
 interface ChoreWithDayNumber extends ChoreScheduleWithCompletion {
@@ -43,8 +44,8 @@ export async function GET() {
 
       const outstandingTasks = kidTasks.filter(task => {
         // Not completed and due today or in the past
-        // task.due_date is already a Date object from the database
-        const dueDate = typeof task.due_date === "string" ? parseISO(task.due_date) : new Date(task.due_date);
+        // due_date is now always a string in YYYY-MM-DD format
+        const dueDate = parseLocalDate(task.due_date);
         return !task.completed_at && !isAfter(dueDate, todayStart);
       });
 
@@ -53,7 +54,7 @@ export async function GET() {
 
       // Upcoming tasks (future tasks not due yet)
       const upcomingTasks = kidTasks.filter(task => {
-        const dueDate = typeof task.due_date === "string" ? parseISO(task.due_date) : new Date(task.due_date);
+        const dueDate = parseLocalDate(task.due_date);
         return !task.completed_at && isAfter(dueDate, todayStart);
       });
 

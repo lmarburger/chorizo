@@ -282,7 +282,16 @@ export interface Task {
 export async function getAllTasks(): Promise<Task[]> {
   const sql = getDb();
   const result = await sql`
-    SELECT * FROM tasks 
+    SELECT 
+      id,
+      title,
+      description,
+      kid_name,
+      due_date::text as due_date,
+      completed_at,
+      created_at,
+      updated_at
+    FROM tasks 
     ORDER BY 
       CASE WHEN completed_at IS NULL THEN 0 ELSE 1 END,
       due_date ASC,
@@ -294,7 +303,16 @@ export async function getAllTasks(): Promise<Task[]> {
 export async function getTasksForKid(kidName: string): Promise<Task[]> {
   const sql = getDb();
   const result = await sql`
-    SELECT * FROM tasks 
+    SELECT 
+      id,
+      title,
+      description,
+      kid_name,
+      due_date::text as due_date,
+      completed_at,
+      created_at,
+      updated_at
+    FROM tasks 
     WHERE kid_name = ${kidName}
     ORDER BY 
       CASE WHEN completed_at IS NULL THEN 0 ELSE 1 END,
@@ -310,7 +328,16 @@ export async function getTasksForParentView(): Promise<Task[]> {
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
   const result = await sql`
-    SELECT * FROM tasks 
+    SELECT 
+      id,
+      title,
+      description,
+      kid_name,
+      due_date::text as due_date,
+      completed_at,
+      created_at,
+      updated_at
+    FROM tasks 
     WHERE completed_at IS NULL 
        OR completed_at >= ${oneWeekAgo.toISOString()}
     ORDER BY 
@@ -326,7 +353,15 @@ export async function addTask(task: Omit<Task, "id" | "completed_at" | "created_
   const result = await sql`
     INSERT INTO tasks (title, description, kid_name, due_date)
     VALUES (${task.title}, ${task.description}, ${task.kid_name}, ${task.due_date})
-    RETURNING *
+    RETURNING 
+      id,
+      title,
+      description,
+      kid_name,
+      due_date::text as due_date,
+      completed_at,
+      created_at,
+      updated_at
   `;
   return result[0] as Task;
 }
@@ -371,7 +406,15 @@ export async function updateTask(
         completed_at = ${task.completed_at !== undefined ? task.completed_at : sql`completed_at`},
         updated_at = NOW()
     WHERE id = ${id}
-    RETURNING *
+    RETURNING 
+      id,
+      title,
+      description,
+      kid_name,
+      due_date::text as due_date,
+      completed_at,
+      created_at,
+      updated_at
   `;
   return result[0] as Task;
 }

@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { ChoreCard } from "./chore-card";
 import { TaskCard } from "./task-card";
 import { ChoreScheduleWithCompletion, Task } from "../lib/db";
+import { parseLocalDate } from "../lib/utils";
 
 export default function KidsClient() {
   const searchParams = useSearchParams();
@@ -117,8 +118,7 @@ export default function KidsClient() {
   today2.setHours(0, 0, 0, 0);
   const uncompletedTasks = tasks.filter(t => {
     if (t.completed_at) return false;
-    const dueDate = new Date(t.due_date);
-    dueDate.setHours(0, 0, 0, 0);
+    const dueDate = parseLocalDate(t.due_date);
     return dueDate <= today2;
   });
 
@@ -215,8 +215,7 @@ export default function KidsClient() {
 
               const isTaskCurrentOrOverdue = (task: Task): boolean => {
                 if (task.completed_at) return false;
-                const dueDate = new Date(task.due_date);
-                dueDate.setHours(0, 0, 0, 0);
+                const dueDate = parseLocalDate(task.due_date);
                 return dueDate <= today2;
               };
 
