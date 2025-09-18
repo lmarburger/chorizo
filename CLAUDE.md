@@ -27,6 +27,7 @@ Chorizo is a family chore tracking web application designed primarily for mobile
      - Edit existing chores and their complete schedules
      - View all chores with weekly schedule grid
      - Delete chores with confirmation (cascades to schedules and completions)
+     - **List refreshes automatically after delete/edit operations (no page reload needed)**
    - **Tasks Management:**
      - Add one-time tasks with title, description, kid assignment, and due date
      - Edit existing tasks inline
@@ -72,7 +73,8 @@ Chorizo is a family chore tracking web application designed primarily for mobile
    - Tests cover CRUD operations, completion tracking, priority sorting, kid-specific filtering
    - Tests against remote Neon test database configured via TEST_DATABASE_URL
    - All 13 integration tests pass (7 chore tests, 6 task tests)
-   - All features have test coverage
+   - Single test file `test.ts` for simplicity
+   - Database automatically uses TEST_DATABASE_URL when available for test isolation
 
 ### 🚧 Planned Features
 - Screen time reporting
@@ -134,7 +136,7 @@ node init-db.mjs      # Initialize/reset production database with sample data
 - TypeScript strict mode enabled
 - React hooks rules enforced
 - Prettier integration (ESLint won't conflict with formatting)
-- Files excluded: `next-env.d.ts`, `next-dev.d.ts`, init scripts
+- Files excluded: `next-env.d.ts`, `next-dev.d.ts`, `init-db.mjs`, `test.ts`
 
 ### Important for Claude
 The `npm run check` command is automatically executed via the Stop hook (`scripts/check-wrapper.sh`).
@@ -149,12 +151,15 @@ No need to manually run `npm run check` - it happens automatically!
 The project has hooks configured for code quality:
 - PostToolUse: `scripts/claude-format-hook.sh` - Auto-formats files and runs linters
   - Prettier for formatting
-  - ESLint for TypeScript/JavaScript linting
+  - ESLint for TypeScript/JavaScript linting (properly handles non-zero exit codes)
   - Shellcheck for shell scripts
+  - Reports linting errors to stderr for visibility
 - Stop hook: Runs `scripts/check-wrapper.sh` to validate the entire codebase with proper error handling
 
 ## Database Management
 - Database URL is stored in `.env.local` (pulled from Vercel)
+- Test database URL in `.env.test` as `TEST_DATABASE_URL`
+- `app/lib/db.ts` automatically uses TEST_DATABASE_URL when available (for test isolation)
 - Currently using same database for dev and prod (will separate later)
 - Schema file: `schema.sql`
 - Database utilities: `app/lib/db.ts`

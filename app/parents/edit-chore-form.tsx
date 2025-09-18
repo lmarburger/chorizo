@@ -8,6 +8,7 @@ interface EditChoreFormProps {
   chore: ChoreWithSchedules;
   kidNames: string[];
   onCancel: () => void;
+  onSuccess?: () => void;
 }
 
 type ScheduleEntry = {
@@ -15,7 +16,7 @@ type ScheduleEntry = {
   days: string[];
 };
 
-export function EditChoreForm({ chore, kidNames: existingKidNames, onCancel }: EditChoreFormProps) {
+export function EditChoreForm({ chore, kidNames: existingKidNames, onCancel, onSuccess }: EditChoreFormProps) {
   // Initialize schedules from existing chore schedules
   const initialSchedules: ScheduleEntry[] = [];
   const scheduleMap = new Map<string, string[]>();
@@ -79,7 +80,11 @@ export function EditChoreForm({ chore, kidNames: existingKidNames, onCancel }: E
 
   const handleSubmit = async (formData: FormData) => {
     await updateChoreWithSchedulesAction(formData);
-    onCancel(); // Close the form after successful save
+    if (onSuccess) {
+      onSuccess(); // This will close the form and refresh the data
+    } else {
+      onCancel(); // Fallback to just closing the form
+    }
   };
 
   return (

@@ -1,0 +1,10 @@
+
+
+---
+
+it's now time to track screen time. on each kids' page above the chores list, there should be a block that shows their total screen time for the day. there should be a button to start a new screen time session. when a screen time session is running, it should be possible to edit the start time of date (in case they forget to press the button when they started their screen time), a button to end the session, and a way to manually set the end time. it should serve 2 use cases:
+ - happy path: kid clicks the start button when they start their screen time and stop when they end it.
+ - sad path: kid starts their screen time and forgets to click the button. they come back after the fact and manually set a start and end time for their session.
+
+---
+

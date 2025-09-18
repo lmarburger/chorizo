@@ -11,14 +11,22 @@ export function ChoreList() {
   const [kidNames, setKidNames] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const fetchData = async () => {
+    try {
+      const [choresRes, kidsRes] = await Promise.all([
+        fetch("/api/chores").then(res => res.json()),
+        fetch("/api/kids").then(res => res.json()),
+      ]);
+      setChores(choresRes.chores || []);
+      setKidNames(kidsRes.kids || []);
+      setLoading(false);
+    } catch {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    Promise.all([fetch("/api/chores").then(res => res.json()), fetch("/api/kids").then(res => res.json())])
-      .then(([choresData, kidsData]) => {
-        setChores(choresData.chores || []);
-        setKidNames(kidsData.kids || []);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
+    fetchData();
   }, []);
 
   const dayOrder = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
@@ -49,7 +57,16 @@ export function ChoreList() {
 
         if (editingChoreId === chore.id) {
           return (
-            <EditChoreForm key={chore.id} chore={chore} kidNames={kidNames} onCancel={() => setEditingChoreId(null)} />
+            <EditChoreForm
+              key={chore.id}
+              chore={chore}
+              kidNames={kidNames}
+              onCancel={() => setEditingChoreId(null)}
+              onSuccess={() => {
+                setEditingChoreId(null);
+                fetchData(); // Refresh the list after editing
+              }}
+            />
           );
         }
 
@@ -103,15 +120,16 @@ export function ChoreList() {
                   Edit
                 </button>
                 <form
-                  action={deleteChoreAction}
-                  onSubmit={e => {
+                  action={async formData => {
                     if (
                       !confirm(
                         `Are you sure you want to delete "${chore.name}"? This will also remove all schedules and completion history for this chore.`
                       )
                     ) {
-                      e.preventDefault();
+                      return;
                     }
+                    await deleteChoreAction(formData);
+                    fetchData(); // Refresh the list after deletion
                   }}>
                   <input type="hidden" name="choreId" value={chore.id} />
                   <button

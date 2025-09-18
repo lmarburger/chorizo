@@ -148,9 +148,9 @@ if [ ${#eslint_files[@]} -gt 0 ]; then
   eslint_out=$(mktemp); TEMPS+=("$eslint_out")
   eslint_err=$(mktemp); TEMPS+=("$eslint_err")
   
-  # Run eslint and capture exit code
-  npx eslint --fix "${eslint_files[@]}" >"$eslint_out" 2>"$eslint_err"
-  eslint_exit=$?
+  # Run eslint and capture exit code (|| true to prevent errexit)
+  eslint_exit=0
+  npx eslint --fix "${eslint_files[@]}" >"$eslint_out" 2>"$eslint_err" || eslint_exit=$?
   
   # ESLint exit codes: 0 = success, 1 = linting errors, 2 = config/other errors
   # We want to show output for both warnings (exit 0 with output) and errors (exit 1)

@@ -14,6 +14,7 @@ A simple, mobile-first web app for tracking family chores, screen time, and inst
   - Single chore can be assigned to multiple kids on different days
   - Flexible scheduling (e.g., "Do dishes" alternates between kids)
   - Visual weekly schedule grid in parent view
+  - Automatic list refresh after delete/edit operations (no page reload needed)
 - **One-Off Tasks**:
   - Create specific tasks with due dates (non-recurring)
   - Assign to individual kids
@@ -198,9 +199,11 @@ The project includes comprehensive integration tests that exercise the actual ap
 
 **Test Features:**
 - **True Integration Testing**: Tests use actual application functions from `app/lib/db.ts`, not raw SQL
-- **Test Isolation**: Each test runs in a fresh database state to prevent test interference
+- **Test Isolation**: Each test runs in a fresh database state to prevent test interference  
 - **Comprehensive Coverage**: 13 tests covering all CRUD operations, completion tracking, priority sorting, and kid-specific filtering for both chores and tasks
 - **Automatic Database Reset**: Tests automatically reset the database schema between runs (no sample data included)
+- **Simple Setup**: Single `test.ts` file handles everything
+- **Smart DB Selection**: `app/lib/db.ts` automatically uses TEST_DATABASE_URL when available
 
 ## Deployment
 
