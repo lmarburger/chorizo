@@ -37,6 +37,12 @@ interface KidStatus {
 export function Dashboard() {
   const [kidStatuses, setKidStatuses] = useState<KidStatus[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
+  const [editForm, setEditForm] = useState({
+    title: "",
+    description: "",
+    due_date: "",
+  });
 
   const fetchDashboardData = async () => {
     try {
@@ -54,11 +60,63 @@ export function Dashboard() {
     }
   };
 
+  const handleEditTask = (task: Task) => {
+    setEditingTaskId(task.id);
+    // Format the date properly for the date input (YYYY-MM-DD)
+    const formattedDate = task.due_date.includes("T") ? task.due_date.split("T")[0] : task.due_date;
+    setEditForm({
+      title: task.title,
+      description: task.description || "",
+      due_date: formattedDate,
+    });
+  };
+
+  const handleUpdateTask = async () => {
+    if (!editingTaskId) return;
+
+    try {
+      const response = await fetch(`/api/tasks/${editingTaskId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(editForm),
+      });
+
+      if (response.ok) {
+        setEditingTaskId(null);
+        fetchDashboardData();
+      }
+    } catch (error) {
+      console.error("Failed to update task:", error);
+    }
+  };
+
+  const handleDeleteTask = async (taskId: number) => {
+    if (!confirm("Are you sure you want to delete this task?")) return;
+
+    try {
+      const response = await fetch(`/api/tasks/${taskId}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        setEditingTaskId(null);
+        fetchDashboardData();
+      }
+    } catch (error) {
+      console.error("Failed to delete task:", error);
+    }
+  };
+
   useEffect(() => {
     fetchDashboardData();
-    const interval = setInterval(fetchDashboardData, 5000); // Refresh every 5 seconds
-    return () => clearInterval(interval);
-  }, []);
+    // Only auto-refresh if not editing
+    if (!editingTaskId) {
+      const interval = setInterval(fetchDashboardData, 5000); // Refresh every 5 seconds
+      return () => clearInterval(interval);
+    }
+  }, [editingTaskId]);
 
   if (loading) {
     return <div className="text-gray-500">Loading dashboard...</div>;
@@ -70,8 +128,6 @@ export function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-bold text-gray-900 dark:text-white">Kids' Status</h2>
-
       {kidStatuses.map(kid => (
         <div
           key={kid.name}
@@ -80,75 +136,187 @@ export function Dashboard() {
               ? "border-2 border-green-500 bg-green-50 dark:bg-green-900/20"
               : "border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800"
           }`}>
-          <div className="mb-3 flex items-center justify-between">
+          <div className={`flex items-center justify-between ${!kid.allComplete ? "mb-3" : ""}`}>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{kid.name}</h3>
             {kid.allComplete && (
               <span className="rounded-full bg-green-500 px-3 py-1 text-sm font-medium text-white">✓ All Done!</span>
             )}
           </div>
 
-          {!kid.allComplete && (
-            <>
-              {kid.outstandingChores.length > 0 && (
-                <div className="mb-3">
-                  <h4 className="mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Outstanding Chores</h4>
-                  <div className="space-y-1">
-                    {kid.outstandingChores.map(chore => {
-                      const today = new Date();
-                      const dayOfWeek = today.getDay() === 0 ? 7 : today.getDay();
-                      const daysAgo = dayOfWeek - chore.day_number;
-                      const isToday = daysAgo === 0;
-                      const dayName = ["", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][chore.day_number];
+          {!kid.allComplete && (kid.outstandingChores.length > 0 || kid.allIncompleteTasks.length > 0) && (
+            <div className="space-y-1">
+              {(() => {
+                const today = new Date();
+                const dayOfWeek = today.getDay() === 0 ? 7 : today.getDay();
+                const todayStart = startOfDay(today);
 
+                type CombinedItem = {
+                  type: "chore" | "task";
+                  id: string;
+                  name: string;
+                  dayName?: string;
+                  dueDate?: Date;
+                  isToday: boolean;
+                  isPast: boolean;
+                  isFuture: boolean;
+                  sortOrder: number;
+                  data: ChoreWithSchedule | Task;
+                };
+
+                // Create combined list of items with type and sorting info
+                const items: CombinedItem[] = [];
+
+                // Add chores
+                kid.outstandingChores.forEach(chore => {
+                  const daysAgo = dayOfWeek - chore.day_number;
+                  const isToday = daysAgo === 0;
+                  const isPast = daysAgo > 0;
+                  const dayName = ["", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][chore.day_number];
+
+                  items.push({
+                    type: "chore",
+                    id: `chore-${chore.id}-${chore.day_number}`,
+                    name: chore.chore_name,
+                    dayName,
+                    isToday,
+                    isPast,
+                    isFuture: false,
+                    sortOrder: isPast ? 0 : isToday ? 1 : 3,
+                    data: chore,
+                  });
+                });
+
+                // Add all incomplete tasks
+                kid.allIncompleteTasks.forEach(task => {
+                  const dueDate = parseISO(task.due_date);
+                  const isToday = format(dueDate, "yyyy-MM-dd") === format(todayStart, "yyyy-MM-dd");
+                  const isPast = dueDate < todayStart;
+                  const isFuture = dueDate > todayStart;
+
+                  items.push({
+                    type: "task",
+                    id: `task-${task.id}`,
+                    name: task.title,
+                    dueDate,
+                    isToday,
+                    isPast,
+                    isFuture,
+                    sortOrder: isPast ? 0 : isToday ? 1 : isFuture ? 2 : 3,
+                    data: task,
+                  });
+                });
+
+                // Sort items: past/overdue first, then today, then future
+                items.sort((a, b) => {
+                  if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+                  return a.name.localeCompare(b.name);
+                });
+
+                return items.map(item => {
+                  if (item.type === "chore") {
+                    return (
+                      <div
+                        key={item.id}
+                        className={`flex items-center justify-between rounded px-2 py-1 text-sm ${
+                          item.isToday
+                            ? "bg-blue-100 text-blue-900 dark:bg-blue-900/30 dark:text-blue-100"
+                            : "bg-red-100 text-red-900 dark:bg-red-900/30 dark:text-red-100"
+                        }`}>
+                        <span className="font-medium">{item.name}</span>
+                        <span className="text-xs opacity-75">Chore ({item.dayName})</span>
+                      </div>
+                    );
+                  } else {
+                    const task = item.data as Task;
+
+                    // If this task is being edited, show the edit form
+                    if (editingTaskId === task.id) {
                       return (
                         <div
-                          key={`${chore.id}-${chore.day_number}`}
-                          className={`rounded px-2 py-1 text-sm ${
-                            isToday
+                          key={item.id}
+                          className="rounded-lg border-2 border-blue-400 bg-white p-3 dark:bg-gray-800">
+                          <div className="space-y-3">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">
+                                Title
+                              </label>
+                              <input
+                                type="text"
+                                value={editForm.title}
+                                onChange={e => setEditForm({ ...editForm, title: e.target.value })}
+                                className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">
+                                Description
+                              </label>
+                              <textarea
+                                value={editForm.description}
+                                onChange={e => setEditForm({ ...editForm, description: e.target.value })}
+                                rows={2}
+                                className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">
+                                Due Date
+                              </label>
+                              <input
+                                type="date"
+                                value={editForm.due_date}
+                                onChange={e => setEditForm({ ...editForm, due_date: e.target.value })}
+                                className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                              />
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <button
+                                onClick={() => handleDeleteTask(task.id)}
+                                className="rounded px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20">
+                                Delete
+                              </button>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => setEditingTaskId(null)}
+                                  className="rounded-md bg-gray-200 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+                                  Cancel
+                                </button>
+                                <button
+                                  onClick={handleUpdateTask}
+                                  className="rounded-md bg-blue-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-600">
+                                  Save
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    // Otherwise show the normal task display (clickable)
+                    return (
+                      <div
+                        key={item.id}
+                        onClick={() => handleEditTask(task)}
+                        className={`flex cursor-pointer items-center justify-between rounded px-2 py-1 text-sm transition-opacity hover:opacity-80 ${
+                          item.isPast
+                            ? "bg-red-100 text-red-900 dark:bg-red-900/30 dark:text-red-100"
+                            : item.isToday
                               ? "bg-blue-100 text-blue-900 dark:bg-blue-900/30 dark:text-blue-100"
-                              : "bg-red-100 text-red-900 dark:bg-red-900/30 dark:text-red-100"
-                          }`}>
-                          <span className="font-medium">{chore.chore_name}</span>
-                          <span className="ml-2 text-xs opacity-75">({dayName})</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {kid.allIncompleteTasks.length > 0 && (
-                <div>
-                  <h4 className="mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Tasks</h4>
-                  <div className="space-y-1">
-                    {kid.allIncompleteTasks.map(task => {
-                      const dueDate = parseISO(task.due_date);
-                      const today = startOfDay(new Date());
-                      const isToday = format(dueDate, "yyyy-MM-dd") === format(today, "yyyy-MM-dd");
-                      const isOverdue = dueDate < today;
-                      const isFuture = dueDate > today;
-
-                      return (
-                        <div
-                          key={task.id}
-                          className={`rounded px-2 py-1 text-sm ${
-                            isOverdue
-                              ? "bg-red-100 text-red-900 dark:bg-red-900/30 dark:text-red-100"
-                              : isToday
-                                ? "bg-blue-100 text-blue-900 dark:bg-blue-900/30 dark:text-blue-100"
-                                : isFuture
-                                  ? "bg-gray-100 text-gray-700 dark:bg-gray-700/30 dark:text-gray-300"
-                                  : "bg-orange-100 text-orange-900 dark:bg-orange-900/30 dark:text-orange-100"
-                          }`}>
-                          <span className="font-medium">{task.title}</span>
-                          <span className="ml-2 text-xs opacity-75">(due {format(dueDate, "MMM d")})</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </>
+                              : item.isFuture
+                                ? "bg-gray-100 text-gray-700 dark:bg-gray-700/30 dark:text-gray-300"
+                                : "bg-orange-100 text-orange-900 dark:bg-orange-900/30 dark:text-orange-100"
+                        }`}>
+                        <span className="font-medium">{item.name}</span>
+                        <span className="rounded bg-purple-100 px-1.5 py-0.5 text-xs font-medium text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                          Task (due {item.dueDate ? format(item.dueDate, "MMM d") : "unknown"})
+                        </span>
+                      </div>
+                    );
+                  }
+                });
+              })()}
+            </div>
           )}
         </div>
       ))}

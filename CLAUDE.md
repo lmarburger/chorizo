@@ -21,50 +21,53 @@ Chorizo is a family chore tracking web application designed primarily for mobile
    - No passwords needed - designed for family devices
 
 3. **Parent View** (`/parents`)
-   - **Chores Management:**
-     - Add new chores with flexible scheduling
+   - **Dashboard:**
+     - Combined view of all kids' outstanding chores and tasks
+     - Kids sorted alphabetically, with completed kids shown last
+     - Green border and "✓ All Done!" badge for kids with no outstanding items
+     - Click on any task to edit inline (rename, change description/date, delete)
+     - Auto-refresh pauses during task editing
+   - **Chore Management:**
+     - View all chores in "Schedule" section sorted alphabetically
+     - Icon-based edit/delete buttons (no text labels)
      - Single chore can be assigned to multiple kids on different days
      - Edit existing chores and their complete schedules
-     - View all chores with weekly schedule grid
      - Delete chores with confirmation (cascades to schedules and completions)
-     - **List refreshes automatically after delete/edit operations (no page reload needed)**
-   - **Tasks Management:**
-     - Add one-time tasks with title, description, kid assignment, and due date
-     - Edit existing tasks inline
-     - View pending tasks sorted by due date
-     - View recently completed tasks (past week)
-     - Delete tasks with confirmation
-     - Visual indicators: Red (overdue), Orange (due soon), Green (completed)
-   - Add new kid names or select from existing
-   - Forms reset/close properly after submission
+   - **Task Management:**
+     - "Add One-Time Task" form (always expanded)
+     - Tasks shown in dashboard, no separate task list
+     - Inline editing directly from dashboard
+   - **UI Elements:**
+     - Back arrow icon for navigation (replaced "Switch User" text)
+     - Settings gear icon at bottom
+     - All forms expanded by default (no collapsing)
+     - Icon buttons throughout (X for remove, trash for delete, pencil for edit)
 
 4. **Kid View** (`/kids?name=KidName`)
-   - **Mixed Display of Chores and Tasks:**
+   - **Unified Display:**
+     - Chores and tasks look identical (no visual distinction)
+     - Day of week shown on right (e.g., "Mon", "Tue") for both chores and tasks
+     - No status labels - color coding tells the story
      - Smart ordering:
        1. Uncompleted tasks for today or past (tasks prioritized)
        2. Uncompleted chores for today or past
        3. Upcoming uncompleted tasks (all future)
        4. Upcoming uncompleted chores
        5. All completed items mixed, sorted by completion time
-   - **Chores:**
-     - Shows entire week's chores
-     - Blue background: Today's chores
-     - Red background: Overdue chores
-     - Gray: Future chores
-     - Green: Completed chores
-   - **Tasks:**
-     - Shows ALL tasks (not limited to current week)
-     - Can complete tasks early (before due date)
-     - Purple "Task" label to distinguish from chores
-     - Red background: Overdue (past due date)
+   - **Color Scheme (simplified):**
+     - Red background: Overdue (past due)
      - Blue background: Due today
-     - Orange background: Due soon (1-2 days)
-     - Gray: Future tasks
-     - Green: Completed
-   - Instant updates without page refresh
-   - Progress counter shows items to do (today/past only)
-   - Congratulations banner when all current items completed
-   - Relative time display for completed items
+     - Gray background: Future items
+     - Green background: Completed items
+   - **UI Elements:**
+     - Back arrow icon for navigation
+     - Clean cards with checkbox, title, description, and day
+     - Relative time shown only for completed items ("Done 5 mins ago")
+   - **Features:**
+     - Instant updates without page refresh
+     - Progress counter shows items to do (today/past only)
+     - Congratulations banner when all current items completed
+     - Can complete tasks early (before due date)
 
 5. **Testing**
    - Comprehensive integration tests for both chores and tasks
@@ -183,13 +186,12 @@ app/
 │   └── tasks/         # Tasks CRUD endpoints
 ├── parents/           # Parent view
 │   ├── page.tsx       # Parent dashboard
+│   ├── dashboard.tsx  # Kids status overview
 │   ├── actions.ts     # Server actions
-│   ├── chore-list.tsx
+│   ├── chore-list.tsx # Chore schedule display
 │   ├── add-chore-form.tsx
 │   ├── edit-chore-form.tsx
-│   ├── task-list.tsx
-│   ├── add-task-form.tsx
-│   └── edit-task-form.tsx
+│   └── add-task-form.tsx
 ├── kids/              # Kid view
 │   ├── page.tsx       # Kid's chore/task view
 │   ├── actions.ts

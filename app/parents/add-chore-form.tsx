@@ -65,8 +65,6 @@ export function AddChoreForm() {
 
   return (
     <form ref={formRef} action={handleSubmit} className="rounded-lg bg-white p-4 shadow dark:bg-gray-800">
-      <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Add New Chore</h2>
-
       <div className="space-y-4">
         <div>
           <label htmlFor="name" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -121,8 +119,11 @@ export function AddChoreForm() {
                 <button
                   type="button"
                   onClick={() => removeScheduleEntry(index)}
-                  className="text-sm text-red-500 hover:text-red-600">
-                  Remove
+                  className="rounded p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+                  title="Remove schedule">
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
                 </button>
               </div>
               <div className="flex flex-wrap gap-1">

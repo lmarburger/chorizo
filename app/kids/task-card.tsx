@@ -54,26 +54,10 @@ export function TaskCard({ task, onToggle }: TaskCardProps) {
     return `${Math.floor(diffDays / 7)} week${Math.floor(diffDays / 7) > 1 ? "s" : ""} ago`;
   };
 
-  const formatDueDate = (dueDate: string): string => {
-    const daysUntil = getDaysUntilDue(dueDate);
-    const date = new Date(dueDate);
-    const dayName = date.toLocaleDateString("en-US", { weekday: "short" });
-
-    if (daysUntil === 0) return "Today";
-    if (daysUntil === 1) return "Tomorrow";
-    if (daysUntil === -1) return "Yesterday";
-    if (daysUntil < -1) return `${Math.abs(daysUntil)} days overdue`;
-    if (daysUntil <= 7) return `${dayName} (${daysUntil} days)`;
-    const weeks = Math.floor(daysUntil / 7);
-    if (weeks === 1) return `Next week`;
-    return `In ${weeks} weeks`;
-  };
-
   const daysUntil = getDaysUntilDue(task.due_date);
   const isOverdue = daysUntil < 0 && !task.completed_at; // Only past due (not today)
   const isDueToday = daysUntil === 0 && !task.completed_at;
-  const isDueSoon = daysUntil > 0 && daysUntil <= 2 && !task.completed_at;
-  const isFuture = daysUntil > 2 && !task.completed_at;
+  const isFuture = daysUntil > 0 && !task.completed_at;
 
   return (
     <button
@@ -86,9 +70,7 @@ export function TaskCard({ task, onToggle }: TaskCardProps) {
             ? "border-2 border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20"
             : isDueToday
               ? "border-2 border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20"
-              : isDueSoon
-                ? "border-2 border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-900/20"
-                : "border-2 border-gray-200 bg-gray-50 dark:border-gray-600 dark:bg-gray-700"
+              : "border-2 border-gray-200 bg-gray-50 dark:border-gray-600 dark:bg-gray-700"
       } hover:scale-[1.02] active:scale-[0.98] ${isToggling ? "opacity-50" : ""}`}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -127,23 +109,17 @@ export function TaskCard({ task, onToggle }: TaskCardProps) {
 
         <div className="text-right">
           <div
-            className={`text-xs font-medium ${
-              task.completed_at ? "text-green-600 dark:text-green-400" : "text-purple-600 dark:text-purple-400"
+            className={`text-sm font-medium ${
+              isOverdue && !task.completed_at
+                ? "text-red-600 dark:text-red-400"
+                : task.completed_at
+                  ? "text-green-600 dark:text-green-400"
+                  : isFuture
+                    ? "text-gray-600 dark:text-gray-400"
+                    : "text-blue-600 dark:text-blue-400"
             }`}>
-            Task
+            {new Date(task.due_date).toLocaleDateString("en-US", { weekday: "short" })}
           </div>
-          {isOverdue && !task.completed_at && (
-            <div className="mt-0.5 text-xs text-red-500 dark:text-red-400">Overdue</div>
-          )}
-          {isDueToday && !task.completed_at && (
-            <div className="mt-0.5 text-xs text-blue-600 dark:text-blue-400">Due today</div>
-          )}
-          {isDueSoon && !task.completed_at && (
-            <div className="mt-0.5 text-xs text-orange-600 dark:text-orange-400">Due soon</div>
-          )}
-          {isFuture && !task.completed_at && (
-            <div className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{formatDueDate(task.due_date)}</div>
-          )}
           {task.completed_at && (
             <div className="mt-0.5 text-xs text-green-600 dark:text-green-400">
               Done {getRelativeTime(task.completed_at)}

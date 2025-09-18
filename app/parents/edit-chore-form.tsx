@@ -141,8 +141,11 @@ export function EditChoreForm({ chore, kidNames: existingKidNames, onCancel, onS
                 <button
                   type="button"
                   onClick={() => removeScheduleEntry(index)}
-                  className="text-sm text-red-500 hover:text-red-600">
-                  Remove
+                  className="rounded p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+                  title="Remove schedule">
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
                 </button>
               </div>
               <div className="flex flex-wrap gap-1">

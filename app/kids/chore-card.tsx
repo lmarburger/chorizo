@@ -43,7 +43,6 @@ export function ChoreCard({ chore, onToggle }: ChoreCardProps) {
   const choreIndex = dayOrder.indexOf(chore.day_of_week);
   const isOverdue = !chore.is_completed && choreIndex < todayIndex;
   const isFuture = choreIndex > todayIndex;
-  const isToday = choreIndex === todayIndex;
 
   const handleToggle = async () => {
     if (isToggling) return;
@@ -127,19 +126,12 @@ export function ChoreCard({ chore, onToggle }: ChoreCardProps) {
                 ? "text-red-600 dark:text-red-400"
                 : chore.is_completed
                   ? "text-green-600 dark:text-green-400"
-                  : "text-blue-600 dark:text-blue-400"
+                  : isFuture
+                    ? "text-gray-600 dark:text-gray-400"
+                    : "text-blue-600 dark:text-blue-400"
             }`}>
             {dayLabels[chore.day_of_week]}
           </div>
-          {isOverdue && !chore.is_completed && (
-            <div className="mt-0.5 text-xs text-red-500 dark:text-red-400">Overdue</div>
-          )}
-          {isToday && !chore.is_completed && (
-            <div className="mt-0.5 text-xs text-blue-600 dark:text-blue-400">Today</div>
-          )}
-          {isFuture && !chore.is_completed && (
-            <div className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Upcoming</div>
-          )}
           {chore.is_completed && chore.completed_at && (
             <div className="mt-0.5 text-xs text-green-600 dark:text-green-400">
               Done {getRelativeTime(chore.completed_at)}

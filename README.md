@@ -8,30 +8,49 @@ A simple, mobile-first web app for tracking family chores, screen time, and inst
 - **Device-Based User Selection** (No Login Required):
   - Kids and parents select their identity once
   - Selection persists on device via localStorage
-  - Quick "Switch User" option available
+  - Back arrow icon for quick user switching
   - No passwords or usernames to remember
+  
+- **Parent Dashboard**:
+  - Combined view of all kids' outstanding items
+  - Kids sorted alphabetically, completed kids shown last
+  - Green border and "✓ All Done!" badge for kids with no outstanding work
+  - Click any task to edit inline (title, description, due date, delete)
+  - Auto-refresh pauses during editing
+  
 - **Schedule-Based Chore Management**: 
   - Single chore can be assigned to multiple kids on different days
   - Flexible scheduling (e.g., "Do dishes" alternates between kids)
-  - Visual weekly schedule grid in parent view
-  - Automatic list refresh after delete/edit operations (no page reload needed)
+  - Visual weekly schedule grid sorted alphabetically
+  - Icon-based controls (edit/delete) for cleaner UI
+  
 - **One-Off Tasks**:
   - Create specific tasks with due dates (non-recurring)
-  - Assign to individual kids
-  - Edit and delete functionality
-  - Prioritized display over recurring chores
-  - Visual indicators for overdue/upcoming tasks
-- **Smart Kids View**: 
-  - Shows both tasks and chores in priority order
-  - Tasks due today/past shown first
-  - Intelligent sorting by completion status and due dates
-  - Relative time display for completed items ("Done 5 mins ago")
-  - Congratulations banner when all today's work is done
-- **Enhanced Visual Feedback**:
-  - Blue: Today's items
+  - Inline editing directly from parent dashboard
+  - Tasks and chores combined in unified display
+  - Always-expanded forms for quick task creation
+  
+- **Unified Kids View**: 
+  - Chores and tasks look identical (no visual distinction)
+  - Day of week shown for both (e.g., "Mon", "Tue")
+  - No status labels - color coding tells the story
+  - Smart priority ordering (overdue/today first, then future)
+  - Relative time for completed items only
+  
+- **Simplified Visual System**:
   - Red: Overdue items
+  - Blue: Today's items  
   - Gray: Future items
-  - Green: Completed with timestamp
+  - Green: Completed items
+  - No orange "due soon" state - cleaner, simpler
+  
+- **Icon-Based UI**:
+  - Back arrow for navigation
+  - Gear icon for settings
+  - X icon for removing items
+  - Trash icon for deleting
+  - Pencil icon for editing
+  
 - **Simple Check-off System**: Tap to mark items complete/incomplete with instant updates
 - **Multi-kid Support**: Track chores and tasks for multiple children
 - **Mobile-Optimized**: Designed for iPhone use
@@ -105,20 +124,23 @@ When you first open the app, you'll see a selection screen:
 
 ### For Parents
 Navigate to `/parents` to:
-- Create recurring chores with flexible scheduling across multiple kids and days
-- Add one-off tasks with specific due dates
-- Edit chore and task details inline
-- View all chores with visual schedule grid showing who does what each day
-- Delete chores or tasks (with confirmation dialog)
-- See both pending and completed tasks
+- View dashboard showing each kid's outstanding chores and tasks
+- See at a glance who's done (green border with checkmark)
+- Click any task in dashboard to edit inline
+- Create recurring chores with flexible scheduling
+- Add one-off tasks with expanded form (always visible)
+- View chore schedule sorted alphabetically
+- Use icon buttons for all actions (edit, delete, remove)
+- Access settings via gear icon at bottom
 
 ### For Kids
 Navigate to `/kids` to:
-- View both tasks and chores in priority order
-- See items organized by urgency (overdue/today's tasks first)
-- Track when items were completed with relative timestamps
-- Easily identify today's, overdue, and upcoming items by color
-- Get a congratulations message when all today's work is complete
+- View unified list of chores and tasks (visually identical)
+- See day of week for each item (Mon, Tue, etc.)
+- Identify status by color alone (red=overdue, blue=today, gray=future)
+- Track completion times with "Done X mins ago"
+- Get congratulations when all current work is complete
+- Navigate back with arrow icon
 
 ## Project Structure
 
@@ -127,13 +149,13 @@ app/
 ├── page.tsx              # User selection screen
 ├── parents/              # Parent management views
 │   ├── page.tsx
-│   ├── chore-list.tsx
-│   ├── task-list.tsx     # One-off tasks management
-│   └── add-task-form.tsx
+│   ├── dashboard.tsx     # Kids status overview
+│   ├── chore-list.tsx    # Chore schedule display
+│   └── add-task-form.tsx # Task creation form
 ├── kids/                 # Kid views
 │   ├── page.tsx
-│   ├── chore-card.tsx
-│   └── task-card.tsx     # Task display component
+│   ├── chore-card.tsx    # Unified card for chores
+│   └── task-card.tsx     # Unified card for tasks
 ├── api/                  # API endpoints
 │   ├── kids/             # Get kid names
 │   ├── tasks/            # Task CRUD operations
