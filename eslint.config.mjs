@@ -68,6 +68,7 @@ export default [
       "init-db.ts",
       "init-test-db.mjs",
       "test.mjs",
+      "scripts/test-future-chore.mjs",
     ],
   },
 ];

@@ -56,7 +56,7 @@ export function ChoreCard({ chore }: ChoreCardProps) {
             : isOverdue
               ? "border-2 border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20"
               : isFuture
-                ? "border-2 border-gray-200 bg-gray-50 opacity-60 dark:border-gray-600 dark:bg-gray-700"
+                ? "border-2 border-gray-200 bg-gray-50 dark:border-gray-600 dark:bg-gray-700"
                 : "border-2 border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20"
         } hover:scale-[1.02] active:scale-[0.98]`}>
         <div className="flex items-center justify-between">

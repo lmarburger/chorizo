@@ -9,17 +9,21 @@ export async function toggleChoreAction(formData: FormData) {
   const isCompleted = formData.get("isCompleted") === "true";
 
   // Calculate the date for this chore based on the day of week
+  // We need to find the date of this day in the current week (Mon-Sun)
   const today = new Date();
   const currentDay = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
   const daysOfWeek = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
   const targetDayIndex = daysOfWeek.indexOf(dayOfWeek);
 
-  // Calculate how many days ago this chore was due
-  let daysDiff = currentDay - targetDayIndex;
-  if (daysDiff < 0) daysDiff += 7;
+  // Get Monday of current week
+  const monday = new Date(today);
+  const daysFromMonday = currentDay === 0 ? 6 : currentDay - 1; // Convert Sunday=0 to days from Monday
+  monday.setDate(today.getDate() - daysFromMonday);
 
-  const choreDate = new Date(today);
-  choreDate.setDate(today.getDate() - daysDiff);
+  // Calculate the target date in this week
+  const daysFromMondayToTarget = targetDayIndex === 0 ? 6 : targetDayIndex - 1; // Convert to Monday-based
+  const choreDate = new Date(monday);
+  choreDate.setDate(monday.getDate() + daysFromMondayToTarget);
   const choreDateStr = choreDate.toLocaleDateString("en-CA"); // YYYY-MM-DD format
 
   if (isCompleted) {
