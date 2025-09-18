@@ -125,6 +125,17 @@ export function formatDateDisplay(date: string | Date): string {
  * Get the day of week abbreviation from a date
  */
 export function getDayAbbreviation(date: string | Date): string {
-  const dateObj = typeof date === "string" ? new Date(date) : date;
+  let dateObj: Date;
+  if (typeof date === "string") {
+    // For date-only strings (YYYY-MM-DD), parse as local date to avoid timezone issues
+    if (date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      const [year, month, day] = date.split("-").map(Number);
+      dateObj = new Date(year, month - 1, day);
+    } else {
+      dateObj = new Date(date);
+    }
+  } else {
+    dateObj = date;
+  }
   return dateObj.toLocaleDateString("en-US", { weekday: "short" });
 }

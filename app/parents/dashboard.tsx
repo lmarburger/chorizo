@@ -327,7 +327,8 @@ export function Dashboard() {
                         }`}>
                         <span className="font-medium">{item.name}</span>
                         <span className="rounded bg-purple-100 px-1.5 py-0.5 text-xs font-medium text-purple-800 dark:bg-purple-900 dark:text-purple-200">
-                          Task (due {item.dueDate ? format(item.dueDate, "MMM d") : "unknown"})
+                          Task (
+                          {item.dueDate ? item.dueDate.toLocaleDateString("en-US", { weekday: "short" }) : "unknown"})
                         </span>
                       </div>
                     );
@@ -413,7 +414,7 @@ export function Dashboard() {
                     className="flex cursor-pointer items-center justify-between rounded bg-gray-100 px-2 py-1 text-sm transition-opacity hover:opacity-80 dark:bg-gray-700/30 dark:text-gray-300">
                     <span className="font-medium">{task.title}</span>
                     <span className="rounded bg-purple-100 px-1.5 py-0.5 text-xs font-medium text-purple-800 dark:bg-purple-900 dark:text-purple-200">
-                      Task (due {format(dueDate, "MMM d")})
+                      Task ({dueDate.toLocaleDateString("en-US", { weekday: "short" })})
                     </span>
                   </div>
                 );

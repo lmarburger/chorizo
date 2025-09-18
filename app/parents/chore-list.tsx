@@ -75,48 +75,15 @@ export function ChoreList() {
 
         return (
           <div key={chore.id} className="rounded-lg bg-white p-4 shadow dark:bg-gray-800">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
+            <div className="flex items-start justify-between gap-2">
+              <div>
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white">{chore.name}</h3>
                 {chore.description && (
                   <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">{chore.description}</p>
                 )}
-
-                {chore.schedules.length > 0 ? (
-                  <div className="mt-3 space-y-1">
-                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Schedule:</p>
-                    <div className="grid grid-cols-7 gap-2 text-xs">
-                      {dayOrder.map(day => {
-                        const kids = scheduleByDay[day] || [];
-                        return (
-                          <div key={day} className="text-center">
-                            <div className="font-medium text-gray-700 dark:text-gray-300">
-                              {dayLabels[day as keyof typeof dayLabels]}
-                            </div>
-                            {kids.length > 0 ? (
-                              <div className="mt-1 space-y-1">
-                                {kids.map((kid, idx) => (
-                                  <div
-                                    key={`${day}-${kid}-${idx}`}
-                                    className="rounded bg-blue-100 px-1 py-0.5 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                                    {kid}
-                                  </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <div className="mt-1 text-gray-400">-</div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ) : (
-                  <p className="mt-2 text-sm text-gray-500 italic dark:text-gray-400">No schedule set</p>
-                )}
               </div>
 
-              <div className="ml-4 flex gap-1">
+              <div className="flex flex-shrink-0 gap-1">
                 <button
                   onClick={() => setEditingChoreId(chore.id)}
                   className="rounded p-1.5 text-blue-500 hover:bg-blue-50 dark:hover:bg-gray-700"
@@ -157,6 +124,34 @@ export function ChoreList() {
                     </svg>
                   </button>
                 </form>
+              </div>
+            </div>
+
+            <div className="mt-3">
+              <div className="grid grid-cols-7 gap-1 text-xs">
+                {dayOrder.map(day => {
+                  const kids = scheduleByDay[day] || [];
+                  return (
+                    <div key={day} className="min-w-0 text-center">
+                      <div className="font-medium text-gray-700 dark:text-gray-300">
+                        {dayLabels[day as keyof typeof dayLabels]}
+                      </div>
+                      {kids.length > 0 ? (
+                        <div className="mt-1 space-y-1">
+                          {kids.map((kid, idx) => (
+                            <div
+                              key={`${day}-${kid}-${idx}`}
+                              className="overflow-hidden rounded bg-blue-100 px-1 py-0.5 text-ellipsis text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                              {kid}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="mt-1">&nbsp;</div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
