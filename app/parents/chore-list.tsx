@@ -3,15 +3,23 @@
 import { ChoreWithSchedules } from "../lib/db";
 import { deleteChoreAction } from "./actions";
 import { EditChoreForm } from "./edit-chore-form";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
-interface ChoreListProps {
-  chores: ChoreWithSchedules[];
-  kidNames: string[];
-}
-
-export function ChoreList({ chores, kidNames }: ChoreListProps) {
+export function ChoreList() {
   const [editingChoreId, setEditingChoreId] = useState<number | null>(null);
+  const [chores, setChores] = useState<ChoreWithSchedules[]>([]);
+  const [kidNames, setKidNames] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([fetch("/api/chores").then(res => res.json()), fetch("/api/kids").then(res => res.json())])
+      .then(([choresData, kidsData]) => {
+        setChores(choresData.chores || []);
+        setKidNames(kidsData.kids || []);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
 
   const dayOrder = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
   const dayLabels = {
@@ -108,11 +116,13 @@ export function ChoreList({ chores, kidNames }: ChoreListProps) {
         );
       })}
 
-      {chores.length === 0 && (
+      {loading ? (
+        <p className="py-8 text-center text-gray-600 dark:text-gray-400">Loading chores...</p>
+      ) : chores.length === 0 ? (
         <p className="py-8 text-center text-gray-600 dark:text-gray-400">
           No chores created yet. Add a chore to get started!
         </p>
-      )}
+      ) : null}
     </div>
   );
 }

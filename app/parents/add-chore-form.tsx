@@ -1,22 +1,28 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { addChoreWithSchedulesAction } from "./actions";
-
-interface AddChoreFormProps {
-  kidNames: string[];
-}
 
 type ScheduleEntry = {
   kid_name: string;
   days: string[];
 };
 
-export function AddChoreForm({ kidNames: existingKidNames }: AddChoreFormProps) {
+export function AddChoreForm() {
   const [schedules, setSchedules] = useState<ScheduleEntry[]>([]);
   const [newKidName, setNewKidName] = useState("");
   const [showNewKidInput, setShowNewKidInput] = useState(false);
+  const [existingKidNames, setExistingKidNames] = useState<string[]>([]);
   const formRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    fetch("/api/kids")
+      .then(res => res.json())
+      .then(data => {
+        setExistingKidNames(data.kids || []);
+      })
+      .catch(console.error);
+  }, []);
 
   const handleSubmit = async (formData: FormData) => {
     await addChoreWithSchedulesAction(formData);

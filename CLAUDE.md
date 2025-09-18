@@ -110,14 +110,13 @@ node init-test-db.mjs # Initialize/reset test database
 - Files excluded: `next-env.d.ts`, `next-dev.d.ts`, init scripts
 
 ### Important for Claude
-When checking work, always run:
-```bash
-npm run check
-```
+The `npm run check` command is automatically executed via the Stop hook (`scripts/check-wrapper.sh`).
 This ensures:
 1. TypeScript types are correct (`npm run typecheck`)
 2. ESLint rules pass (`npm run lint`)
 3. Code is properly formatted (`npm run format:check`)
+
+No need to manually run `npm run check` - it happens automatically!
 
 ### Hooks Configuration (for Claude Code CLI)
 The project has hooks configured for code quality:
