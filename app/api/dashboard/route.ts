@@ -48,10 +48,14 @@ export async function GET() {
         return !task.completed_at && !isAfter(dueDate, todayStart);
       });
 
+      // All incomplete tasks (including future ones) for display in dashboard
+      const allIncompleteTasks = kidTasks.filter(task => !task.completed_at);
+
       return {
         name: kidName,
         outstandingChores,
         outstandingTasks,
+        allIncompleteTasks, // Add all incomplete tasks for dashboard display
         allComplete: outstandingChores.length === 0 && outstandingTasks.length === 0,
       };
     });

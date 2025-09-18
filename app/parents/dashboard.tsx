@@ -30,6 +30,7 @@ interface KidStatus {
   name: string;
   outstandingChores: ChoreWithSchedule[];
   outstandingTasks: Task[];
+  allIncompleteTasks: Task[]; // All incomplete tasks including future ones
   allComplete: boolean;
 }
 
@@ -116,15 +117,16 @@ export function Dashboard() {
                 </div>
               )}
 
-              {kid.outstandingTasks.length > 0 && (
+              {kid.allIncompleteTasks.length > 0 && (
                 <div>
-                  <h4 className="mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Outstanding Tasks</h4>
+                  <h4 className="mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Tasks</h4>
                   <div className="space-y-1">
-                    {kid.outstandingTasks.map(task => {
+                    {kid.allIncompleteTasks.map(task => {
                       const dueDate = parseISO(task.due_date);
                       const today = startOfDay(new Date());
                       const isToday = format(dueDate, "yyyy-MM-dd") === format(today, "yyyy-MM-dd");
                       const isOverdue = dueDate < today;
+                      const isFuture = dueDate > today;
 
                       return (
                         <div
@@ -134,7 +136,9 @@ export function Dashboard() {
                               ? "bg-red-100 text-red-900 dark:bg-red-900/30 dark:text-red-100"
                               : isToday
                                 ? "bg-blue-100 text-blue-900 dark:bg-blue-900/30 dark:text-blue-100"
-                                : "bg-orange-100 text-orange-900 dark:bg-orange-900/30 dark:text-orange-100"
+                                : isFuture
+                                  ? "bg-gray-100 text-gray-700 dark:bg-gray-700/30 dark:text-gray-300"
+                                  : "bg-orange-100 text-orange-900 dark:bg-orange-900/30 dark:text-orange-100"
                           }`}>
                           <span className="font-medium">{task.title}</span>
                           <span className="ml-2 text-xs opacity-75">(due {format(dueDate, "MMM d")})</span>

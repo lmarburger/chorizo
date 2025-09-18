@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { Dashboard } from "./dashboard";
 import { ChoreList } from "./chore-list";
 import { AddChoreForm } from "./add-chore-form";
-import { TaskList } from "./task-list";
 import { AddTaskForm } from "./add-task-form";
 
 export default function ParentsPage() {
@@ -48,19 +47,16 @@ export default function ParentsPage() {
         {/* Divider */}
         <hr className="my-8 border-gray-300 dark:border-gray-600" />
 
-        {/* Task Management (more frequent) */}
+        {/* Task Management */}
         <div className="mt-8">
-          <h2 className="mb-4 text-xl font-semibold text-gray-900 dark:text-white">Tasks</h2>
+          <h2 className="mb-4 text-xl font-semibold text-gray-900 dark:text-white">Add Task</h2>
           <AddTaskForm />
-          <div className="mt-6">
-            <TaskList />
-          </div>
         </div>
 
         {/* Divider */}
         <hr className="my-8 border-gray-300 dark:border-gray-600" />
 
-        {/* Chore Management (less frequent) */}
+        {/* Chore Management */}
         <div className="mt-8">
           <h2 className="mb-4 text-xl font-semibold text-gray-900 dark:text-white">Chores</h2>
           <AddChoreForm />
