@@ -62,15 +62,6 @@ export default function KidsClient() {
   }, [kidName, router]);
 
   const today = new Date().toLocaleDateString("en-US", { weekday: "long" }).toLowerCase();
-  const dayLabels: Record<string, string> = {
-    monday: "Monday",
-    tuesday: "Tuesday",
-    wednesday: "Wednesday",
-    thursday: "Thursday",
-    friday: "Friday",
-    saturday: "Saturday",
-    sunday: "Sunday",
-  };
 
   const handleSwitchUser = () => {
     localStorage.removeItem("selectedUser");
@@ -146,7 +137,7 @@ export default function KidsClient() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
           </button>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{kidName}'s Chores</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{kidName}</h1>
           <button
             onClick={() => setShowFeedback(true)}
             className="rounded-full p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20"
@@ -166,7 +157,7 @@ export default function KidsClient() {
           <div className="mb-6 rounded-lg border border-blue-300 bg-blue-50 p-4 dark:border-blue-700 dark:bg-blue-900/30">
             <div className="mb-3">
               <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Have an idea or suggestion? Let your parents know!
+                Got an idea or suggestion? Tell me!
               </label>
               <textarea
                 value={feedbackMessage}
@@ -197,26 +188,19 @@ export default function KidsClient() {
           </div>
         )}
 
-        {!allCaughtUp && (
-          <p className="mb-6 text-center text-gray-600 dark:text-gray-400">
-            {dayLabels[today as keyof typeof dayLabels]} - {uncompletedTodayAndPast.length + uncompletedTasks.length}{" "}
-            {uncompletedTodayAndPast.length + uncompletedTasks.length === 1 ? "item" : "items"} to do
-          </p>
-        )}
-
         {allCaughtUp && (
           <div className="mb-6 rounded-lg border-2 border-green-300 bg-green-100 p-4 text-center dark:border-green-700 dark:bg-green-900/30">
             <div className="mb-2 text-2xl">🎉</div>
             <p className="text-lg font-semibold text-green-800 dark:text-green-200">Great job, {kidName}!</p>
             <p className="mt-1 text-sm text-green-700 dark:text-green-300">
-              You're all done for today! Feel free to relax or get ahead on tomorrow's chores.
+              You're all done for today! Go relax or get ahead on tomorrow if you want.
             </p>
           </div>
         )}
 
         {chores.length === 0 && tasks.length === 0 ? (
           <p className="py-8 text-center text-gray-600 dark:text-gray-400">
-            No chores or tasks scheduled yet. Ask a parent to add some!
+            No chores or tasks scheduled yet. I'll add some soon!
           </p>
         ) : (
           <div className="space-y-2">

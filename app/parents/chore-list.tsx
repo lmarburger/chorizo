@@ -45,8 +45,6 @@ export function ChoreList() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Schedule</h2>
-
       {sortedChores.map(chore => {
         const scheduleByDay: Record<string, string[]> = {};
 

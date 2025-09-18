@@ -71,6 +71,7 @@ export function AddChoreForm({ onSuccess }: AddChoreFormProps = {}) {
 
   return (
     <form ref={formRef} action={handleSubmit} className="rounded-lg bg-white p-4 shadow dark:bg-gray-800">
+      <h2 className="mb-4 text-xl font-semibold text-gray-900 dark:text-white">Add Chore</h2>
       <div className="space-y-4">
         <div>
           <label htmlFor="name" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -149,14 +150,6 @@ export function AddChoreForm({ onSuccess }: AddChoreFormProps = {}) {
               </div>
             </div>
           ))}
-
-          {schedules.length === 0 && (
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              {allKidNames.length > 0
-                ? "Click on a kid name above to add a schedule (optional)"
-                : "You can create the chore now and add schedules later"}
-            </p>
-          )}
 
           {/* Hidden inputs for form submission */}
           {schedules.map((schedule, schedIdx) =>

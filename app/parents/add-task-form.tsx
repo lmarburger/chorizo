@@ -61,6 +61,7 @@ export function AddTaskForm({ onSuccess }: AddTaskFormProps = {}) {
 
   return (
     <div className="rounded-lg bg-white p-4 shadow dark:bg-gray-800">
+      <h2 className="mb-4 text-xl font-semibold text-gray-900 dark:text-white">Add One-Time Task</h2>
       <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label htmlFor="title" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -117,19 +118,11 @@ export function AddTaskForm({ onSuccess }: AddTaskFormProps = {}) {
             id="due_date"
             required
             defaultValue={defaultDueDate}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            className="box-border w-full max-w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
           />
         </div>
 
         <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              formRef.current?.reset();
-            }}
-            className="rounded-md bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
-            Clear
-          </button>
           <button
             type="submit"
             disabled={submitting}

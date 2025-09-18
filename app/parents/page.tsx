@@ -41,7 +41,7 @@ export default function ParentsPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="mx-auto max-w-2xl px-4 py-6">
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-6 flex items-center">
           <button
             onClick={handleSwitchUser}
             className="rounded-full p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20"
@@ -50,35 +50,25 @@ export default function ParentsPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
           </button>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Parent Dashboard</h1>
-          <div className="w-20"></div>
+          <h1 className="flex-1 text-center text-2xl font-bold text-gray-900 dark:text-white">Parents</h1>
+          <div className="w-9"></div>
         </div>
 
         <FeedbackSection type="incomplete" />
 
         <Dashboard key={dashboardKey} />
 
-        <hr className="my-8 border-gray-300 dark:border-gray-600" />
-
         <div className="mt-8">
           <ChoreList key={choreListKey} />
         </div>
 
-        <hr className="my-8 border-gray-300 dark:border-gray-600" />
-
         <div className="mt-8">
-          <h2 className="mb-4 text-xl font-semibold text-gray-900 dark:text-white">Add One-Time Task</h2>
           <AddTaskForm onSuccess={refreshData} />
         </div>
 
-        <hr className="my-8 border-gray-300 dark:border-gray-600" />
-
         <div className="mt-8">
-          <h2 className="mb-4 text-xl font-semibold text-gray-900 dark:text-white">Add Chore</h2>
           <AddChoreForm onSuccess={refreshData} />
         </div>
-
-        <hr className="my-8 border-gray-300 dark:border-gray-600" />
 
         <FeedbackSection type="completed" />
         <div className="mt-12 flex justify-center">

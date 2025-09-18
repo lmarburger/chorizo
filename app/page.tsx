@@ -55,7 +55,7 @@ export default function Home() {
         <h1 className="mb-12 text-center text-4xl font-bold text-gray-900 dark:text-white">Chorizo</h1>
 
         <div className="space-y-4">
-          <h2 className="mb-6 text-center text-xl font-semibold text-gray-700 dark:text-gray-300">Who are you?</h2>
+          <h2 className="mb-6 text-center text-xl font-semibold text-gray-700 dark:text-gray-300">Who's this?</h2>
 
           {kids.map(kidName => (
             <button
@@ -68,7 +68,7 @@ export default function Home() {
 
           <button
             onClick={() => handleSelection("parent")}
-            className="block w-full rounded-lg bg-green-500 px-6 py-4 text-center text-lg font-semibold text-white transition-colors hover:bg-green-600">
+            className="block w-full rounded-lg bg-gray-500 px-6 py-4 text-center text-lg font-semibold text-white transition-colors hover:bg-gray-600">
             Parents
           </button>
         </div>

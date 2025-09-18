@@ -144,6 +144,19 @@ node init-db.mjs      # Initialize/reset production database with sample data
   - Never use divider comments for sections (e.g., "/* Settings */")
   - Let component names, function names, and JSX structure self-document
 
+## Copy & Tone
+
+- **Voice**: Use first-person voice as if the parent is speaking directly to their kids
+  - ✅ "Who's this?" instead of ❌ "Who are you?"
+  - ✅ "Tell me!" instead of ❌ "Let your parents know!"
+  - ✅ "I'll add some soon!" instead of ❌ "Ask a parent to add some!"
+- **Tone**: Casual, friendly, and personal - like a parent talking to their kids
+- **Avoid**: Third-party or formal language that sounds like an app talking
+- **Examples**:
+  - Feedback prompt: "Got an idea or suggestion? Tell me!"
+  - Completion message: "You're all done for today! Go relax or get ahead on tomorrow if you want."
+  - Empty state: "No chores or tasks scheduled yet. I'll add some soon!"
+
 ## Code Quality Tools
 - **ESLint**: Configured for Next.js and TypeScript with React rules
 - **Prettier**: Auto-formatting with consistent style (2 spaces, 120 line width, double quotes)
