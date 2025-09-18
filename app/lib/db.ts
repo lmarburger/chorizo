@@ -400,3 +400,33 @@ export async function deleteKid(kidName: string): Promise<void> {
   // Delete all chore schedules for this kid (will cascade delete completions)
   await sql`DELETE FROM chore_schedules WHERE kid_name = ${kidName}`;
 }
+
+// Add a new kid by creating a welcome task
+export async function addKid(kidName: string): Promise<void> {
+  const sql = getDb();
+
+  // Check if kid already exists
+  const existing = await sql`
+    SELECT DISTINCT kid_name 
+    FROM (
+      SELECT kid_name FROM tasks WHERE kid_name = ${kidName}
+      UNION
+      SELECT kid_name FROM chore_schedules WHERE kid_name = ${kidName}
+    ) AS kids
+    LIMIT 1
+  `;
+
+  if (existing.length > 0) {
+    throw new Error("Kid already exists");
+  }
+
+  // Create a welcome task for the new kid that's due tomorrow
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowStr = tomorrow.toISOString().split("T")[0];
+
+  await sql`
+    INSERT INTO tasks (title, description, kid_name, due_date)
+    VALUES ('Welcome to Chorizo!', 'Mark this task complete when you are ready to start', ${kidName}, ${tomorrowStr})
+  `;
+}

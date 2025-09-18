@@ -8,7 +8,11 @@ type ScheduleEntry = {
   days: string[];
 };
 
-export function AddChoreForm() {
+interface AddChoreFormProps {
+  onSuccess?: () => void;
+}
+
+export function AddChoreForm({ onSuccess }: AddChoreFormProps = {}) {
   const [schedules, setSchedules] = useState<ScheduleEntry[]>([]);
   const [existingKidNames, setExistingKidNames] = useState<string[]>([]);
   const formRef = useRef<HTMLFormElement>(null);
@@ -27,6 +31,8 @@ export function AddChoreForm() {
     // Reset form state and inputs after successful submission
     setSchedules([]);
     formRef.current?.reset();
+    // Call the success callback to refresh the chore list
+    onSuccess?.();
   };
 
   const allKidNames = [...new Set([...existingKidNames, ...schedules.map(s => s.kid_name)])];
@@ -146,7 +152,9 @@ export function AddChoreForm() {
 
           {schedules.length === 0 && (
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Click on a kid name above to start adding schedule
+              {allKidNames.length > 0
+                ? "Click on a kid name above to add a schedule (optional)"
+                : "You can create the chore now and add schedules later"}
             </p>
           )}
 
@@ -166,7 +174,7 @@ export function AddChoreForm() {
 
       <button
         type="submit"
-        disabled={schedules.length === 0 || schedules.every(s => s.days.length === 0)}
+        disabled={schedules.length > 0 && schedules.every(s => s.days.length === 0)}
         className="mt-4 w-full rounded-md bg-blue-500 px-4 py-2 font-medium text-white hover:bg-blue-600 disabled:opacity-50">
         Add Chore
       </button>

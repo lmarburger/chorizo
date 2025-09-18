@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Dashboard } from "./dashboard";
 import { ChoreList } from "./chore-list";
@@ -9,6 +9,13 @@ import { AddTaskForm } from "./add-task-form";
 
 export default function ParentsPage() {
   const router = useRouter();
+  const [choreListKey, setChoreListKey] = useState(0);
+  const [dashboardKey, setDashboardKey] = useState(0);
+
+  const refreshData = useCallback(() => {
+    setChoreListKey(prev => prev + 1);
+    setDashboardKey(prev => prev + 1);
+  }, []);
 
   useEffect(() => {
     // Check if user is supposed to be here
@@ -47,14 +54,14 @@ export default function ParentsPage() {
         </div>
 
         {/* Dashboard showing kids' status */}
-        <Dashboard />
+        <Dashboard key={dashboardKey} />
 
         {/* Divider */}
         <hr className="my-8 border-gray-300 dark:border-gray-600" />
 
         {/* Chore Schedule */}
         <div className="mt-8">
-          <ChoreList />
+          <ChoreList key={choreListKey} />
         </div>
 
         {/* Divider */}
@@ -63,7 +70,7 @@ export default function ParentsPage() {
         {/* Add One-Time Task */}
         <div className="mt-8">
           <h2 className="mb-4 text-xl font-semibold text-gray-900 dark:text-white">Add One-Time Task</h2>
-          <AddTaskForm />
+          <AddTaskForm onSuccess={refreshData} />
         </div>
 
         {/* Divider */}
@@ -72,7 +79,7 @@ export default function ParentsPage() {
         {/* Add Chore */}
         <div className="mt-8">
           <h2 className="mb-4 text-xl font-semibold text-gray-900 dark:text-white">Add Chore</h2>
-          <AddChoreForm />
+          <AddChoreForm onSuccess={refreshData} />
         </div>
 
         {/* Settings link at the bottom */}

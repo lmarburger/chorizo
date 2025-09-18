@@ -2,7 +2,11 @@
 
 import { useState, useRef, useEffect } from "react";
 
-export function AddTaskForm() {
+interface AddTaskFormProps {
+  onSuccess?: () => void;
+}
+
+export function AddTaskForm({ onSuccess }: AddTaskFormProps = {}) {
   const [existingKidNames, setExistingKidNames] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
@@ -40,8 +44,8 @@ export function AddTaskForm() {
       if (response.ok) {
         formRef.current?.reset();
 
-        // Trigger a refresh of the task list
-        window.location.reload();
+        // Trigger a refresh of the task list and dashboard
+        onSuccess?.();
       }
     } catch (error) {
       console.error("Failed to add task:", error);

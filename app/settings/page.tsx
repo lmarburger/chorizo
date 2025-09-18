@@ -59,31 +59,25 @@ export default function SettingsPage() {
     if (!newKidName.trim()) return;
 
     try {
-      // For now, we'll just add the kid by creating a dummy chore schedule
-      // In a real app, we'd have a proper API endpoint for this
-      const response = await fetch("/api/chores", {
+      const response = await fetch("/api/kids", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: "Welcome Task",
-          description: "Welcome to Chorizo!",
-          schedules: [{ kid_name: newKidName.trim(), day_of_week: 1 }],
+          name: newKidName.trim(),
         }),
       });
 
-      if (response.ok) {
-        // Delete the dummy chore immediately
+      if (!response.ok) {
         const data = await response.json();
-        await fetch(`/api/chores/${data.chore.id}`, {
-          method: "DELETE",
-        });
-
-        setNewKidName("");
-        fetchKids();
+        throw new Error(data.error || "Failed to add kid");
       }
+
+      setNewKidName("");
+      setError("");
+      fetchKids();
     } catch (err) {
       console.error("Failed to add kid:", err);
-      setError("Failed to add kid");
+      setError(err instanceof Error ? err.message : "Failed to add kid");
     }
   };
 
