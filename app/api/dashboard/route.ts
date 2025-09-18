@@ -56,6 +56,16 @@ export async function GET() {
       };
     });
 
+    // Sort kids: alphabetically by name, but with completed kids at the end
+    dashboardData.sort((a, b) => {
+      // If one is complete and the other isn't, incomplete comes first
+      if (a.allComplete !== b.allComplete) {
+        return a.allComplete ? 1 : -1;
+      }
+      // Otherwise sort alphabetically by name
+      return a.name.localeCompare(b.name);
+    });
+
     return NextResponse.json({ dashboard: dashboardData });
   } catch (error) {
     console.error("Failed to fetch dashboard data:", error);
