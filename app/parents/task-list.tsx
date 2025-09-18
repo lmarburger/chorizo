@@ -97,11 +97,8 @@ export function TaskList() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold text-gray-900 dark:text-white">One-Time Tasks</h2>
-
-      {uncompletedTasks.length > 0 && (
+      {uncompletedTasks.length > 2 && (
         <div className="space-y-2">
-          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Pending Tasks</h3>
           {uncompletedTasks.map(task => {
             const daysUntil = getDaysUntilDue(task.due_date);
             const isOverdue = daysUntil < 0;
@@ -187,7 +184,6 @@ export function TaskList() {
 
       {completedTasks.length > 0 && (
         <div className="space-y-2">
-          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Recently Completed</h3>
           {completedTasks.map(task => {
             if (editingTaskId === task.id) {
               return (

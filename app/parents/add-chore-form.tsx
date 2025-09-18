@@ -10,8 +10,6 @@ type ScheduleEntry = {
 
 export function AddChoreForm() {
   const [schedules, setSchedules] = useState<ScheduleEntry[]>([]);
-  const [newKidName, setNewKidName] = useState("");
-  const [showNewKidInput, setShowNewKidInput] = useState(false);
   const [existingKidNames, setExistingKidNames] = useState<string[]>([]);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -28,8 +26,6 @@ export function AddChoreForm() {
     await addChoreWithSchedulesAction(formData);
     // Reset form state and inputs after successful submission
     setSchedules([]);
-    setNewKidName("");
-    setShowNewKidInput(false);
     formRef.current?.reset();
   };
 
@@ -44,14 +40,6 @@ export function AddChoreForm() {
     friday: "Fri",
     saturday: "Sat",
     sunday: "Sun",
-  };
-
-  const addScheduleEntry = () => {
-    if (showNewKidInput && newKidName) {
-      setSchedules([...schedules, { kid_name: newKidName, days: [] }]);
-      setNewKidName("");
-      setShowNewKidInput(false);
-    }
   };
 
   const addExistingKidSchedule = (kidName: string) => {
@@ -123,44 +111,7 @@ export function AddChoreForm() {
                   + {kidName}
                 </button>
               ))}
-            {!showNewKidInput && (
-              <button
-                type="button"
-                onClick={() => setShowNewKidInput(true)}
-                className="rounded-md bg-green-100 px-3 py-1 text-sm text-green-700 hover:bg-green-200 dark:bg-green-900 dark:text-green-300 dark:hover:bg-green-800">
-                + New Kid
-              </button>
-            )}
           </div>
-
-          {/* New kid input */}
-          {showNewKidInput && (
-            <div className="mb-3 flex gap-2">
-              <input
-                type="text"
-                value={newKidName}
-                onChange={e => setNewKidName(e.target.value)}
-                placeholder="Kid's name"
-                className="flex-1 rounded-md border border-gray-300 px-3 py-1 text-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-              />
-              <button
-                type="button"
-                onClick={addScheduleEntry}
-                disabled={!newKidName}
-                className="rounded-md bg-blue-500 px-3 py-1 text-sm text-white hover:bg-blue-600 disabled:opacity-50">
-                Add
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowNewKidInput(false);
-                  setNewKidName("");
-                }}
-                className="rounded-md bg-gray-300 px-3 py-1 text-sm text-gray-700 hover:bg-gray-400">
-                Cancel
-              </button>
-            </div>
-          )}
 
           {/* Schedule entries */}
           {schedules.map((schedule, index) => (

@@ -5,8 +5,6 @@ import { useState, useRef, useEffect } from "react";
 export function AddTaskForm() {
   const [isOpen, setIsOpen] = useState(false);
   const [existingKidNames, setExistingKidNames] = useState<string[]>([]);
-  const [newKidName, setNewKidName] = useState("");
-  const [showNewKidInput, setShowNewKidInput] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -24,7 +22,7 @@ export function AddTaskForm() {
     setSubmitting(true);
 
     const formData = new FormData(e.currentTarget);
-    const kidName = showNewKidInput && newKidName ? newKidName : formData.get("kid_name");
+    const kidName = formData.get("kid_name");
 
     try {
       const response = await fetch("/api/tasks", {
@@ -42,8 +40,6 @@ export function AddTaskForm() {
 
       if (response.ok) {
         formRef.current?.reset();
-        setNewKidName("");
-        setShowNewKidInput(false);
         setIsOpen(false);
 
         // Trigger a refresh of the task list
@@ -101,49 +97,18 @@ export function AddTaskForm() {
             <label htmlFor="kid_name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Assign to
             </label>
-            {!showNewKidInput ? (
-              <div className="mt-1 flex gap-2">
-                <select
-                  name="kid_name"
-                  id="kid_name"
-                  required={!showNewKidInput}
-                  disabled={showNewKidInput}
-                  className="block flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700">
-                  <option value="">Select a kid</option>
-                  {existingKidNames.map(name => (
-                    <option key={name} value={name}>
-                      {name}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  onClick={() => setShowNewKidInput(true)}
-                  className="rounded-md bg-gray-100 px-3 py-2 text-sm text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
-                  New Kid
-                </button>
-              </div>
-            ) : (
-              <div className="mt-1 flex gap-2">
-                <input
-                  type="text"
-                  value={newKidName}
-                  onChange={e => setNewKidName(e.target.value)}
-                  required={showNewKidInput}
-                  className="block flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
-                  placeholder="Enter kid's name"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowNewKidInput(false);
-                    setNewKidName("");
-                  }}
-                  className="rounded-md bg-gray-100 px-3 py-2 text-sm text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
-                  Cancel
-                </button>
-              </div>
-            )}
+            <select
+              name="kid_name"
+              id="kid_name"
+              required
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700">
+              <option value="">Select a kid</option>
+              {existingKidNames.map(name => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>
@@ -166,8 +131,6 @@ export function AddTaskForm() {
               onClick={() => {
                 setIsOpen(false);
                 formRef.current?.reset();
-                setNewKidName("");
-                setShowNewKidInput(false);
               }}
               className="rounded-md bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
               Cancel

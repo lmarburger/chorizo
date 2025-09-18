@@ -147,6 +147,14 @@ This ensures:
 
 No need to manually run `npm run check` - it happens automatically!
 
+**CRITICAL: Test Updates Required**
+- When adding new features or changing existing behavior, ALWAYS update the tests accordingly
+- Tests must keep pace with application changes to maintain code quality
+- Run `npm test` after making changes to ensure tests still pass
+- Add new test cases for new functionality
+- Update existing tests if behavior changes
+- Tests are in `test.ts` and test the core database functions in `app/lib/db.ts`
+
 ### Hooks Configuration (for Claude Code CLI)
 The project has hooks configured for code quality:
 - PostToolUse: `scripts/claude-format-hook.sh` - Auto-formats files and runs linters

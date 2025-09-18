@@ -3,7 +3,7 @@ import "./globals.css";
 import { inter } from "./fonts";
 
 export const metadata: Metadata = {
-  title: "Chorizo - Chore Tracker",
+  title: "Chorizo - Tasty Chores",
   description: "Track chores, screen time, and practice time for kids",
 };
 

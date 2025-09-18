@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { Dashboard } from "./dashboard";
 import { ChoreList } from "./chore-list";
 import { AddChoreForm } from "./add-chore-form";
 import { TaskList } from "./task-list";
@@ -37,22 +38,44 @@ export default function ParentsPage() {
           <button onClick={handleSwitchUser} className="font-medium text-blue-500 hover:text-blue-600">
             Switch User
           </button>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Manage Chores</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Parent Dashboard</h1>
           <div className="w-20"></div>
         </div>
 
-        <AddChoreForm />
+        {/* Dashboard showing kids' status */}
+        <Dashboard />
 
-        <div className="mt-8">
-          <ChoreList />
-        </div>
+        {/* Divider */}
+        <hr className="my-8 border-gray-300 dark:border-gray-600" />
 
+        {/* Task Management (more frequent) */}
         <div className="mt-8">
+          <h2 className="mb-4 text-xl font-semibold text-gray-900 dark:text-white">Tasks</h2>
           <AddTaskForm />
+          <div className="mt-6">
+            <TaskList />
+          </div>
         </div>
 
+        {/* Divider */}
+        <hr className="my-8 border-gray-300 dark:border-gray-600" />
+
+        {/* Chore Management (less frequent) */}
         <div className="mt-8">
-          <TaskList />
+          <h2 className="mb-4 text-xl font-semibold text-gray-900 dark:text-white">Chores</h2>
+          <AddChoreForm />
+          <div className="mt-6">
+            <ChoreList />
+          </div>
+        </div>
+
+        {/* Settings link at the bottom */}
+        <div className="mt-12 border-t border-gray-300 pt-8 dark:border-gray-600">
+          <button
+            onClick={() => router.push("/settings")}
+            className="rounded-md bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+            Settings (Manage Kids)
+          </button>
         </div>
       </div>
     </div>

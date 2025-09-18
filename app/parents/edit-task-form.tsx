@@ -15,8 +15,6 @@ export function EditTaskForm({ task, onCancel, onSave }: EditTaskFormProps) {
   const [kidName, setKidName] = useState(task.kid_name);
   const [dueDate, setDueDate] = useState(task.due_date);
   const [existingKidNames, setExistingKidNames] = useState<string[]>([]);
-  const [showNewKidInput, setShowNewKidInput] = useState(false);
-  const [newKidName, setNewKidName] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -36,7 +34,7 @@ export function EditTaskForm({ task, onCancel, onSave }: EditTaskFormProps) {
     e.preventDefault();
     setSubmitting(true);
 
-    const finalKidName = showNewKidInput && newKidName ? newKidName : kidName;
+    const finalKidName = kidName;
 
     try {
       const response = await fetch(`/api/tasks/${task.id}`, {
@@ -96,49 +94,18 @@ export function EditTaskForm({ task, onCancel, onSave }: EditTaskFormProps) {
           <label htmlFor="kid_name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
             Assigned to
           </label>
-          {!showNewKidInput ? (
-            <div className="mt-1 flex gap-2">
-              <select
-                id="kid_name"
-                value={kidName}
-                onChange={e => setKidName(e.target.value)}
-                required={!showNewKidInput}
-                disabled={showNewKidInput}
-                className="block flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700">
-                {existingKidNames.map(name => (
-                  <option key={name} value={name}>
-                    {name}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="button"
-                onClick={() => setShowNewKidInput(true)}
-                className="rounded-md bg-gray-100 px-3 py-2 text-sm text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
-                New Kid
-              </button>
-            </div>
-          ) : (
-            <div className="mt-1 flex gap-2">
-              <input
-                type="text"
-                value={newKidName}
-                onChange={e => setNewKidName(e.target.value)}
-                required={showNewKidInput}
-                className="block flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
-                placeholder="Enter kid's name"
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  setShowNewKidInput(false);
-                  setNewKidName("");
-                }}
-                className="rounded-md bg-gray-100 px-3 py-2 text-sm text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
-                Cancel
-              </button>
-            </div>
-          )}
+          <select
+            id="kid_name"
+            value={kidName}
+            onChange={e => setKidName(e.target.value)}
+            required
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700">
+            {existingKidNames.map(name => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div>

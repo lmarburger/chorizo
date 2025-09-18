@@ -1,0 +1,64 @@
+import { NextResponse } from "next/server";
+import { getCurrentWeekChores, getAllTasks, getUniqueKidNames, ChoreScheduleWithCompletion } from "@/app/lib/db";
+import { startOfDay, isAfter, parseISO } from "date-fns";
+
+// Extend the type to include day_number which is returned by the SQL query
+interface ChoreWithDayNumber extends ChoreScheduleWithCompletion {
+  day_number: number;
+}
+
+export async function GET() {
+  try {
+    // Get all data in parallel
+    const [allChoresData, allTasks, kidNames] = await Promise.all([
+      getCurrentWeekChores(),
+      getAllTasks(),
+      getUniqueKidNames(),
+    ]);
+
+    // Cast to include day_number which is returned by the SQL query
+    const allChores = allChoresData as ChoreWithDayNumber[];
+
+    // Get today's date info
+    const today = new Date();
+    const dayOfWeek = today.getDay() === 0 ? 7 : today.getDay();
+    const todayStart = startOfDay(today);
+
+    // Build dashboard data for each kid
+    const dashboardData = kidNames.map(kidName => {
+      // Filter chores for this kid
+      const kidChores = allChores.filter(chore => chore.kid_name === kidName);
+
+      // Filter tasks for this kid
+      const kidTasks = allTasks.filter(task => task.kid_name === kidName);
+
+      // Filter for outstanding items (today or past, not completed)
+      const outstandingChores = kidChores.filter(chore => {
+        // Only consider chores for today or past days
+        if (chore.day_number > dayOfWeek) return false;
+
+        // Check if not completed
+        return !chore.is_completed;
+      });
+
+      const outstandingTasks = kidTasks.filter(task => {
+        // Not completed and due today or in the past
+        // task.due_date is already a Date object from the database
+        const dueDate = typeof task.due_date === "string" ? parseISO(task.due_date) : new Date(task.due_date);
+        return !task.completed_at && !isAfter(dueDate, todayStart);
+      });
+
+      return {
+        name: kidName,
+        outstandingChores,
+        outstandingTasks,
+        allComplete: outstandingChores.length === 0 && outstandingTasks.length === 0,
+      };
+    });
+
+    return NextResponse.json({ dashboard: dashboardData });
+  } catch (error) {
+    console.error("Failed to fetch dashboard data:", error);
+    return NextResponse.json({ error: "Failed to fetch dashboard data" }, { status: 500 });
+  }
+}
