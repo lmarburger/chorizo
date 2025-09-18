@@ -5,6 +5,7 @@ set -euo pipefail
 # Captures stdout/stderr and on failure emits both to stderr with exit code 2.
 
 declare -a TEMPS=()
+# shellcheck disable=SC2329  # cleanup is invoked by trap
 cleanup() {
   set +e
   for f in "${TEMPS[@]:-}"; do

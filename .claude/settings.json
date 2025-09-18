@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "jq -r '.tool_input.file_path' | { read file_path; if echo \"$file_path\" | grep -qE '\\.(ts|tsx|js|jsx|json|css|mjs)$'; then npx prettier --write \"$file_path\"; fi; }"
+            "command": "scripts/claude-format-hook.sh"
           }
         ]
       }
