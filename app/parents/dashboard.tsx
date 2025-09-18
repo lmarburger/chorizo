@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { format, parseISO, startOfDay } from "date-fns";
+import { FormInput, FormTextarea, FormButton } from "../components/form-components";
 
 interface ChoreWithSchedule {
   id: number;
@@ -251,60 +252,42 @@ export function Dashboard() {
 
                     if (editingTaskId === task.id) {
                       return (
-                        <div
-                          key={item.id}
-                          className="rounded-lg border-2 border-blue-400 bg-white p-3 dark:bg-gray-800">
-                          <div className="space-y-3">
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">
-                                Title
-                              </label>
-                              <input
-                                type="text"
-                                value={editForm.title}
-                                onChange={e => setEditForm({ ...editForm, title: e.target.value })}
-                                className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">
-                                Description
-                              </label>
-                              <textarea
-                                value={editForm.description}
-                                onChange={e => setEditForm({ ...editForm, description: e.target.value })}
-                                rows={2}
-                                className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">
-                                Due Date
-                              </label>
-                              <input
-                                type="date"
-                                value={editForm.due_date}
-                                onChange={e => setEditForm({ ...editForm, due_date: e.target.value })}
-                                className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
-                              />
-                            </div>
+                        <div key={item.id} className="rounded-lg bg-white p-4 shadow dark:bg-gray-800">
+                          <div className="space-y-4">
+                            <FormInput
+                              name="title"
+                              label="Title"
+                              value={editForm.title}
+                              onChange={e => setEditForm({ ...editForm, title: e.target.value })}
+                            />
+
+                            <FormTextarea
+                              name="description"
+                              label="Description"
+                              value={editForm.description}
+                              onChange={e => setEditForm({ ...editForm, description: e.target.value })}
+                              rows={2}
+                            />
+
+                            <FormInput
+                              type="date"
+                              name="due_date"
+                              label="Due Date"
+                              value={editForm.due_date}
+                              onChange={e => setEditForm({ ...editForm, due_date: e.target.value })}
+                            />
+
                             <div className="flex items-center justify-between">
-                              <button
-                                onClick={() => handleDeleteTask(task.id)}
-                                className="rounded px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20">
+                              <FormButton variant="danger" onClick={() => handleDeleteTask(task.id)}>
                                 Delete
-                              </button>
+                              </FormButton>
                               <div className="flex gap-2">
-                                <button
-                                  onClick={() => setEditingTaskId(null)}
-                                  className="rounded-md bg-gray-200 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+                                <FormButton variant="secondary" onClick={() => setEditingTaskId(null)}>
                                   Cancel
-                                </button>
-                                <button
-                                  onClick={handleUpdateTask}
-                                  className="rounded-md bg-blue-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-600">
+                                </FormButton>
+                                <FormButton variant="primary" onClick={handleUpdateTask}>
                                   Save
-                                </button>
+                                </FormButton>
                               </div>
                             </div>
                           </div>
@@ -349,54 +332,42 @@ export function Dashboard() {
                     <div
                       key={`task-${task.id}`}
                       onClick={e => e.stopPropagation()}
-                      className="rounded-lg border-2 border-blue-400 bg-white p-3 dark:bg-gray-800">
-                      <div className="space-y-3">
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">Title</label>
-                          <input
-                            type="text"
-                            value={editForm.title}
-                            onChange={e => setEditForm({ ...editForm, title: e.target.value })}
-                            className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">
-                            Description
-                          </label>
-                          <textarea
-                            value={editForm.description}
-                            onChange={e => setEditForm({ ...editForm, description: e.target.value })}
-                            rows={2}
-                            className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">Due Date</label>
-                          <input
-                            type="date"
-                            value={editForm.due_date}
-                            onChange={e => setEditForm({ ...editForm, due_date: e.target.value })}
-                            className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
-                          />
-                        </div>
+                      className="rounded-lg bg-white p-4 shadow dark:bg-gray-800">
+                      <div className="space-y-4">
+                        <FormInput
+                          name="title"
+                          label="Title"
+                          value={editForm.title}
+                          onChange={e => setEditForm({ ...editForm, title: e.target.value })}
+                        />
+
+                        <FormTextarea
+                          name="description"
+                          label="Description"
+                          value={editForm.description}
+                          onChange={e => setEditForm({ ...editForm, description: e.target.value })}
+                          rows={2}
+                        />
+
+                        <FormInput
+                          type="date"
+                          name="due_date"
+                          label="Due Date"
+                          value={editForm.due_date}
+                          onChange={e => setEditForm({ ...editForm, due_date: e.target.value })}
+                        />
+
                         <div className="flex items-center justify-between">
-                          <button
-                            onClick={() => handleDeleteTask(task.id)}
-                            className="rounded px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20">
+                          <FormButton variant="danger" onClick={() => handleDeleteTask(task.id)}>
                             Delete
-                          </button>
+                          </FormButton>
                           <div className="flex gap-2">
-                            <button
-                              onClick={() => setEditingTaskId(null)}
-                              className="rounded-md bg-gray-200 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+                            <FormButton variant="secondary" onClick={() => setEditingTaskId(null)}>
                               Cancel
-                            </button>
-                            <button
-                              onClick={handleUpdateTask}
-                              className="rounded-md bg-blue-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-600">
+                            </FormButton>
+                            <FormButton variant="primary" onClick={handleUpdateTask}>
                               Save
-                            </button>
+                            </FormButton>
                           </div>
                         </div>
                       </div>

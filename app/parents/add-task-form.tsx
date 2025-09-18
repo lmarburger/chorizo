@@ -73,15 +73,7 @@ export function AddTaskForm({ onSuccess }: AddTaskFormProps = {}) {
           options={[{ value: "", label: "Select a kid" }, ...kidNames.map(name => ({ value: name, label: name }))]}
         />
 
-        <FormInput
-          type="date"
-          name="due_date"
-          id="due_date"
-          label="Due Date"
-          required
-          defaultValue={defaultDueDate}
-          className="box-border max-w-full"
-        />
+        <FormInput type="date" name="due_date" id="due_date" label="Due Date" required defaultValue={defaultDueDate} />
 
         <FormButton type="submit" loading={submitting} className="w-full">
           Add Task

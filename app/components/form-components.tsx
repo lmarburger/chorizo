@@ -10,8 +10,12 @@ interface FormInputProps extends InputHTMLAttributes<HTMLInputElement> {
   error?: string;
 }
 
-export function FormInput({ label, error, id, className = "", ...props }: FormInputProps) {
+export function FormInput({ label, error, id, className = "", type, ...props }: FormInputProps) {
   const inputId = id || props.name;
+
+  // Base styles for all inputs
+  const baseStyles =
+    "w-full rounded-lg border-2 border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700";
 
   return (
     <div className="w-full">
@@ -20,11 +24,13 @@ export function FormInput({ label, error, id, className = "", ...props }: FormIn
           {label}
         </label>
       )}
-      <input
-        id={inputId}
-        className={`w-full rounded-lg border-2 border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 ${className}`}
-        {...props}
-      />
+      {type === "date" ? (
+        <div className="relative overflow-hidden rounded-lg">
+          <input id={inputId} type={type} className={`${baseStyles} ${className}`} {...props} />
+        </div>
+      ) : (
+        <input id={inputId} type={type} className={`${baseStyles} ${className}`} {...props} />
+      )}
       {error && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{error}</p>}
     </div>
   );
