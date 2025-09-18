@@ -72,10 +72,6 @@ export default function Home() {
             Parents
           </button>
         </div>
-
-        <p className="mt-8 text-center text-sm text-gray-600 dark:text-gray-400">
-          Track chores, screen time, and practice time
-        </p>
       </div>
     </div>
   );

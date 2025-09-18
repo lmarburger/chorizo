@@ -108,8 +108,13 @@ export default function SettingsPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="mx-auto max-w-2xl px-4 py-6">
         <div className="mb-6 flex items-center justify-between">
-          <button onClick={() => router.push("/parents")} className="font-medium text-blue-500 hover:text-blue-600">
-            ← Back to Dashboard
+          <button
+            onClick={() => router.push("/parents")}
+            className="rounded-full p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+            title="Back to Parents">
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
           </button>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Settings</h1>
           <div className="w-24"></div>

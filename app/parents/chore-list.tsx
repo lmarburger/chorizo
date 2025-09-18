@@ -74,58 +74,54 @@ export function ChoreList() {
         }
 
         return (
-          <div key={chore.id} className="rounded-lg bg-white p-4 shadow dark:bg-gray-800">
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white">{chore.name}</h3>
-                {chore.description && (
-                  <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">{chore.description}</p>
-                )}
-              </div>
-
-              <div className="flex flex-shrink-0 gap-1">
+          <div key={chore.id} className="relative rounded-lg bg-white p-4 shadow dark:bg-gray-800">
+            <div className="absolute top-4 right-4 flex gap-1">
+              <button
+                onClick={() => setEditingChoreId(chore.id)}
+                className="rounded p-1.5 text-blue-500 hover:bg-blue-50 dark:hover:bg-gray-700"
+                title="Edit chore">
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                  />
+                </svg>
+              </button>
+              <form
+                action={async formData => {
+                  if (
+                    !confirm(
+                      `Are you sure you want to delete "${chore.name}"? This will also remove all schedules and completion history for this chore.`
+                    )
+                  ) {
+                    return;
+                  }
+                  await deleteChoreAction(formData);
+                  fetchData(); // Refresh the list after deletion
+                }}>
+                <input type="hidden" name="choreId" value={chore.id} />
                 <button
-                  onClick={() => setEditingChoreId(chore.id)}
-                  className="rounded p-1.5 text-blue-500 hover:bg-blue-50 dark:hover:bg-gray-700"
-                  title="Edit chore">
+                  type="submit"
+                  className="rounded p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-gray-700"
+                  title="Delete chore">
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
                     />
                   </svg>
                 </button>
-                <form
-                  action={async formData => {
-                    if (
-                      !confirm(
-                        `Are you sure you want to delete "${chore.name}"? This will also remove all schedules and completion history for this chore.`
-                      )
-                    ) {
-                      return;
-                    }
-                    await deleteChoreAction(formData);
-                    fetchData(); // Refresh the list after deletion
-                  }}>
-                  <input type="hidden" name="choreId" value={chore.id} />
-                  <button
-                    type="submit"
-                    className="rounded p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-gray-700"
-                    title="Delete chore">
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                      />
-                    </svg>
-                  </button>
-                </form>
-              </div>
+              </form>
             </div>
+
+            <div className="pr-16">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">{chore.name}</h3>
+            </div>
+            {chore.description && <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">{chore.description}</p>}
 
             <div className="mt-3">
               <div className="grid grid-cols-7 gap-0 text-xs">

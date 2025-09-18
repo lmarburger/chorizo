@@ -4,7 +4,7 @@ import { inter } from "./fonts";
 
 export const metadata: Metadata = {
   title: "Chorizo - Tasty Chores",
-  description: "Track chores, screen time, and practice time for kids",
+  description: "Track chores for kids",
 };
 
 export default function RootLayout({
