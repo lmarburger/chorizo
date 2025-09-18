@@ -6,45 +6,73 @@ Chorizo is a family chore tracking web application designed primarily for mobile
 ## Current Implementation Status
 
 ### ✅ Completed Features
-1. **Database Schema (Schedule-based)**
+1. **Database Schema**
    - `chores` table: Stores unique chore definitions (name, description)
    - `chore_schedules` table: Maps chores to kids and days (one chore can have multiple schedules)
    - `chore_completions` table: Tracks when chores are marked complete with timestamps
+   - `tasks` table: One-off tasks with due dates (title, description, kid_name, due_date, completed_at)
    - Week runs Monday through Sunday
 
-2. **Parent View** (`/parents`)
-   - Add new chores with flexible scheduling:
-     - Single chore can be assigned to multiple kids
-     - Different kids can do the same chore on different days
-     - Example: "Do the dishes" alternates between kids throughout the week
-   - Edit existing chores and their complete schedules
-   - View all chores with weekly schedule grid showing assignments
-   - Delete chores (cascades to schedules and completions)
+2. **User Selection System** (No Login Required)
+   - Home page shows buttons for each kid and "Parents" button
+   - Device-based persistence using localStorage
+   - Automatic redirect to last selected view
+   - "Switch User" button available on all views
+   - No passwords needed - designed for family devices
+
+3. **Parent View** (`/parents`)
+   - **Chores Management:**
+     - Add new chores with flexible scheduling
+     - Single chore can be assigned to multiple kids on different days
+     - Edit existing chores and their complete schedules
+     - View all chores with weekly schedule grid
+     - Delete chores with confirmation (cascades to schedules and completions)
+   - **Tasks Management:**
+     - Add one-time tasks with title, description, kid assignment, and due date
+     - Edit existing tasks inline
+     - View pending tasks sorted by due date
+     - View recently completed tasks (past week)
+     - Delete tasks with confirmation
+     - Visual indicators: Red (overdue), Orange (due soon), Green (completed)
    - Add new kid names or select from existing
    - Forms reset/close properly after submission
 
-3. **Kid View** (`/kids`)
-   - Shows entire week's chores with smart sorting:
-     - Uncompleted chores first (sorted by day: Mon→Sun)
-     - Completed chores at bottom (sorted by completion time, most recent first)
-   - Tap to toggle chore completion
-   - Visual indicators:
-     - Blue background: Today's uncompleted chores
+4. **Kid View** (`/kids?name=KidName`)
+   - **Mixed Display of Chores and Tasks:**
+     - Smart ordering:
+       1. Uncompleted tasks for today or past (tasks prioritized)
+       2. Uncompleted chores for today or past
+       3. Upcoming uncompleted tasks (all future)
+       4. Upcoming uncompleted chores
+       5. All completed items mixed, sorted by completion time
+   - **Chores:**
+     - Shows entire week's chores
+     - Blue background: Today's chores
      - Red background: Overdue chores
-     - Gray/faded: Future/upcoming chores
-     - Green background: Completed chores
-   - Status labels: "Overdue", "Today", "Upcoming", "Done X mins/hours/days ago"
-   - Progress counter per kid
-   - Relative time display for completed chores
-
-4. **Home Page**
-   - Simple navigation to Kid and Parent views
-   - Mobile-optimized design
+     - Gray: Future chores
+     - Green: Completed chores
+   - **Tasks:**
+     - Shows ALL tasks (not limited to current week)
+     - Can complete tasks early (before due date)
+     - Purple "Task" label to distinguish from chores
+     - Red background: Overdue (past due date)
+     - Blue background: Due today
+     - Orange background: Due soon (1-2 days)
+     - Gray: Future tasks
+     - Green: Completed
+   - Instant updates without page refresh
+   - Progress counter shows items to do (today/past only)
+   - Congratulations banner when all current items completed
+   - Relative time display for completed items
 
 5. **Testing**
-   - Simple database tests verifying CRUD operations
-   - Tests against remote Neon test database
-   - No complex E2E framework needed
+   - Comprehensive integration tests for both chores and tasks
+   - Tests exercise actual application functions from `app/lib/db.ts`, not raw SQL
+   - Each test runs in isolation with a fresh database state (no test interference)
+   - Tests cover CRUD operations, completion tracking, priority sorting, kid-specific filtering
+   - Tests against remote Neon test database configured via TEST_DATABASE_URL
+   - All 13 integration tests pass (7 chore tests, 6 task tests)
+   - All features have test coverage
 
 ### 🚧 Planned Features
 - Screen time reporting
@@ -79,11 +107,10 @@ npm run format    # Format code with Prettier
 npm run format:check # Check if code is formatted
 
 # Testing
-npm test          # Run simple database tests
+npm test          # Run integration tests
 
 # Database
 node init-db.mjs      # Initialize/reset production database with sample data
-node init-test-db.mjs # Initialize/reset test database
 ```
 
 ## Code Quality Tools
@@ -135,20 +162,28 @@ The project has hooks configured for code quality:
 ## Project Structure
 ```
 app/
-├── page.tsx           # Home page with navigation
+├── page.tsx           # Home page with kid/parent selection
 ├── layout.tsx         # Root layout
+├── api/               # API endpoints
+│   ├── chores/        # Chores endpoints
+│   ├── kids/          # Kids data and kid-specific endpoints
+│   └── tasks/         # Tasks CRUD endpoints
 ├── parents/           # Parent view
-│   ├── page.tsx
+│   ├── page.tsx       # Parent dashboard
 │   ├── actions.ts     # Server actions
 │   ├── chore-list.tsx
 │   ├── add-chore-form.tsx
-│   └── edit-chore-form.tsx
+│   ├── edit-chore-form.tsx
+│   ├── task-list.tsx
+│   ├── add-task-form.tsx
+│   └── edit-task-form.tsx
 ├── kids/              # Kid view
-│   ├── page.tsx
+│   ├── page.tsx       # Kid's chore/task view
 │   ├── actions.ts
-│   └── chore-card.tsx
+│   ├── chore-card.tsx
+│   └── task-card.tsx
 └── lib/
-    └── db.ts          # Database queries and types
+    └── db.ts          # Database queries and types (chores + tasks)
 ```
 
 ## Design Principles
@@ -166,6 +201,10 @@ app/
   - **Feed pet**: Sam (Tue, Thu, Sat)
   - **Do the dishes**: Alternates - Alex (Mon, Wed, Fri, Sun), Sam (Tue, Thu, Sat)
   - **Practice piano**: Both kids (Mon-Fri)
+- **Sample Tasks** (from migration):
+  - **Pack for trip**: Alex (due in 3 days)
+  - **Science project**: Sam (due in 5 days)
+  - **Library books**: Alex (due tomorrow)
 
 ## Known Issues/TODOs
 - Add authentication system
@@ -178,10 +217,12 @@ app/
 ## Testing Approach
 
 ### Database Testing
-- **Framework**: Simple Node.js script (`test.mjs`)
-- **Test Database**: Separate Neon database branch for tests
-- **Coverage**: Tests all CRUD operations
-- **Setup**: Add test database URL to `.env.test`
+- **Framework**: TypeScript integration tests (`test.ts`)
+- **Test Database**: Separate Neon database configured via TEST_DATABASE_URL in `.env.test`
+- **Approach**: Tests actual application functions from `app/lib/db.ts`, not raw SQL
+- **Isolation**: Each test runs in a fresh database state (drops/recreates schema)
+- **Coverage**: 13 comprehensive tests covering all CRUD operations for both chores and tasks
+- **Setup**: Add test database URL to `.env.test` as TEST_DATABASE_URL
 
 ### Manual Testing
 - iPhone Safari

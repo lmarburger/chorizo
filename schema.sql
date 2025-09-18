@@ -2,6 +2,7 @@
 DROP TABLE IF EXISTS chore_completions CASCADE;
 DROP TABLE IF EXISTS chore_schedules CASCADE;
 DROP TABLE IF EXISTS chores CASCADE;
+DROP TABLE IF EXISTS tasks CASCADE;
 DROP TYPE IF EXISTS day_of_week CASCADE;
 
 -- Create enum for days of the week
@@ -37,12 +38,27 @@ CREATE TABLE chore_completions (
   UNIQUE(chore_schedule_id, completed_date)
 );
 
+-- Tasks table to store one-off tasks with due dates
+CREATE TABLE tasks (
+  id SERIAL PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  kid_name VARCHAR(100) NOT NULL,
+  due_date DATE NOT NULL,
+  completed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Indexes for better query performance
 CREATE INDEX idx_schedules_kid_name ON chore_schedules(kid_name);
 CREATE INDEX idx_schedules_day_of_week ON chore_schedules(day_of_week);
 CREATE INDEX idx_schedules_chore_id ON chore_schedules(chore_id);
 CREATE INDEX idx_completions_date ON chore_completions(completed_date);
 CREATE INDEX idx_completions_schedule_id ON chore_completions(chore_schedule_id);
+CREATE INDEX idx_tasks_kid_name ON tasks(kid_name);
+CREATE INDEX idx_tasks_due_date ON tasks(due_date);
+CREATE INDEX idx_tasks_completed ON tasks(completed_at);
 
 -- Sample data for testing
 -- First, create the chores

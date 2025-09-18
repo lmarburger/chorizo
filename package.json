@@ -12,12 +12,7 @@
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
     "check": "./scripts/check-wrapper.sh",
-    "test": "node test.mjs",
-    "test:setup": "./scripts/setup-test-env.sh",
-    "test:db:init": "node init-test-db.mjs",
-    "test:db:reset": "./scripts/test-db-reset.sh",
-    "test:db:wait": "./scripts/test-db-wait.sh",
-    "test:ci": "npm run test:db:wait && npm run test:db:reset && npm test"
+    "test": "npx tsx test.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.1",

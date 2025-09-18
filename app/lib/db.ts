@@ -42,10 +42,12 @@ export interface ChoreScheduleWithCompletion extends ChoreScheduleWithChore {
 }
 
 function getDb() {
-  if (!process.env.DATABASE_URL) {
+  // Use TEST_DATABASE_URL if available (for testing), otherwise use DATABASE_URL
+  const dbUrl = process.env.TEST_DATABASE_URL || process.env.DATABASE_URL;
+  if (!dbUrl) {
     throw new Error("DATABASE_URL is not set");
   }
-  return neon(process.env.DATABASE_URL);
+  return neon(dbUrl);
 }
 
 export async function getAllChoresWithSchedules(): Promise<ChoreWithSchedules[]> {
@@ -257,4 +259,133 @@ export async function getUniqueKidNames(): Promise<string[]> {
     SELECT DISTINCT kid_name FROM chore_schedules ORDER BY kid_name
   `;
   return result.map(r => r.kid_name) as string[];
+}
+
+// Task-related types and functions
+export interface Task {
+  id: number;
+  title: string;
+  description: string | null;
+  kid_name: string;
+  due_date: string;
+  completed_at: Date | null;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export async function getAllTasks(): Promise<Task[]> {
+  const sql = getDb();
+  const result = await sql`
+    SELECT * FROM tasks 
+    ORDER BY 
+      CASE WHEN completed_at IS NULL THEN 0 ELSE 1 END,
+      due_date ASC,
+      completed_at DESC
+  `;
+  return result as Task[];
+}
+
+export async function getTasksForKid(kidName: string): Promise<Task[]> {
+  const sql = getDb();
+  const result = await sql`
+    SELECT * FROM tasks 
+    WHERE kid_name = ${kidName}
+    ORDER BY 
+      CASE WHEN completed_at IS NULL THEN 0 ELSE 1 END,
+      due_date ASC,
+      completed_at DESC
+  `;
+  return result as Task[];
+}
+
+export async function getTasksForParentView(): Promise<Task[]> {
+  const sql = getDb();
+  const oneWeekAgo = new Date();
+  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+  const result = await sql`
+    SELECT * FROM tasks 
+    WHERE completed_at IS NULL 
+       OR completed_at >= ${oneWeekAgo.toISOString()}
+    ORDER BY 
+      CASE WHEN completed_at IS NULL THEN 0 ELSE 1 END,
+      due_date ASC,
+      completed_at DESC
+  `;
+  return result as Task[];
+}
+
+export async function addTask(task: Omit<Task, "id" | "completed_at" | "created_at" | "updated_at">): Promise<Task> {
+  const sql = getDb();
+  const result = await sql`
+    INSERT INTO tasks (title, description, kid_name, due_date)
+    VALUES (${task.title}, ${task.description}, ${task.kid_name}, ${task.due_date})
+    RETURNING *
+  `;
+  return result[0] as Task;
+}
+
+export async function updateTask(
+  id: number,
+  task: Partial<Omit<Task, "id" | "created_at" | "updated_at">>
+): Promise<Task> {
+  const sql = getDb();
+  const updates: string[] = [];
+  const values: Record<string, unknown> = {};
+
+  if (task.title !== undefined) {
+    updates.push("title = ${title}");
+    values.title = task.title;
+  }
+  if (task.description !== undefined) {
+    updates.push("description = ${description}");
+    values.description = task.description;
+  }
+  if (task.kid_name !== undefined) {
+    updates.push("kid_name = ${kid_name}");
+    values.kid_name = task.kid_name;
+  }
+  if (task.due_date !== undefined) {
+    updates.push("due_date = ${due_date}");
+    values.due_date = task.due_date;
+  }
+  if (task.completed_at !== undefined) {
+    updates.push("completed_at = ${completed_at}");
+    values.completed_at = task.completed_at;
+  }
+
+  updates.push("updated_at = NOW()");
+
+  const result = await sql`
+    UPDATE tasks 
+    SET title = ${task.title || sql`title`},
+        description = ${task.description !== undefined ? task.description : sql`description`},
+        kid_name = ${task.kid_name || sql`kid_name`},
+        due_date = ${task.due_date || sql`due_date`},
+        completed_at = ${task.completed_at !== undefined ? task.completed_at : sql`completed_at`},
+        updated_at = NOW()
+    WHERE id = ${id}
+    RETURNING *
+  `;
+  return result[0] as Task;
+}
+
+export async function deleteTask(id: number): Promise<void> {
+  const sql = getDb();
+  await sql`DELETE FROM tasks WHERE id = ${id}`;
+}
+
+export async function toggleTaskComplete(id: number): Promise<Task> {
+  const sql = getDb();
+  const result = await sql`
+    UPDATE tasks 
+    SET completed_at = CASE 
+      WHEN completed_at IS NULL THEN NOW() 
+      ELSE NULL 
+    END,
+    updated_at = NOW()
+    WHERE id = ${id}
+    RETURNING *
+  `;
+  return result[0] as Task;
 }

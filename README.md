@@ -5,27 +5,39 @@ A simple, mobile-first web app for tracking family chores, screen time, and inst
 ## Features
 
 ### Current
+- **Device-Based User Selection** (No Login Required):
+  - Kids and parents select their identity once
+  - Selection persists on device via localStorage
+  - Quick "Switch User" option available
+  - No passwords or usernames to remember
 - **Schedule-Based Chore Management**: 
   - Single chore can be assigned to multiple kids on different days
   - Flexible scheduling (e.g., "Do dishes" alternates between kids)
   - Visual weekly schedule grid in parent view
+- **One-Off Tasks**:
+  - Create specific tasks with due dates (non-recurring)
+  - Assign to individual kids
+  - Edit and delete functionality
+  - Prioritized display over recurring chores
+  - Visual indicators for overdue/upcoming tasks
 - **Smart Kids View**: 
-  - Shows entire week's chores, not just today
-  - Intelligent sorting: uncompleted by day, then completed by recency
-  - Relative time display for completed chores ("Done 5 mins ago")
+  - Shows both tasks and chores in priority order
+  - Tasks due today/past shown first
+  - Intelligent sorting by completion status and due dates
+  - Relative time display for completed items ("Done 5 mins ago")
+  - Congratulations banner when all today's work is done
 - **Enhanced Visual Feedback**:
-  - Blue: Today's chores
-  - Red: Overdue chores
-  - Gray: Future chores
+  - Blue: Today's items
+  - Red: Overdue items
+  - Gray: Future items
   - Green: Completed with timestamp
-- **Simple Check-off System**: Tap to mark chores complete/incomplete
-- **Multi-kid Support**: Track chores for multiple children
+- **Simple Check-off System**: Tap to mark items complete/incomplete with instant updates
+- **Multi-kid Support**: Track chores and tasks for multiple children
 - **Mobile-Optimized**: Designed for iPhone use
 
 ### Coming Soon
 - Screen time reporting
 - Instrument practice tracking
-- User authentication
 - Weekly summaries and reports
 - Reward/points system
 
@@ -83,29 +95,50 @@ Open [http://localhost:3000](http://localhost:3000) to see the app.
 
 ## Usage
 
+### User Selection
+When you first open the app, you'll see a selection screen:
+- Tap your name if you're a kid
+- Tap "Parents" if you're a parent
+- The app remembers your selection on this device
+- Use "Switch User" to change users anytime
+
 ### For Parents
 Navigate to `/parents` to:
-- Create chores with flexible scheduling across multiple kids and days
-- Edit chore details and complete weekly schedules
+- Create recurring chores with flexible scheduling across multiple kids and days
+- Add one-off tasks with specific due dates
+- Edit chore and task details inline
 - View all chores with visual schedule grid showing who does what each day
-- Delete chores (automatically removes all schedules)
+- Delete chores or tasks (with confirmation dialog)
+- See both pending and completed tasks
 
 ### For Kids
 Navigate to `/kids` to:
-- View entire week's chores at a glance
-- See chores organized by completion status (uncompleted first, then completed)
-- Track when chores were completed with relative timestamps
-- Easily identify today's, overdue, and upcoming chores by color
+- View both tasks and chores in priority order
+- See items organized by urgency (overdue/today's tasks first)
+- Track when items were completed with relative timestamps
+- Easily identify today's, overdue, and upcoming items by color
+- Get a congratulations message when all today's work is complete
 
 ## Project Structure
 
 ```
 app/
-├── page.tsx           # Home navigation
-├── parents/           # Parent management views
-├── kids/             # Kid chore views
+├── page.tsx              # User selection screen
+├── parents/              # Parent management views
+│   ├── page.tsx
+│   ├── chore-list.tsx
+│   ├── task-list.tsx     # One-off tasks management
+│   └── add-task-form.tsx
+├── kids/                 # Kid views
+│   ├── page.tsx
+│   ├── chore-card.tsx
+│   └── task-card.tsx     # Task display component
+├── api/                  # API endpoints
+│   ├── kids/             # Get kid names
+│   ├── tasks/            # Task CRUD operations
+│   └── chores/           # Chore operations
 └── lib/
-    └── db.ts         # Database queries
+    └── db.ts             # Database queries and types
 ```
 
 ## Database Schema
@@ -113,6 +146,7 @@ app/
 - **chores**: Stores unique chore definitions (name, description)
 - **chore_schedules**: Maps chores to kids and days (chore_id, kid_name, day_of_week)
 - **chore_completions**: Tracks completions with timestamps (chore_schedule_id, completed_date, completed_at)
+- **tasks**: One-off tasks with due dates (title, description, kid_name, due_date, completed_at)
 
 ## Technology Stack
 
@@ -139,7 +173,7 @@ npm run format       # Format code with Prettier
 npm run format:check # Check formatting
 
 # Testing
-npm test             # Run simple database tests
+npm test             # Run integration tests for chores and tasks
 
 # Database
 node init-db.mjs     # Initialize/reset database with sample data
@@ -156,12 +190,17 @@ Run `npm run check` before committing to ensure code quality.
 
 ### Testing
 
-The project includes simple database tests:
+The project includes comprehensive integration tests that exercise the actual application code:
 
 1. Create a test database in Neon
-2. Add the connection string to `.env.test`
-3. Run `node init-test-db.mjs` to initialize the test database
-4. Run `npm test` to execute tests
+2. Add the connection string to `.env.test` as `TEST_DATABASE_URL`
+3. Run `npm test` to execute the integration tests
+
+**Test Features:**
+- **True Integration Testing**: Tests use actual application functions from `app/lib/db.ts`, not raw SQL
+- **Test Isolation**: Each test runs in a fresh database state to prevent test interference
+- **Comprehensive Coverage**: 13 tests covering all CRUD operations, completion tracking, priority sorting, and kid-specific filtering for both chores and tasks
+- **Automatic Database Reset**: Tests automatically reset the database schema between runs (no sample data included)
 
 ## Deployment
 

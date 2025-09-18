@@ -102,7 +102,17 @@ export function ChoreList() {
                   className="rounded px-3 py-1 text-sm font-medium text-blue-500 hover:bg-blue-50 dark:hover:bg-gray-700">
                   Edit
                 </button>
-                <form action={deleteChoreAction}>
+                <form
+                  action={deleteChoreAction}
+                  onSubmit={e => {
+                    if (
+                      !confirm(
+                        `Are you sure you want to delete "${chore.name}"? This will also remove all schedules and completion history for this chore.`
+                      )
+                    ) {
+                      e.preventDefault();
+                    }
+                  }}>
                   <input type="hidden" name="choreId" value={chore.id} />
                   <button
                     type="submit"

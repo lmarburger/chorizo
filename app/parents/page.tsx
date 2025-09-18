@@ -4,6 +4,8 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ChoreList } from "./chore-list";
 import { AddChoreForm } from "./add-chore-form";
+import { TaskList } from "./task-list";
+import { AddTaskForm } from "./add-task-form";
 
 export default function ParentsPage() {
   const router = useRouter();
@@ -43,6 +45,14 @@ export default function ParentsPage() {
 
         <div className="mt-8">
           <ChoreList />
+        </div>
+
+        <div className="mt-8">
+          <AddTaskForm />
+        </div>
+
+        <div className="mt-8">
+          <TaskList />
         </div>
       </div>
     </div>

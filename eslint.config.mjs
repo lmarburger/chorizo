@@ -36,6 +36,7 @@ export default [
         module: "writable",
         require: "readonly",
         global: "readonly",
+        fetch: "readonly",
       },
     },
     rules: {
@@ -65,10 +66,7 @@ export default [
       "next-env.d.ts",
       "next-dev.d.ts",
       "init-db.mjs",
-      "init-db.ts",
-      "init-test-db.mjs",
-      "test.mjs",
-      "scripts/test-future-chore.mjs",
+      "test.ts",
     ],
   },
 ];

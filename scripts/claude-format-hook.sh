@@ -144,12 +144,24 @@ fi
 
 # Run eslint for linting and auto-fixing
 if [ ${#eslint_files[@]} -gt 0 ]; then
-  # Capture stderr for error reporting
+  # Capture both stdout and stderr for error reporting
+  eslint_out=$(mktemp); TEMPS+=("$eslint_out")
   eslint_err=$(mktemp); TEMPS+=("$eslint_err")
-  if ! npx eslint --fix "${eslint_files[@]}" 2>"$eslint_err"; then
-    echo "ERROR: eslint failed on ${#eslint_files[@]} file(s):" >&2
-    cat "$eslint_err" >&2
-    eslint_failed=true
+  
+  # Run eslint and capture exit code
+  npx eslint --fix "${eslint_files[@]}" >"$eslint_out" 2>"$eslint_err"
+  eslint_exit=$?
+  
+  # ESLint exit codes: 0 = success, 1 = linting errors, 2 = config/other errors
+  # We want to show output for both warnings (exit 0 with output) and errors (exit 1)
+  if [ $eslint_exit -ne 0 ] || [ -s "$eslint_out" ]; then
+    # Check if there's actual lint output (not just formatting messages)
+    if grep -qE '^\s*[0-9]+:[0-9]+\s+(error|warning)' "$eslint_out"; then
+      echo "ERROR: eslint failed on ${#eslint_files[@]} file(s):" >&2
+      cat "$eslint_out" >&2  # ESLint outputs to stdout
+      [ -s "$eslint_err" ] && cat "$eslint_err" >&2  # Also show any stderr
+      eslint_failed=true
+    fi
   fi
 fi
 
