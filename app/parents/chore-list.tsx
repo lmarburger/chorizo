@@ -128,21 +128,23 @@ export function ChoreList() {
             </div>
 
             <div className="mt-3">
-              <div className="grid grid-cols-7 gap-1 text-xs">
-                {dayOrder.map(day => {
+              <div className="grid grid-cols-7 gap-0 text-xs">
+                {dayOrder.map((day, index) => {
                   const kids = scheduleByDay[day] || [];
                   return (
-                    <div key={day} className="min-w-0 text-center">
+                    <div
+                      key={day}
+                      className={`min-w-0 text-center ${index > 0 ? "border-l border-gray-300 dark:border-gray-600" : ""}`}>
                       <div className="font-medium text-gray-700 dark:text-gray-300">
                         {dayLabels[day as keyof typeof dayLabels]}
                       </div>
                       {kids.length > 0 ? (
-                        <div className="mt-1 space-y-1">
+                        <div className="mt-1 flex flex-col items-center space-y-1">
                           {kids.map((kid, idx) => (
                             <div
                               key={`${day}-${kid}-${idx}`}
-                              className="overflow-hidden rounded bg-blue-100 px-1 py-0.5 text-ellipsis text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                              {kid}
+                              className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 text-sm font-semibold text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                              {kid.charAt(0).toUpperCase()}
                             </div>
                           ))}
                         </div>
