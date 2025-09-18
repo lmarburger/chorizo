@@ -156,9 +156,15 @@ if [ ${#eslint_files[@]} -gt 0 ]; then
   # We want to show output for both warnings (exit 0 with output) and errors (exit 1)
   if [ $eslint_exit -ne 0 ] || [ -s "$eslint_out" ]; then
     # Check if there's actual lint output (not just formatting messages)
-    if grep -qE '^\s*[0-9]+:[0-9]+\s+(error|warning)' "$eslint_out"; then
+    # Exclude "File ignored" warnings since these are intentional and not problems
+    # Handle both types of ignore warnings:
+    # - "File ignored because of a matching ignore pattern"
+    # - "File ignored because outside of base path"
+    if grep -vE '^\s*0:0\s+warning\s+File ignored because' "$eslint_out" | \
+       grep -qE '^\s*[0-9]+:[0-9]+\s+(error|warning)'; then
       echo "ERROR: eslint failed on ${#eslint_files[@]} file(s):" >&2
-      cat "$eslint_out" >&2  # ESLint outputs to stdout
+      # Show only non-ignored warnings/errors
+      grep -vE '^\s*0:0\s+warning\s+File ignored because' "$eslint_out" >&2
       [ -s "$eslint_err" ] && cat "$eslint_err" >&2  # Also show any stderr
       eslint_failed=true
     fi
