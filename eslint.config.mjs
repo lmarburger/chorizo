@@ -67,6 +67,7 @@ export default [
       "next-dev.d.ts",
       "init-db.mjs",
       "test.ts",
+      "scripts/*.js",
     ],
   },
 ];
