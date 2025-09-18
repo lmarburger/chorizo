@@ -99,7 +99,7 @@ export function BaseItemCard({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div
-            className={`flex h-6 w-6 items-center justify-center rounded-full border-2 ${
+            className={`flex size-6 flex-shrink-0 items-center justify-center rounded-full border-2 ${
               isCompleted ? "border-green-500 bg-green-500" : "border-gray-400 dark:border-gray-500"
             }`}>
             {isCompleted && (
