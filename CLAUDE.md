@@ -11,6 +11,7 @@ Chorizo is a family chore tracking web application designed primarily for mobile
    - `chore_schedules` table: Maps chores to kids and days (one chore can have multiple schedules)
    - `chore_completions` table: Tracks when chores are marked complete with timestamps
    - `tasks` table: One-off tasks with due dates (title, description, kid_name, due_date, completed_at)
+   - `feedback` table: Kid feedback/suggestions (kid_name, message, completed_at, created_at)
    - Week runs Monday through Sunday
 
 2. **User Selection System** (No Login Required)
@@ -21,6 +22,10 @@ Chorizo is a family chore tracking web application designed primarily for mobile
    - No passwords needed - designed for family devices
 
 3. **Parent View** (`/parents`)
+   - **Feedback Section (Top):**
+     - Yellow highlighted feedback from kids requiring attention
+     - Mark as read/delete options for each feedback item
+     - Shows kid name, timestamp, and message
    - **Dashboard:**
      - Combined view of all kids' outstanding chores and tasks
      - Kids sorted alphabetically, with completed kids shown last
@@ -39,6 +44,10 @@ Chorizo is a family chore tracking web application designed primarily for mobile
      - "Add One-Time Task" form (always expanded)
      - Tasks shown in dashboard, no separate task list
      - Inline editing directly from dashboard
+   - **Completed Feedback (Bottom):**
+     - Shows previously read feedback for reference
+     - Subtle styling with gray background
+     - Can mark as unread or delete
    - **UI Elements:**
      - Back arrow icon for navigation (replaced "Switch User" text)
      - Settings gear icon at bottom
@@ -63,8 +72,13 @@ Chorizo is a family chore tracking web application designed primarily for mobile
      - Green background: Completed items
    - **UI Elements:**
      - Back arrow icon for navigation
+     - Speech bubble icon for feedback (top-right)
      - Clean cards with checkbox, title, description, and day
      - Relative time shown only for completed items ("Done 5 mins ago")
+   - **Feedback Feature:**
+     - Speech bubble button in header opens feedback form
+     - Simple textarea for kids to send ideas/suggestions to parents
+     - Messages appear instantly in parent dashboard
    - **Features:**
      - Instant updates without page refresh
      - Progress counter shows items to do (today/past only)
@@ -156,6 +170,14 @@ This ensures:
 
 No need to manually run `npm run check` - it happens automatically!
 
+**CRITICAL: Documentation Updates**
+When making any behavioral changes or adding features:
+1. **Always update CLAUDE.md** to reflect implementation changes
+2. **Always update README.md** for user-facing features
+3. Do this proactively without being asked
+4. Update documentation in the same session as code changes
+5. Keep feature lists, technical details, and project structure current
+
 **CRITICAL: Test Updates Required**
 - When adding new features or changing existing behavior, ALWAYS update the tests accordingly
 - Tests must keep pace with application changes to maintain code quality
@@ -189,10 +211,12 @@ app/
 ├── api/               # API endpoints
 │   ├── chores/        # Chores endpoints
 │   ├── kids/          # Kids data and kid-specific endpoints
-│   └── tasks/         # Tasks CRUD endpoints
+│   ├── tasks/         # Tasks CRUD endpoints
+│   └── feedback/      # Feedback CRUD endpoints
 ├── parents/           # Parent view
 │   ├── page.tsx       # Parent dashboard
 │   ├── dashboard.tsx  # Kids status overview
+│   ├── feedback-section.tsx # Feedback display component
 │   ├── actions.ts     # Server actions
 │   ├── chore-list.tsx # Chore schedule display
 │   ├── add-chore-form.tsx

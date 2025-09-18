@@ -12,6 +12,7 @@ A simple, mobile-first web app for tracking family chores, screen time, and inst
   - No passwords or usernames to remember
   
 - **Parent Dashboard**:
+  - Feedback from kids shown at top (yellow highlighted when unread)
   - Combined view of all kids' outstanding items
   - Kids sorted alphabetically, completed kids shown last
   - Green border for kids with no outstanding work (clean, minimal design)
@@ -19,6 +20,7 @@ A simple, mobile-first web app for tracking family chores, screen time, and inst
   - Click green box to expand and view/edit upcoming tasks
   - Click any task to edit inline (title, description, due date, delete)
   - Auto-refresh pauses during editing
+  - Completed feedback section at bottom for reference
   
 - **Schedule-Based Chore Management**: 
   - Single chore can be assigned to multiple kids on different days
@@ -39,6 +41,7 @@ A simple, mobile-first web app for tracking family chores, screen time, and inst
   - No status labels - color coding tells the story
   - Smart priority ordering (overdue/today first, then future)
   - Relative time for completed items only
+  - Feedback button (speech bubble) for sending ideas to parents
   
 - **Simplified Visual System**:
   - Red: Overdue items
@@ -53,6 +56,13 @@ A simple, mobile-first web app for tracking family chores, screen time, and inst
   - X icon for removing items
   - Trash icon for deleting
   - Pencil icon for editing
+  - Speech bubble for feedback
+  
+- **Feedback System**: 
+  - Kids can send feedback/ideas directly to parents
+  - Parents see feedback prominently at top of dashboard
+  - Mark feedback as read/unread, delete when done
+  - Completed feedback archived at bottom for reference
   
 - **Simple Check-off System**: Tap to mark items complete/incomplete with instant updates
 - **Multi-kid Support**: Track chores and tasks for multiple children
@@ -127,6 +137,7 @@ When you first open the app, you'll see a selection screen:
 
 ### For Parents
 Navigate to `/parents` to:
+- Review feedback from kids at top of page (yellow when unread)
 - View dashboard showing each kid's outstanding chores and tasks
 - See at a glance who's done (green border indicates completion)
 - Click green box to expand and see upcoming tasks (if any exist)
@@ -135,6 +146,7 @@ Navigate to `/parents` to:
 - Add one-off tasks with expanded form (always visible)
 - View chore schedule sorted alphabetically
 - Use icon buttons for all actions (edit, delete, remove)
+- Access completed feedback archive at bottom
 - Access settings via gear icon at bottom
 
 ### For Kids
@@ -144,6 +156,7 @@ Navigate to `/kids` to:
 - Identify status by color alone (red=overdue, blue=today, gray=future)
 - Track completion times with "Done X mins ago"
 - Get congratulations when all current work is complete
+- Send feedback to parents via speech bubble button
 - Navigate back with arrow icon
 
 ## Project Structure
@@ -174,6 +187,7 @@ app/
 - **chore_schedules**: Maps chores to kids and days (chore_id, kid_name, day_of_week)
 - **chore_completions**: Tracks completions with timestamps (chore_schedule_id, completed_date, completed_at)
 - **tasks**: One-off tasks with due dates (title, description, kid_name, due_date, completed_at)
+- **feedback**: Kid feedback/suggestions (kid_name, message, completed_at, created_at)
 
 ## Technology Stack
 

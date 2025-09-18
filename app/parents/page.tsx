@@ -6,6 +6,7 @@ import { Dashboard } from "./dashboard";
 import { ChoreList } from "./chore-list";
 import { AddChoreForm } from "./add-chore-form";
 import { AddTaskForm } from "./add-task-form";
+import { FeedbackSection } from "./feedback-section";
 
 export default function ParentsPage() {
   const router = useRouter();
@@ -53,6 +54,9 @@ export default function ParentsPage() {
           <div className="w-20"></div>
         </div>
 
+        {/* Incomplete feedback at the top */}
+        <FeedbackSection type="incomplete" />
+
         {/* Dashboard showing kids' status */}
         <Dashboard key={dashboardKey} />
 
@@ -82,8 +86,14 @@ export default function ParentsPage() {
           <AddChoreForm onSuccess={refreshData} />
         </div>
 
+        {/* Divider before completed feedback */}
+        <hr className="my-8 border-gray-300 dark:border-gray-600" />
+
+        {/* Completed feedback at the bottom */}
+        <FeedbackSection type="completed" />
+
         {/* Settings link at the bottom */}
-        <div className="mt-12 flex justify-center border-t border-gray-300 pt-8 dark:border-gray-600">
+        <div className="mt-12 flex justify-center">
           <button
             onClick={() => router.push("/settings")}
             className="rounded-full bg-gray-200 p-3 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"

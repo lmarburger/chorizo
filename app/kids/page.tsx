@@ -14,6 +14,9 @@ export default function KidsPage() {
   const [chores, setChores] = useState<ChoreScheduleWithCompletion[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedbackMessage, setFeedbackMessage] = useState("");
+  const [submittingFeedback, setSubmittingFeedback] = useState(false);
 
   const fetchChores = () => {
     if (kidName) {
@@ -79,6 +82,31 @@ export default function KidsPage() {
     router.push("/");
   };
 
+  const handleSubmitFeedback = async () => {
+    if (!feedbackMessage.trim() || !kidName) return;
+
+    setSubmittingFeedback(true);
+    try {
+      const response = await fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kid_name: kidName,
+          message: feedbackMessage.trim(),
+        }),
+      });
+
+      if (response.ok) {
+        setFeedbackMessage("");
+        setShowFeedback(false);
+      }
+    } catch (error) {
+      console.error("Failed to submit feedback:", error);
+    } finally {
+      setSubmittingFeedback(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
@@ -124,8 +152,55 @@ export default function KidsPage() {
             </svg>
           </button>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{kidName}'s Chores</h1>
-          <div className="w-20"></div>
+          <button
+            onClick={() => setShowFeedback(true)}
+            className="rounded-full p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+            title="Send Feedback">
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+              />
+            </svg>
+          </button>
         </div>
+
+        {showFeedback && (
+          <div className="mb-6 rounded-lg border border-blue-300 bg-blue-50 p-4 dark:border-blue-700 dark:bg-blue-900/30">
+            <div className="mb-3">
+              <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Have an idea or suggestion? Let your parents know!
+              </label>
+              <textarea
+                value={feedbackMessage}
+                onChange={e => setFeedbackMessage(e.target.value)}
+                placeholder="Type your message here..."
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800"
+                rows={3}
+                disabled={submittingFeedback}
+              />
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handleSubmitFeedback}
+                disabled={!feedbackMessage.trim() || submittingFeedback}
+                className="flex-1 rounded-md bg-blue-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-600 disabled:opacity-50">
+                {submittingFeedback ? "Sending..." : "Send"}
+              </button>
+              <button
+                onClick={() => {
+                  setShowFeedback(false);
+                  setFeedbackMessage("");
+                }}
+                disabled={submittingFeedback}
+                className="flex-1 rounded-md bg-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-400">
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
 
         {!allCaughtUp && (
           <p className="mb-6 text-center text-gray-600 dark:text-gray-400">

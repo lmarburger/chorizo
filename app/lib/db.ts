@@ -436,3 +436,80 @@ export async function addKid(kidName: string): Promise<void> {
     VALUES ('Welcome to Chorizo!', 'Mark this task complete when you are ready to start', ${kidName}, ${tomorrowStr})
   `;
 }
+
+// Feedback functions
+export interface Feedback {
+  id: number;
+  kid_name: string;
+  message: string;
+  completed_at: Date | null;
+  created_at: Date;
+}
+
+export async function getAllFeedback(): Promise<Feedback[]> {
+  const sql = getDb();
+  const result = await sql`
+    SELECT * FROM feedback
+    ORDER BY 
+      CASE WHEN completed_at IS NULL THEN 0 ELSE 1 END,
+      created_at DESC
+  `;
+  return result as Feedback[];
+}
+
+export async function getIncompleteFeedback(): Promise<Feedback[]> {
+  const sql = getDb();
+  const result = await sql`
+    SELECT * FROM feedback
+    WHERE completed_at IS NULL
+    ORDER BY created_at DESC
+  `;
+  return result as Feedback[];
+}
+
+export async function getCompletedFeedback(): Promise<Feedback[]> {
+  const sql = getDb();
+  const result = await sql`
+    SELECT * FROM feedback
+    WHERE completed_at IS NOT NULL
+    ORDER BY completed_at DESC
+  `;
+  return result as Feedback[];
+}
+
+export async function addFeedback(kidName: string, message: string): Promise<Feedback> {
+  const sql = getDb();
+  const result = await sql`
+    INSERT INTO feedback (kid_name, message)
+    VALUES (${kidName}, ${message})
+    RETURNING *
+  `;
+  return result[0] as Feedback;
+}
+
+export async function markFeedbackComplete(id: number): Promise<Feedback> {
+  const sql = getDb();
+  const result = await sql`
+    UPDATE feedback
+    SET completed_at = NOW()
+    WHERE id = ${id}
+    RETURNING *
+  `;
+  return result[0] as Feedback;
+}
+
+export async function markFeedbackIncomplete(id: number): Promise<Feedback> {
+  const sql = getDb();
+  const result = await sql`
+    UPDATE feedback
+    SET completed_at = NULL
+    WHERE id = ${id}
+    RETURNING *
+  `;
+  return result[0] as Feedback;
+}
+
+export async function deleteFeedback(id: number): Promise<void> {
+  const sql = getDb();
+  await sql`DELETE FROM feedback WHERE id = ${id}`;
+}
