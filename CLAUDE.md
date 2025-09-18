@@ -6,23 +6,36 @@ Chorizo is a family chore tracking web application designed primarily for mobile
 ## Current Implementation Status
 
 ### ✅ Completed Features
-1. **Database Schema**
-   - `chores` table: Stores chore definitions with kid assignments and days of week
-   - `chore_completions` table: Tracks when chores are marked complete
+1. **Database Schema (Schedule-based)**
+   - `chores` table: Stores unique chore definitions (name, description)
+   - `chore_schedules` table: Maps chores to kids and days (one chore can have multiple schedules)
+   - `chore_completions` table: Tracks when chores are marked complete with timestamps
    - Week runs Monday through Sunday
 
 2. **Parent View** (`/parents`)
-   - Add new chores with name, description, kid assignment, and day of week
-   - Edit existing chores (all fields editable)
-   - View all chores organized by kid
-   - Delete chores
+   - Add new chores with flexible scheduling:
+     - Single chore can be assigned to multiple kids
+     - Different kids can do the same chore on different days
+     - Example: "Do the dishes" alternates between kids throughout the week
+   - Edit existing chores and their complete schedules
+   - View all chores with weekly schedule grid showing assignments
+   - Delete chores (cascades to schedules and completions)
    - Add new kid names or select from existing
+   - Forms reset/close properly after submission
 
 3. **Kid View** (`/kids`)
-   - Shows today's chores plus any overdue from earlier in the week
+   - Shows entire week's chores with smart sorting:
+     - Uncompleted chores first (sorted by day: Mon→Sun)
+     - Completed chores at bottom (sorted by completion time, most recent first)
    - Tap to toggle chore completion
-   - Visual indicators: green for complete, red for overdue
+   - Visual indicators:
+     - Blue background: Today's uncompleted chores
+     - Red background: Overdue chores
+     - Gray/faded: Future/upcoming chores
+     - Green background: Completed chores
+   - Status labels: "Overdue", "Today", "Upcoming", "Done X mins/hours/days ago"
    - Progress counter per kid
+   - Relative time display for completed chores
 
 4. **Home Page**
    - Simple navigation to Kid and Parent views
@@ -108,7 +121,10 @@ This ensures:
 
 ### Hooks Configuration (for Claude Code CLI)
 The project has hooks configured for code quality:
-- PostToolUse: Auto-formats `.ts`, `.tsx`, `.js`, `.jsx`, `.json`, `.css`, `.mjs` files
+- PostToolUse: `scripts/claude-format-hook.sh` - Auto-formats files and runs linters
+  - Prettier for formatting
+  - ESLint for TypeScript/JavaScript linting
+  - Shellcheck for shell scripts
 - Stop hook: Runs `scripts/check-wrapper.sh` to validate the entire codebase with proper error handling
 
 ## Database Management
@@ -144,9 +160,13 @@ app/
 
 ## Sample Data
 - **Kids**: Alex, Sam
-- **Chores**: 
-  - Alex: Make bed (Mon-Fri), Take out trash (Wed, Sat)
-  - Sam: Clean room (Mon, Thu), Feed pet (Tue, Thu, Sat)
+- **Chores with Schedules**: 
+  - **Make bed**: Alex (Mon-Fri)
+  - **Take out trash**: Alex (Wed, Sat)
+  - **Clean room**: Sam (Mon, Thu)
+  - **Feed pet**: Sam (Tue, Thu, Sat)
+  - **Do the dishes**: Alternates - Alex (Mon, Wed, Fri, Sun), Sam (Tue, Thu, Sat)
+  - **Practice piano**: Both kids (Mon-Fri)
 
 ## Known Issues/TODOs
 - Add authentication system

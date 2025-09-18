@@ -1,10 +1,25 @@
 "use client";
 
-import { ChoreWithCompletion } from "../lib/db";
+import { ChoreScheduleWithCompletion } from "../lib/db";
 import { toggleChoreAction } from "./actions";
 
 interface ChoreCardProps {
-  chore: ChoreWithCompletion;
+  chore: ChoreScheduleWithCompletion;
+}
+
+function getRelativeTime(date: Date): string {
+  const now = new Date();
+  const diffMs = now.getTime() - new Date(date).getTime();
+  const diffSecs = Math.floor(diffMs / 1000);
+  const diffMins = Math.floor(diffSecs / 60);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffSecs < 60) return "just now";
+  if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? "s" : ""} ago`;
+  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? "s" : ""} ago`;
+  if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
+  return `${Math.floor(diffDays / 7)} week${Math.floor(diffDays / 7) > 1 ? "s" : ""} ago`;
 }
 
 export function ChoreCard({ chore }: ChoreCardProps) {
@@ -18,13 +33,18 @@ export function ChoreCard({ chore }: ChoreCardProps) {
     sunday: "Sun",
   };
 
-  // Check if this is an overdue chore
+  // Determine chore status
   const today = new Date().toLocaleDateString("en-US", { weekday: "long" }).toLowerCase();
-  const isOverdue = chore.day_of_week !== today;
+  const dayOrder = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+  const todayIndex = dayOrder.indexOf(today);
+  const choreIndex = dayOrder.indexOf(chore.day_of_week);
+  const isOverdue = !chore.is_completed && choreIndex < todayIndex;
+  const isFuture = choreIndex > todayIndex;
+  const isToday = choreIndex === todayIndex;
 
   return (
     <form action={toggleChoreAction}>
-      <input type="hidden" name="choreId" value={chore.id} />
+      <input type="hidden" name="scheduleId" value={chore.id} />
       <input type="hidden" name="dayOfWeek" value={chore.day_of_week} />
       <input type="hidden" name="isCompleted" value={chore.is_completed.toString()} />
 
@@ -35,7 +55,9 @@ export function ChoreCard({ chore }: ChoreCardProps) {
             ? "border-2 border-green-300 bg-green-100 dark:border-green-700 dark:bg-green-900/30"
             : isOverdue
               ? "border-2 border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20"
-              : "border-2 border-gray-200 bg-gray-50 dark:border-gray-600 dark:bg-gray-700"
+              : isFuture
+                ? "border-2 border-gray-200 bg-gray-50 opacity-60 dark:border-gray-600 dark:bg-gray-700"
+                : "border-2 border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20"
         } hover:scale-[1.02] active:scale-[0.98]`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -59,14 +81,14 @@ export function ChoreCard({ chore }: ChoreCardProps) {
                 className={`font-medium ${
                   chore.is_completed ? "text-gray-500 line-through dark:text-gray-400" : "text-gray-900 dark:text-white"
                 }`}>
-                {chore.name}
+                {chore.chore_name}
               </div>
-              {chore.description && (
+              {chore.chore_description && (
                 <div
                   className={`mt-0.5 text-sm ${
                     chore.is_completed ? "text-gray-400 dark:text-gray-500" : "text-gray-600 dark:text-gray-400"
                   }`}>
-                  {chore.description}
+                  {chore.chore_description}
                 </div>
               )}
             </div>
@@ -86,7 +108,17 @@ export function ChoreCard({ chore }: ChoreCardProps) {
             {isOverdue && !chore.is_completed && (
               <div className="mt-0.5 text-xs text-red-500 dark:text-red-400">Overdue</div>
             )}
-            {chore.is_completed && <div className="mt-0.5 text-xs text-green-600 dark:text-green-400">Done!</div>}
+            {isToday && !chore.is_completed && (
+              <div className="mt-0.5 text-xs text-blue-600 dark:text-blue-400">Today</div>
+            )}
+            {isFuture && !chore.is_completed && (
+              <div className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">Upcoming</div>
+            )}
+            {chore.is_completed && chore.completed_at && (
+              <div className="mt-0.5 text-xs text-green-600 dark:text-green-400">
+                Done {getRelativeTime(chore.completed_at)}
+              </div>
+            )}
           </div>
         </div>
       </button>

@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { getAllChores, getUniqueKidNames } from "../lib/db";
+import { getAllChoresWithSchedules, getUniqueKidNames } from "../lib/db";
 import { ChoreList } from "./chore-list";
 import { AddChoreForm } from "./add-chore-form";
 
 export default async function ParentsPage() {
-  const chores = await getAllChores();
+  const chores = await getAllChoresWithSchedules();
   const kidNames = await getUniqueKidNames();
 
   return (

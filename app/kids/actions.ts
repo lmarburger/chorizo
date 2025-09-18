@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { completeChore, uncompleteChore } from "../lib/db";
 
 export async function toggleChoreAction(formData: FormData) {
-  const choreId = parseInt(formData.get("choreId") as string);
+  const scheduleId = parseInt(formData.get("scheduleId") as string);
   const dayOfWeek = formData.get("dayOfWeek") as string;
   const isCompleted = formData.get("isCompleted") === "true";
 
@@ -24,10 +24,10 @@ export async function toggleChoreAction(formData: FormData) {
 
   if (isCompleted) {
     // Uncomplete the chore
-    await uncompleteChore(choreId, choreDateStr);
+    await uncompleteChore(scheduleId, choreDateStr);
   } else {
     // Complete the chore
-    await completeChore(choreId, choreDateStr);
+    await completeChore(scheduleId, choreDateStr);
   }
 
   revalidatePath("/kids");

@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { getTodayAndOverdueChores, getUniqueKidNames } from "../lib/db";
+import { getCurrentWeekChores, getUniqueKidNames } from "../lib/db";
 import { ChoreCard } from "./chore-card";
 
 export default async function KidsPage() {
-  const allChores = await getTodayAndOverdueChores();
+  const allChores = await getCurrentWeekChores();
   const kidNames = await getUniqueKidNames();
 
   // Group chores by kid
@@ -37,7 +37,7 @@ export default async function KidsPage() {
           <Link href="/" className="font-medium text-blue-500 hover:text-blue-600">
             ← Back
           </Link>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Today's Chores</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">This Week's Chores</h1>
           <div className="w-16"></div>
         </div>
 

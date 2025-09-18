@@ -6,23 +6,39 @@ export interface Chore {
   id: number;
   name: string;
   description: string | null;
-  kid_name: string;
-  day_of_week: DayOfWeek;
   created_at: Date;
   updated_at: Date;
 }
 
-export interface ChoreCompletion {
+export interface ChoreSchedule {
   id: number;
   chore_id: number;
+  kid_name: string;
+  day_of_week: DayOfWeek;
+  created_at: Date;
+}
+
+export interface ChoreWithSchedules extends Chore {
+  schedules: ChoreSchedule[];
+}
+
+export interface ChoreScheduleWithChore extends ChoreSchedule {
+  chore_name: string;
+  chore_description: string | null;
+}
+
+export interface ChoreCompletion {
+  id: number;
+  chore_schedule_id: number;
   completed_date: string;
   completed_at: Date;
   notes: string | null;
 }
 
-export interface ChoreWithCompletion extends Chore {
+export interface ChoreScheduleWithCompletion extends ChoreScheduleWithChore {
   is_completed: boolean;
   completion_id?: number;
+  completed_at?: Date;
 }
 
 function getDb() {
@@ -32,29 +48,15 @@ function getDb() {
   return neon(process.env.DATABASE_URL);
 }
 
-export async function getAllChores(): Promise<Chore[]> {
+export async function getAllChoresWithSchedules(): Promise<ChoreWithSchedules[]> {
   const sql = getDb();
-  const result = await sql`
+  const chores = await sql`
     SELECT * FROM chores 
-    ORDER BY kid_name, 
-      CASE day_of_week
-        WHEN 'monday' THEN 1
-        WHEN 'tuesday' THEN 2
-        WHEN 'wednesday' THEN 3
-        WHEN 'thursday' THEN 4
-        WHEN 'friday' THEN 5
-        WHEN 'saturday' THEN 6
-        WHEN 'sunday' THEN 7
-      END
+    ORDER BY name
   `;
-  return result as Chore[];
-}
 
-export async function getChoresForKid(kidName: string): Promise<Chore[]> {
-  const sql = getDb();
-  const result = await sql`
-    SELECT * FROM chores 
-    WHERE kid_name = ${kidName}
+  const schedules = await sql`
+    SELECT * FROM chore_schedules
     ORDER BY 
       CASE day_of_week
         WHEN 'monday' THEN 1
@@ -64,18 +66,51 @@ export async function getChoresForKid(kidName: string): Promise<Chore[]> {
         WHEN 'friday' THEN 5
         WHEN 'saturday' THEN 6
         WHEN 'sunday' THEN 7
-      END
+      END,
+      kid_name
   `;
-  return result as Chore[];
+
+  return (chores as Chore[]).map(chore => ({
+    ...chore,
+    schedules: (schedules as ChoreSchedule[]).filter(s => s.chore_id === chore.id),
+  }));
 }
 
-export async function getTodayAndOverdueChores(): Promise<ChoreWithCompletion[]> {
+export async function getChoreById(id: number): Promise<ChoreWithSchedules | null> {
   const sql = getDb();
-  // const today = new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD format - unused for now
-  const currentDay = new Date().toLocaleDateString("en-US", { weekday: "long" }).toLowerCase() as DayOfWeek;
-  const currentDayNumber = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"].indexOf(
-    currentDay
-  );
+  const choreResult = await sql`
+    SELECT * FROM chores WHERE id = ${id}
+  `;
+
+  if (choreResult.length === 0) {
+    return null;
+  }
+
+  const chore = choreResult[0] as Chore;
+  const schedules = await sql`
+    SELECT * FROM chore_schedules 
+    WHERE chore_id = ${id}
+    ORDER BY 
+      CASE day_of_week
+        WHEN 'monday' THEN 1
+        WHEN 'tuesday' THEN 2
+        WHEN 'wednesday' THEN 3
+        WHEN 'thursday' THEN 4
+        WHEN 'friday' THEN 5
+        WHEN 'saturday' THEN 6
+        WHEN 'sunday' THEN 7
+      END,
+      kid_name
+  `;
+
+  return {
+    ...chore,
+    schedules: schedules as ChoreSchedule[],
+  };
+}
+
+export async function getCurrentWeekChores(): Promise<ChoreScheduleWithCompletion[]> {
+  const sql = getDb();
 
   // Get the Monday of current week
   const mondayDate = new Date();
@@ -84,10 +119,12 @@ export async function getTodayAndOverdueChores(): Promise<ChoreWithCompletion[]>
   const mondayStr = mondayDate.toLocaleDateString("en-CA");
 
   const result = await sql`
-    WITH week_chores AS (
+    WITH week_schedules AS (
       SELECT 
-        c.*,
-        CASE c.day_of_week
+        cs.*,
+        c.name as chore_name,
+        c.description as chore_description,
+        CASE cs.day_of_week
           WHEN 'monday' THEN 1
           WHEN 'tuesday' THEN 2
           WHEN 'wednesday' THEN 3
@@ -97,7 +134,7 @@ export async function getTodayAndOverdueChores(): Promise<ChoreWithCompletion[]>
           WHEN 'sunday' THEN 7
         END as day_number,
         DATE(${mondayStr}::date + (
-          CASE c.day_of_week
+          CASE cs.day_of_week
             WHEN 'monday' THEN 0
             WHEN 'tuesday' THEN 1
             WHEN 'wednesday' THEN 2
@@ -107,64 +144,39 @@ export async function getTodayAndOverdueChores(): Promise<ChoreWithCompletion[]>
             WHEN 'sunday' THEN 6
           END
         ) * INTERVAL '1 day') as chore_date
-      FROM chores c
+      FROM chore_schedules cs
+      JOIN chores c ON cs.chore_id = c.id
     )
     SELECT 
-      wc.*,
+      ws.*,
       cc.id as completion_id,
+      cc.completed_at,
       CASE WHEN cc.id IS NOT NULL THEN true ELSE false END as is_completed
-    FROM week_chores wc
+    FROM week_schedules ws
     LEFT JOIN chore_completions cc 
-      ON wc.id = cc.chore_id 
-      AND cc.completed_date = wc.chore_date
-    WHERE wc.day_number <= ${currentDayNumber === 0 ? 7 : currentDayNumber}
-    ORDER BY wc.kid_name, wc.day_number
+      ON ws.id = cc.chore_schedule_id 
+      AND cc.completed_date = ws.chore_date
+    ORDER BY 
+      ws.kid_name,
+      -- First show uncompleted chores sorted by day
+      CASE WHEN cc.id IS NULL THEN 0 ELSE 1 END,
+      -- For uncompleted: sort by day number, for completed: use completion time
+      CASE WHEN cc.id IS NULL THEN ws.day_number ELSE NULL END,
+      -- Then show completed chores sorted by completion time (most recent first)
+      cc.completed_at DESC
   `;
 
-  return result as ChoreWithCompletion[];
+  return result as ChoreScheduleWithCompletion[];
 }
 
 export async function addChore(chore: Omit<Chore, "id" | "created_at" | "updated_at">): Promise<Chore> {
   const sql = getDb();
   const result = await sql`
-    INSERT INTO chores (name, description, kid_name, day_of_week)
-    VALUES (${chore.name}, ${chore.description}, ${chore.kid_name}, ${chore.day_of_week})
+    INSERT INTO chores (name, description)
+    VALUES (${chore.name}, ${chore.description})
     RETURNING *
   `;
   return result[0] as Chore;
-}
-
-export async function deleteChore(id: number): Promise<void> {
-  const sql = getDb();
-  await sql`DELETE FROM chores WHERE id = ${id}`;
-}
-
-export async function completeChore(choreId: number, date: string, notes?: string): Promise<ChoreCompletion> {
-  const sql = getDb();
-  const result = await sql`
-    INSERT INTO chore_completions (chore_id, completed_date, notes)
-    VALUES (${choreId}, ${date}, ${notes})
-    ON CONFLICT (chore_id, completed_date) 
-    DO UPDATE SET completed_at = NOW(), notes = ${notes}
-    RETURNING *
-  `;
-  return result[0] as ChoreCompletion;
-}
-
-export async function uncompleteChore(choreId: number, date: string): Promise<void> {
-  const sql = getDb();
-  await sql`
-    DELETE FROM chore_completions 
-    WHERE chore_id = ${choreId} AND completed_date = ${date}
-  `;
-}
-
-export async function getUniqueKidNames(): Promise<string[]> {
-  const sql = getDb();
-  const result = await sql`
-    SELECT DISTINCT kid_name FROM chores ORDER BY kid_name
-  `;
-  return result.map(r => r.kid_name) as string[];
 }
 
 export async function updateChore(id: number, chore: Omit<Chore, "id" | "created_at" | "updated_at">): Promise<Chore> {
@@ -173,11 +185,76 @@ export async function updateChore(id: number, chore: Omit<Chore, "id" | "created
     UPDATE chores 
     SET name = ${chore.name}, 
         description = ${chore.description}, 
-        kid_name = ${chore.kid_name}, 
-        day_of_week = ${chore.day_of_week},
         updated_at = NOW()
     WHERE id = ${id}
     RETURNING *
   `;
   return result[0] as Chore;
+}
+
+export async function deleteChore(id: number): Promise<void> {
+  const sql = getDb();
+  // Schedules and completions will be cascade deleted
+  await sql`DELETE FROM chores WHERE id = ${id}`;
+}
+
+export async function addChoreSchedule(choreId: number, kidName: string, dayOfWeek: DayOfWeek): Promise<ChoreSchedule> {
+  const sql = getDb();
+  const result = await sql`
+    INSERT INTO chore_schedules (chore_id, kid_name, day_of_week)
+    VALUES (${choreId}, ${kidName}, ${dayOfWeek})
+    RETURNING *
+  `;
+  return result[0] as ChoreSchedule;
+}
+
+export async function deleteChoreSchedule(id: number): Promise<void> {
+  const sql = getDb();
+  await sql`DELETE FROM chore_schedules WHERE id = ${id}`;
+}
+
+export async function updateChoreSchedules(
+  choreId: number,
+  schedules: { kid_name: string; day_of_week: DayOfWeek }[]
+): Promise<void> {
+  const sql = getDb();
+
+  // Delete existing schedules
+  await sql`DELETE FROM chore_schedules WHERE chore_id = ${choreId}`;
+
+  // Add new schedules one by one using parameterized queries
+  for (const schedule of schedules) {
+    await sql`
+      INSERT INTO chore_schedules (chore_id, kid_name, day_of_week)
+      VALUES (${choreId}, ${schedule.kid_name}, ${schedule.day_of_week})
+    `;
+  }
+}
+
+export async function completeChore(scheduleId: number, date: string, notes?: string): Promise<ChoreCompletion> {
+  const sql = getDb();
+  const result = await sql`
+    INSERT INTO chore_completions (chore_schedule_id, completed_date, notes)
+    VALUES (${scheduleId}, ${date}, ${notes})
+    ON CONFLICT (chore_schedule_id, completed_date) 
+    DO UPDATE SET completed_at = NOW(), notes = ${notes}
+    RETURNING *
+  `;
+  return result[0] as ChoreCompletion;
+}
+
+export async function uncompleteChore(scheduleId: number, date: string): Promise<void> {
+  const sql = getDb();
+  await sql`
+    DELETE FROM chore_completions 
+    WHERE chore_schedule_id = ${scheduleId} AND completed_date = ${date}
+  `;
+}
+
+export async function getUniqueKidNames(): Promise<string[]> {
+  const sql = getDb();
+  const result = await sql`
+    SELECT DISTINCT kid_name FROM chore_schedules ORDER BY kid_name
+  `;
+  return result.map(r => r.kid_name) as string[];
 }
