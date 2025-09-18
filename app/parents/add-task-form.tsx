@@ -1,24 +1,18 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
+import { FormInput, FormTextarea, FormSelect, FormButton } from "../components/form-components";
+import { useKidNames } from "../hooks/use-kid-names";
+import { getTomorrowDateString } from "../lib/utils";
 
 interface AddTaskFormProps {
   onSuccess?: () => void;
 }
 
 export function AddTaskForm({ onSuccess }: AddTaskFormProps = {}) {
-  const [existingKidNames, setExistingKidNames] = useState<string[]>([]);
+  const { kidNames } = useKidNames();
   const [submitting, setSubmitting] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
-
-  useEffect(() => {
-    fetch("/api/kids")
-      .then(res => res.json())
-      .then(data => {
-        setExistingKidNames(data.kids || []);
-      })
-      .catch(console.error);
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -55,79 +49,43 @@ export function AddTaskForm({ onSuccess }: AddTaskFormProps = {}) {
   };
 
   // Get tomorrow's date as the default due date
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const defaultDueDate = tomorrow.toISOString().split("T")[0];
+  const defaultDueDate = getTomorrowDateString();
 
   return (
     <div className="rounded-lg bg-white p-4 shadow dark:bg-gray-800">
       <h2 className="mb-4 text-xl font-semibold text-gray-900 dark:text-white">Add One-Time Task</h2>
       <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="title" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Task Title
-          </label>
-          <input
-            type="text"
-            name="title"
-            id="title"
-            required
-            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-            placeholder="Pack for trip"
-          />
-        </div>
+        <FormInput name="title" id="title" label="Task Title" required placeholder="Pack for trip" />
 
-        <div>
-          <label htmlFor="description" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Description (optional)
-          </label>
-          <textarea
-            name="description"
-            id="description"
-            rows={2}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-            placeholder="Any details about the task"
-          />
-        </div>
+        <FormTextarea
+          name="description"
+          id="description"
+          label="Description (optional)"
+          rows={2}
+          placeholder="Any details about the task"
+        />
 
-        <div>
-          <label htmlFor="kid_name" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Assign to
-          </label>
-          <select
-            name="kid_name"
-            id="kid_name"
-            required
-            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-            <option value="">Select a kid</option>
-            {existingKidNames.map(name => (
-              <option key={name} value={name}>
-                {name}
-              </option>
-            ))}
-          </select>
-        </div>
+        <FormSelect
+          name="kid_name"
+          id="kid_name"
+          label="Assign to"
+          required
+          options={[{ value: "", label: "Select a kid" }, ...kidNames.map(name => ({ value: name, label: name }))]}
+        />
 
-        <div>
-          <label htmlFor="due_date" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Due Date
-          </label>
-          <input
-            type="date"
-            name="due_date"
-            id="due_date"
-            required
-            defaultValue={defaultDueDate}
-            className="box-border w-full max-w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-          />
-        </div>
+        <FormInput
+          type="date"
+          name="due_date"
+          id="due_date"
+          label="Due Date"
+          required
+          defaultValue={defaultDueDate}
+          className="box-border max-w-full"
+        />
 
-        <button
-          type="submit"
-          disabled={submitting}
-          className="w-full rounded-md bg-blue-500 px-4 py-2 font-medium text-white hover:bg-blue-600 disabled:opacity-50">
-          {submitting ? "Adding..." : "Add Task"}
-        </button>
+        <FormButton type="submit" loading={submitting} className="w-full">
+          Add Task
+        </FormButton>
       </form>
     </div>
   );

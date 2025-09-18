@@ -139,3 +139,44 @@ export function getDayAbbreviation(date: string | Date): string {
   }
   return dateObj.toLocaleDateString("en-US", { weekday: "short" });
 }
+
+/**
+ * Parse a date string ensuring it's treated as local date
+ * Prevents timezone issues with YYYY-MM-DD format dates
+ */
+export function parseLocalDate(dateString: string): Date {
+  if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    const [year, month, day] = dateString.split("-").map(Number);
+    return new Date(year, month - 1, day);
+  }
+  return new Date(dateString);
+}
+
+/**
+ * Get tomorrow's date in YYYY-MM-DD format
+ * Commonly used for default due dates
+ */
+export function getTomorrowDateString(): string {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  return tomorrow.toISOString().split("T")[0];
+}
+
+/**
+ * Check if a date string represents today
+ */
+export function isToday(dateString: string): boolean {
+  const today = new Date().toISOString().split("T")[0];
+  const inputDate = formatDateForInput(dateString);
+  return today === inputDate;
+}
+
+/**
+ * Check if a date string is in the past (before today)
+ */
+export function isPastDate(dateString: string): boolean {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const inputDate = parseLocalDate(formatDateForInput(dateString));
+  return inputDate < today;
+}

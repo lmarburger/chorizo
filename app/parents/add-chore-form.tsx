@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { addChoreWithSchedulesAction } from "./actions";
+import { FormInput, FormTextarea, FormButton } from "../components/form-components";
+import { useKidNames } from "../hooks/use-kid-names";
 
 type ScheduleEntry = {
   kid_name: string;
@@ -14,17 +16,8 @@ interface AddChoreFormProps {
 
 export function AddChoreForm({ onSuccess }: AddChoreFormProps = {}) {
   const [schedules, setSchedules] = useState<ScheduleEntry[]>([]);
-  const [existingKidNames, setExistingKidNames] = useState<string[]>([]);
+  const { kidNames: existingKidNames } = useKidNames();
   const formRef = useRef<HTMLFormElement>(null);
-
-  useEffect(() => {
-    fetch("/api/kids")
-      .then(res => res.json())
-      .then(data => {
-        setExistingKidNames(data.kids || []);
-      })
-      .catch(console.error);
-  }, []);
 
   const handleSubmit = async (formData: FormData) => {
     await addChoreWithSchedulesAction(formData);
@@ -73,32 +66,15 @@ export function AddChoreForm({ onSuccess }: AddChoreFormProps = {}) {
     <form ref={formRef} action={handleSubmit} className="rounded-lg bg-white p-4 shadow dark:bg-gray-800">
       <h2 className="mb-4 text-xl font-semibold text-gray-900 dark:text-white">Add Chore</h2>
       <div className="space-y-4">
-        <div>
-          <label htmlFor="name" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Chore Name
-          </label>
-          <input
-            type="text"
-            id="name"
-            name="name"
-            required
-            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-            placeholder="Do the dishes"
-          />
-        </div>
+        <FormInput name="name" id="name" label="Chore Name" required placeholder="Do the dishes" />
 
-        <div>
-          <label htmlFor="description" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Description (Optional)
-          </label>
-          <textarea
-            id="description"
-            name="description"
-            rows={2}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-            placeholder="Wash, dry, and put away all dishes"
-          />
-        </div>
+        <FormTextarea
+          name="description"
+          id="description"
+          label="Description (Optional)"
+          rows={2}
+          placeholder="Wash, dry, and put away all dishes"
+        />
 
         <div>
           <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Schedule</label>
@@ -165,12 +141,12 @@ export function AddChoreForm({ onSuccess }: AddChoreFormProps = {}) {
         </div>
       </div>
 
-      <button
+      <FormButton
         type="submit"
         disabled={schedules.length > 0 && schedules.every(s => s.days.length === 0)}
-        className="mt-4 w-full rounded-md bg-blue-500 px-4 py-2 font-medium text-white hover:bg-blue-600 disabled:opacity-50">
+        className="mt-4 w-full">
         Add Chore
-      </button>
+      </FormButton>
     </form>
   );
 }

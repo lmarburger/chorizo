@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import { getTasksForParentView, addTask, getAllTasks } from "@/app/lib/db";
+import { apiSuccess, apiError, handleDbError, parseJsonBody } from "@/app/lib/api-utils";
 
 export async function GET(request: Request) {
   try {
@@ -7,20 +7,38 @@ export async function GET(request: Request) {
     const view = searchParams.get("view");
 
     const tasks = view === "parent" ? await getTasksForParentView() : await getAllTasks();
-    return NextResponse.json({ tasks });
+    return apiSuccess({ tasks });
   } catch (error) {
-    console.error("Failed to fetch tasks:", error);
-    return NextResponse.json({ error: "Failed to fetch tasks" }, { status: 500 });
+    return handleDbError(error);
   }
 }
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const task = await addTask(body);
-    return NextResponse.json({ task });
+    const body = await parseJsonBody<{
+      title?: string;
+      description?: string;
+      kid_name?: string;
+      due_date?: string;
+    }>(request);
+
+    if (!body) {
+      return handleDbError(new Error("Invalid JSON body"));
+    }
+
+    // Validate required fields
+    if (!body.title || !body.kid_name || !body.due_date) {
+      return apiError("Missing required fields: title, kid_name, or due_date", 400);
+    }
+
+    const task = await addTask({
+      title: body.title,
+      description: body.description || null,
+      kid_name: body.kid_name,
+      due_date: body.due_date,
+    });
+    return apiSuccess({ task });
   } catch (error) {
-    console.error("Failed to add task:", error);
-    return NextResponse.json({ error: "Failed to add task" }, { status: 500 });
+    return handleDbError(error);
   }
 }

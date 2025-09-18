@@ -1,15 +1,18 @@
-import { NextResponse } from "next/server";
 import { updateTask, deleteTask, toggleTaskComplete } from "@/app/lib/db";
+import { apiSuccess, handleDbError, parseJsonBody } from "@/app/lib/api-utils";
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const body = await request.json();
+    const body = await parseJsonBody(request);
+    if (!body) {
+      return handleDbError(new Error("Invalid JSON body"));
+    }
+
     const task = await updateTask(parseInt(id), body);
-    return NextResponse.json({ task });
+    return apiSuccess({ task });
   } catch (error) {
-    console.error("Failed to update task:", error);
-    return NextResponse.json({ error: "Failed to update task" }, { status: 500 });
+    return handleDbError(error);
   }
 }
 
@@ -17,10 +20,9 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   try {
     const { id } = await params;
     await deleteTask(parseInt(id));
-    return NextResponse.json({ success: true });
+    return apiSuccess({ success: true });
   } catch (error) {
-    console.error("Failed to delete task:", error);
-    return NextResponse.json({ error: "Failed to delete task" }, { status: 500 });
+    return handleDbError(error);
   }
 }
 
@@ -28,9 +30,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   try {
     const { id } = await params;
     const task = await toggleTaskComplete(parseInt(id));
-    return NextResponse.json({ task });
+    return apiSuccess({ task });
   } catch (error) {
-    console.error("Failed to toggle task:", error);
-    return NextResponse.json({ error: "Failed to toggle task" }, { status: 500 });
+    return handleDbError(error);
   }
 }

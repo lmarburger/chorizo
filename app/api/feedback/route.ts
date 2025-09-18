@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getAllFeedback, addFeedback, getIncompleteFeedback, getCompletedFeedback } from "@/app/lib/db";
+import { apiError, apiSuccess, validateRequiredFields, handleDbError, parseJsonBody } from "@/app/lib/api-utils";
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,26 +16,27 @@ export async function GET(request: NextRequest) {
       feedback = await getAllFeedback();
     }
 
-    return NextResponse.json({ feedback });
+    return apiSuccess({ feedback });
   } catch (error) {
-    console.error("Failed to fetch feedback:", error);
-    return NextResponse.json({ error: "Failed to fetch feedback" }, { status: 500 });
+    return handleDbError(error);
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { kid_name, message } = body;
-
-    if (!kid_name || !message) {
-      return NextResponse.json({ error: "Kid name and message are required" }, { status: 400 });
+    const body = await parseJsonBody<{ kid_name: string; message: string }>(request);
+    if (!body) {
+      return apiError("Invalid JSON body", 400);
     }
 
-    const feedback = await addFeedback(kid_name, message);
-    return NextResponse.json({ feedback });
+    const validationError = validateRequiredFields(body, ["kid_name", "message"]);
+    if (validationError) {
+      return apiError(validationError, 400);
+    }
+
+    const feedback = await addFeedback(body.kid_name, body.message);
+    return apiSuccess({ feedback });
   } catch (error) {
-    console.error("Failed to add feedback:", error);
-    return NextResponse.json({ error: "Failed to add feedback" }, { status: 500 });
+    return handleDbError(error);
   }
 }
