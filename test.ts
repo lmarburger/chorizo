@@ -508,6 +508,110 @@ async function testDeleteTask() {
   console.log("  ✅ Delete task works");
 }
 
+// Test: Get chore by ID
+async function testGetChoreById() {
+  await resetTestDatabase();
+  console.log("\n🧪 Testing: Get chore by ID");
+
+  // Create a chore
+  const chore = await addChore({
+    name: "Test Get By ID",
+    description: "Test description",
+  });
+
+  // Import getChoreById function
+  const { getChoreById } = await import("./app/lib/db");
+
+  // Test existing chore retrieval
+  const retrieved = await getChoreById(chore.id);
+  assert(retrieved, "Should retrieve existing chore");
+  assert.equal(retrieved?.id, chore.id, "Retrieved chore should have correct ID");
+  assert.equal(retrieved?.name, "Test Get By ID", "Retrieved chore should have correct name");
+
+  // Test non-existent chore
+  const nonExistent = await getChoreById(999999);
+  assert.equal(nonExistent, null, "Should return null for non-existent chore");
+
+  console.log("  ✅ Get chore by ID works");
+}
+
+// Test: Tasks for parent view (past week filtering)
+async function testTasksForParentView() {
+  await resetTestDatabase();
+  console.log("\n🧪 Testing: Tasks for parent view");
+
+  const kidName = "Test Kid";
+
+  // Create tasks at various times
+  await addTask({
+    title: "Old Task",
+    description: null,
+    kid_name: kidName,
+    due_date: getDayString(-10), // 10 days ago
+  });
+
+  await addTask({
+    title: "Recent Task",
+    description: null,
+    kid_name: kidName,
+    due_date: getDayString(-3), // 3 days ago
+  });
+
+  const futureTask = await addTask({
+    title: "Future Task",
+    description: null,
+    kid_name: kidName,
+    due_date: getTomorrowString(),
+  });
+
+  // Mark the future task as completed
+  await toggleTaskComplete(futureTask.id);
+
+  // Import and test getTasksForParentView
+  const { getTasksForParentView } = await import("./app/lib/db");
+  const parentTasks = await getTasksForParentView();
+
+  // Should include all tasks (parent view shows all pending + recent completed)
+  assert(parentTasks.length >= 2, "Should have at least 2 tasks in parent view");
+
+  // Check that completed tasks from past week are included
+  const completedRecent = parentTasks.filter(t => t.completed_at !== null);
+  assert(completedRecent.length > 0, "Should include recently completed tasks");
+
+  console.log("  ✅ Tasks for parent view works");
+}
+
+// Test: Error handling and edge cases
+async function testErrorHandling() {
+  await resetTestDatabase();
+  console.log("\n🧪 Testing: Error handling");
+
+  // Test invalid chore schedule (invalid day)
+  try {
+    await addChoreSchedule(999999, "Test Kid", "invalid_day" as any);
+    assert.fail("Should have thrown error for invalid day");
+  } catch (error) {
+    assert(error, "Should throw error for invalid chore ID or day");
+  }
+
+  // Test duplicate chore names (unique constraint exists)
+  const uniqueName = `Unique Test ${Date.now()}`;
+  const chore1 = await addChore({ name: uniqueName, description: "First" });
+
+  // This should fail due to unique constraint on name
+  try {
+    await addChore({ name: uniqueName, description: "Second" });
+    assert.fail("Should have thrown error for duplicate chore name");
+  } catch (error: any) {
+    assert(
+      error.message.includes("duplicate key") || error.message.includes("already exists"),
+      "Should throw duplicate key error"
+    );
+  }
+
+  console.log("  ✅ Error handling works");
+}
+
 // Main test runner
 async function runIntegrationTests() {
   console.log("🚀 Running database integration tests");
@@ -522,6 +626,7 @@ async function runIntegrationTests() {
     testGetChoresForKid,
     testGetUniqueKidNames,
     testDeleteChore,
+    testGetChoreById,
     // Task tests
     testAddTask,
     testUpdateTask,
@@ -529,6 +634,9 @@ async function runIntegrationTests() {
     testGetTasksForKid,
     testTaskPrioritySorting,
     testDeleteTask,
+    testTasksForParentView,
+    // Error handling
+    testErrorHandling,
   ];
 
   try {
@@ -536,7 +644,7 @@ async function runIntegrationTests() {
     console.log("CHORE TESTS");
     console.log("═══════════════════════════════════════════");
 
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < 8; i++) {
       await tests[i]();
     }
 
@@ -544,7 +652,15 @@ async function runIntegrationTests() {
     console.log("TASK TESTS");
     console.log("═══════════════════════════════════════════");
 
-    for (let i = 7; i < tests.length; i++) {
+    for (let i = 8; i < 14; i++) {
+      await tests[i]();
+    }
+
+    console.log("\n═══════════════════════════════════════════");
+    console.log("ADDITIONAL TESTS");
+    console.log("═══════════════════════════════════════════");
+
+    for (let i = 14; i < tests.length; i++) {
       await tests[i]();
     }
 

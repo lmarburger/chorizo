@@ -118,6 +118,10 @@ npm test          # Run integration tests
 node init-db.mjs      # Initialize/reset production database with sample data
 ```
 
+## Code Style
+
+- **Comments**: Only for complex logic or valuable context.
+
 ## Code Quality Tools
 - **ESLint**: Configured for Next.js and TypeScript with React rules
 - **Prettier**: Auto-formatting with consistent style (2 spaces, 120 line width, double quotes)
