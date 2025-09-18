@@ -15,13 +15,17 @@ Chorizo is a family chore tracking web application designed primarily for mobile
    - Week runs Monday through Sunday
 
 2. **User Selection System** (No Login Required)
-   - Home page shows buttons for each kid and "Parents" button
+   - Home page shows buttons for each kid and grey "Parents" button
+   - "Who's this?" prompt using personal voice
    - Device-based persistence using localStorage
    - Automatic redirect to last selected view
-   - "Switch User" button available on all views
+   - Back arrow icon for user switching (no text)
    - No passwords needed - designed for family devices
 
 3. **Parent View** (`/parents`)
+   - **Header:**
+     - Centered "Parents" title
+     - Back arrow icon for user switching
    - **Feedback Section (Top):**
      - Yellow highlighted feedback from kids requiring attention
      - Mark as read/delete options for each feedback item
@@ -41,7 +45,8 @@ Chorizo is a family chore tracking web application designed primarily for mobile
      - Edit existing chores and their complete schedules (kids sorted alphabetically)
      - Delete chores with confirmation (cascades to schedules and completions)
    - **Task Management:**
-     - "Add One-Time Task" form (always expanded)
+     - "Add One-Time Task" heading inside form box
+     - Form always expanded for quick access
      - Tasks shown in dashboard, no separate task list
      - Inline editing directly from dashboard
    - **Completed Feedback (Bottom):**
@@ -49,15 +54,20 @@ Chorizo is a family chore tracking web application designed primarily for mobile
      - Subtle styling with gray background
      - Can mark as unread or delete
    - **UI Elements:**
-     - Back arrow icon for navigation (replaced "Switch User" text)
+     - Back arrow icon for navigation (no text labels)
      - Settings gear icon at bottom
-     - All forms expanded by default (no collapsing)
+     - All forms expanded by default with headings inside boxes
      - Icon buttons throughout (X for remove, trash for delete, pencil for edit)
+     - "Add Chore" heading also inside form box
 
 4. **Kid View** (`/kids?name=KidName`)
+   - **Header:**
+     - Shows just kid's name (e.g., "Penny" not "Penny's Chores")
+     - Back arrow and feedback icons
    - **Unified Display:**
      - Chores and tasks look identical (no visual distinction)
-     - Day of week shown on right (e.g., "Mon", "Tue") for both chores and tasks
+     - Day label aligned horizontally with title
+     - Description takes full width below title
      - No status labels - color coding tells the story
      - Smart ordering:
        1. Uncompleted tasks for today or past (tasks prioritized)
@@ -73,16 +83,19 @@ Chorizo is a family chore tracking web application designed primarily for mobile
    - **UI Elements:**
      - Back arrow icon for navigation
      - Speech bubble icon for feedback (top-right)
-     - Clean cards with checkbox, title, description, and day
-     - Relative time shown only for completed items ("Done 5 mins ago")
+     - Clean cards with checkbox on left
+     - Title and day label on same line
+     - Description spans full width below
+     - No relative time shown (removed for cleaner look)
    - **Feedback Feature:**
      - Speech bubble button in header opens feedback form
-     - Simple textarea for kids to send ideas/suggestions to parents
+     - Personal prompt: "Got an idea or suggestion? Tell me!"
+     - Simple textarea for kids to send messages
      - Messages appear instantly in parent dashboard
    - **Features:**
      - Instant updates without page refresh
-     - Progress counter shows items to do (today/past only)
-     - Congratulations banner when all current items completed
+     - Congratulations banner with personal message when done
+     - Empty state: "No chores or tasks scheduled yet. I'll add some soon!"
      - Can complete tasks early (before due date)
 
 5. **Testing**

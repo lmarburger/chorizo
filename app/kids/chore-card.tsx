@@ -20,7 +20,6 @@ export function ChoreCard({ chore, onToggle }: ChoreCardProps) {
       description={chore.chore_description}
       dayOrDate={DAY_LABELS[chore.day_of_week as (typeof DAYS_OF_WEEK)[number]]}
       isCompleted={chore.is_completed}
-      completedAt={chore.completed_at}
       isOverdue={isOverdue}
       isFuture={isFuture}
       onToggle={onToggle}

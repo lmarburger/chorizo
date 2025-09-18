@@ -122,14 +122,12 @@ export function AddTaskForm({ onSuccess }: AddTaskFormProps = {}) {
           />
         </div>
 
-        <div className="flex justify-end gap-2">
-          <button
-            type="submit"
-            disabled={submitting}
-            className="rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-blue-600 disabled:opacity-50">
-            {submitting ? "Adding..." : "Add Task"}
-          </button>
-        </div>
+        <button
+          type="submit"
+          disabled={submitting}
+          className="w-full rounded-md bg-blue-500 px-4 py-2 font-medium text-white hover:bg-blue-600 disabled:opacity-50">
+          {submitting ? "Adding..." : "Add Task"}
+        </button>
       </form>
     </div>
   );

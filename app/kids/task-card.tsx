@@ -21,7 +21,6 @@ export function TaskCard({ task, onToggle }: TaskCardProps) {
       description={task.description}
       dayOrDate={task.due_date}
       isCompleted={!!task.completed_at}
-      completedAt={task.completed_at ? new Date(task.completed_at) : null}
       isOverdue={isOverdue}
       isFuture={isFuture}
       onToggle={onToggle}

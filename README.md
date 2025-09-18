@@ -6,12 +6,13 @@ A simple, mobile-first web app for tracking family chores, screen time, and inst
 
 ### Current
 - **Device-Based User Selection** (No Login Required):
-  - Kids and parents select their identity once
+  - "Who's this?" prompt with kid names and grey Parents button
   - Selection persists on device via localStorage
   - Back arrow icon for quick user switching
   - No passwords or usernames to remember
   
 - **Parent Dashboard**:
+  - Centered "Parents" title with back arrow
   - Feedback from kids shown at top (yellow highlighted when unread)
   - Combined view of all kids' outstanding items
   - Kids sorted alphabetically, completed kids shown last
@@ -30,17 +31,19 @@ A simple, mobile-first web app for tracking family chores, screen time, and inst
   - Icon-based controls (edit/delete) for cleaner UI
   
 - **One-Off Tasks**:
+  - "Add One-Time Task" heading inside form box
   - Create specific tasks with due dates (non-recurring)
   - Inline editing directly from parent dashboard
   - Tasks and chores combined in unified display
-  - Always-expanded forms for quick task creation
+  - Always-expanded form for quick task creation
   
 - **Unified Kids View**: 
+  - Header shows just kid's name (e.g., "Penny")
   - Chores and tasks look identical (no visual distinction)
-  - Day of week shown for both (e.g., "Mon", "Tue")
+  - Day label aligned with title on same line
+  - Description spans full width below title
   - No status labels - color coding tells the story
   - Smart priority ordering (overdue/today first, then future)
-  - Relative time for completed items only
   - Feedback button (speech bubble) for sending ideas to parents
   
 - **Simplified Visual System**:
@@ -59,6 +62,7 @@ A simple, mobile-first web app for tracking family chores, screen time, and inst
   - Speech bubble for feedback
   
 - **Feedback System**: 
+  - Personal prompt: "Got an idea or suggestion? Tell me!"
   - Kids can send feedback/ideas directly to parents
   - Parents see feedback prominently at top of dashboard
   - Mark feedback as read/unread, delete when done
@@ -129,21 +133,22 @@ Open [http://localhost:3000](http://localhost:3000) to see the app.
 ## Usage
 
 ### User Selection
-When you first open the app, you'll see a selection screen:
+When you first open the app, you'll see "Who's this?":
 - Tap your name if you're a kid
-- Tap "Parents" if you're a parent
+- Tap the grey "Parents" button if you're a parent
 - The app remembers your selection on this device
-- Use "Switch User" to change users anytime
+- Use the back arrow icon to switch users anytime
 
 ### For Parents
 Navigate to `/parents` to:
+- See centered "Parents" heading
 - Review feedback from kids at top of page (yellow when unread)
 - View dashboard showing each kid's outstanding chores and tasks
 - See at a glance who's done (green border indicates completion)
 - Click green box to expand and see upcoming tasks (if any exist)
 - Click any task in dashboard to edit inline
-- Create recurring chores with flexible scheduling
-- Add one-off tasks with expanded form (always visible)
+- Create recurring chores ("Add Chore" heading in form)
+- Add one-off tasks ("Add One-Time Task" heading in form)
 - View chore schedule sorted alphabetically
 - Use icon buttons for all actions (edit, delete, remove)
 - Access completed feedback archive at bottom
@@ -151,11 +156,12 @@ Navigate to `/parents` to:
 
 ### For Kids
 Navigate to `/kids` to:
+- See your name at the top (e.g., "Penny")
 - View unified list of chores and tasks (visually identical)
-- See day of week for each item (Mon, Tue, etc.)
+- See day label next to title on same line
+- Read full-width descriptions below titles
 - Identify status by color alone (red=overdue, blue=today, gray=future)
-- Track completion times with "Done X mins ago"
-- Get congratulations when all current work is complete
+- Get personal congratulations when all current work is complete
 - Send feedback to parents via speech bubble button
 - Navigate back with arrow icon
 
