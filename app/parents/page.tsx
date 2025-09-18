@@ -54,45 +54,33 @@ export default function ParentsPage() {
           <div className="w-20"></div>
         </div>
 
-        {/* Incomplete feedback at the top */}
         <FeedbackSection type="incomplete" />
 
-        {/* Dashboard showing kids' status */}
         <Dashboard key={dashboardKey} />
 
-        {/* Divider */}
         <hr className="my-8 border-gray-300 dark:border-gray-600" />
 
-        {/* Chore Schedule */}
         <div className="mt-8">
           <ChoreList key={choreListKey} />
         </div>
 
-        {/* Divider */}
         <hr className="my-8 border-gray-300 dark:border-gray-600" />
 
-        {/* Add One-Time Task */}
         <div className="mt-8">
           <h2 className="mb-4 text-xl font-semibold text-gray-900 dark:text-white">Add One-Time Task</h2>
           <AddTaskForm onSuccess={refreshData} />
         </div>
 
-        {/* Divider */}
         <hr className="my-8 border-gray-300 dark:border-gray-600" />
 
-        {/* Add Chore */}
         <div className="mt-8">
           <h2 className="mb-4 text-xl font-semibold text-gray-900 dark:text-white">Add Chore</h2>
           <AddChoreForm onSuccess={refreshData} />
         </div>
 
-        {/* Divider before completed feedback */}
         <hr className="my-8 border-gray-300 dark:border-gray-600" />
 
-        {/* Completed feedback at the bottom */}
         <FeedbackSection type="completed" />
-
-        {/* Settings link at the bottom */}
         <div className="mt-12 flex justify-center">
           <button
             onClick={() => router.push("/settings")}

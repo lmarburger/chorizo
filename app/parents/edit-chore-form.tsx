@@ -123,7 +123,6 @@ export function EditChoreForm({ chore, kidNames: existingKidNames, onCancel, onS
         <div>
           <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Schedule</label>
 
-          {/* Add kid buttons */}
           <div className="mb-3 flex flex-wrap gap-2">
             {allKidNames
               .filter(name => !schedules.some(s => s.kid_name === name))
@@ -138,7 +137,6 @@ export function EditChoreForm({ chore, kidNames: existingKidNames, onCancel, onS
               ))}
           </div>
 
-          {/* Schedule entries */}
           {schedules.map((schedule, index) => (
             <div key={index} className="mb-3 rounded border border-gray-200 p-3 dark:border-gray-600">
               <div className="mb-2 flex items-center justify-between">
@@ -171,7 +169,6 @@ export function EditChoreForm({ chore, kidNames: existingKidNames, onCancel, onS
             </div>
           ))}
 
-          {/* Hidden inputs for form submission */}
           {schedules.map((schedule, schedIdx) =>
             schedule.days.map((day, dayIdx) => (
               <input

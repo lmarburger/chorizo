@@ -30,9 +30,9 @@ interface KidStatus {
   name: string;
   outstandingChores: ChoreWithSchedule[];
   outstandingTasks: Task[];
-  allIncompleteTasks: Task[]; // All incomplete tasks including future ones
+  allIncompleteTasks: Task[];
   allComplete: boolean;
-  upcomingTasks: Task[]; // Future tasks not due yet
+  upcomingTasks: Task[];
 }
 
 export function Dashboard() {
@@ -48,7 +48,6 @@ export function Dashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      // Single API call to get all dashboard data
       const response = await fetch("/api/dashboard");
       const data = await response.json();
 
@@ -64,7 +63,6 @@ export function Dashboard() {
 
   const handleEditTask = (task: Task) => {
     setEditingTaskId(task.id);
-    // Format the date properly for the date input (YYYY-MM-DD)
     const formattedDate = task.due_date.includes("T") ? task.due_date.split("T")[0] : task.due_date;
     setEditForm({
       title: task.title,
@@ -113,9 +111,8 @@ export function Dashboard() {
 
   useEffect(() => {
     fetchDashboardData();
-    // Only auto-refresh if not editing
     if (!editingTaskId) {
-      const interval = setInterval(fetchDashboardData, 5000); // Refresh every 5 seconds
+      const interval = setInterval(fetchDashboardData, 5000);
       return () => clearInterval(interval);
     }
   }, [editingTaskId]);
@@ -191,10 +188,7 @@ export function Dashboard() {
                   data: ChoreWithSchedule | Task;
                 };
 
-                // Create combined list of items with type and sorting info
                 const items: CombinedItem[] = [];
-
-                // Add chores
                 kid.outstandingChores.forEach(chore => {
                   const daysAgo = dayOfWeek - chore.day_number;
                   const isToday = daysAgo === 0;
@@ -214,7 +208,6 @@ export function Dashboard() {
                   });
                 });
 
-                // Add all incomplete tasks
                 kid.allIncompleteTasks.forEach(task => {
                   const dueDate = parseISO(task.due_date);
                   const isToday = format(dueDate, "yyyy-MM-dd") === format(todayStart, "yyyy-MM-dd");
@@ -234,7 +227,6 @@ export function Dashboard() {
                   });
                 });
 
-                // Sort items: past/overdue first, then today, then future
                 items.sort((a, b) => {
                   if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
                   return a.name.localeCompare(b.name);
@@ -257,7 +249,6 @@ export function Dashboard() {
                   } else {
                     const task = item.data as Task;
 
-                    // If this task is being edited, show the edit form
                     if (editingTaskId === task.id) {
                       return (
                         <div
@@ -321,7 +312,6 @@ export function Dashboard() {
                       );
                     }
 
-                    // Otherwise show the normal task display (clickable)
                     return (
                       <div
                         key={item.id}
@@ -347,14 +337,12 @@ export function Dashboard() {
             </div>
           )}
 
-          {/* Expanded view for completed kids showing upcoming tasks */}
           {kid.allComplete && expandedKids.has(kid.name) && kid.upcomingTasks.length > 0 && (
             <div className="mt-3 space-y-1">
               <div className="mb-2 text-xs font-medium text-gray-600 dark:text-gray-400">Upcoming Tasks:</div>
               {kid.upcomingTasks.map(task => {
                 const dueDate = parseISO(task.due_date);
 
-                // If this task is being edited, show the edit form
                 if (editingTaskId === task.id) {
                   return (
                     <div
@@ -415,7 +403,6 @@ export function Dashboard() {
                   );
                 }
 
-                // Otherwise show the normal task display (clickable)
                 return (
                   <div
                     key={`task-${task.id}`}

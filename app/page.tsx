@@ -9,12 +9,10 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check if we have a stored preference
     const storedUser = localStorage.getItem("selectedUser");
     const storedUserType = localStorage.getItem("userType");
 
     if (storedUser && storedUserType) {
-      // Redirect to the appropriate page
       if (storedUserType === "parent") {
         router.push("/parents");
       } else if (storedUserType === "kid") {
@@ -22,7 +20,6 @@ export default function Home() {
       }
     }
 
-    // Fetch kid names
     fetch("/api/kids")
       .then(res => res.json())
       .then(data => {
@@ -60,7 +57,6 @@ export default function Home() {
         <div className="space-y-4">
           <h2 className="mb-6 text-center text-xl font-semibold text-gray-700 dark:text-gray-300">Who are you?</h2>
 
-          {/* Kid buttons */}
           {kids.map(kidName => (
             <button
               key={kidName}
@@ -70,7 +66,6 @@ export default function Home() {
             </button>
           ))}
 
-          {/* Parent button */}
           <button
             onClick={() => handleSelection("parent")}
             className="block w-full rounded-lg bg-green-500 px-6 py-4 text-center text-lg font-semibold text-white transition-colors hover:bg-green-600">

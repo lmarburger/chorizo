@@ -44,9 +44,7 @@ export default function KidsPage() {
   };
 
   useEffect(() => {
-    // Check if we have a valid kid name
     if (!kidName) {
-      // Check localStorage for saved preference
       const storedUser = localStorage.getItem("selectedUser");
       const storedUserType = localStorage.getItem("userType");
 
@@ -58,13 +56,11 @@ export default function KidsPage() {
       return;
     }
 
-    // Fetch chores and tasks for this kid
     fetchChores();
     fetchTasks();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kidName, router]);
 
-  // Get today's day name
   const today = new Date().toLocaleDateString("en-US", { weekday: "long" }).toLowerCase();
   const dayLabels: Record<string, string> = {
     monday: "Monday",
@@ -126,7 +122,6 @@ export default function KidsPage() {
 
   const uncompletedTodayAndPast = todayAndPastChores.filter(c => !c.is_completed);
 
-  // Check uncompleted tasks that are due today or overdue
   const today2 = new Date();
   today2.setHours(0, 0, 0, 0);
   const uncompletedTasks = tasks.filter(t => {
@@ -225,9 +220,7 @@ export default function KidsPage() {
           </p>
         ) : (
           <div className="space-y-2">
-            {/* Mix tasks and chores together, sorted by completion status and time */}
             {(() => {
-              // Create a unified list of items with type information
               const allItems: Array<{
                 type: "task" | "chore";
                 item: Task | ChoreScheduleWithCompletion;
@@ -236,7 +229,6 @@ export default function KidsPage() {
                 sortOrder: number;
               }> = [];
 
-              // Helper to determine if a task is current/overdue
               const isTaskCurrentOrOverdue = (task: Task): boolean => {
                 if (task.completed_at) return false;
                 const dueDate = new Date(task.due_date);
@@ -244,14 +236,12 @@ export default function KidsPage() {
                 return dueDate <= today2;
               };
 
-              // Helper to determine if a chore is current/overdue
               const isChoreCurrentOrOverdue = (chore: ChoreScheduleWithCompletion): boolean => {
                 if (chore.is_completed) return false;
                 const choreIndex = dayOrder.indexOf(chore.day_of_week);
                 return choreIndex <= todayIndex;
               };
 
-              // Add tasks with proper categorization
               tasks.forEach(task => {
                 let sortOrder: number;
                 if (task.completed_at) {
@@ -271,7 +261,6 @@ export default function KidsPage() {
                 });
               });
 
-              // Add chores with proper categorization
               chores.forEach(chore => {
                 let sortOrder: number;
                 if (chore.is_completed) {
@@ -291,12 +280,6 @@ export default function KidsPage() {
                 });
               });
 
-              // Sort according to the specified order:
-              // 1. Uncompleted tasks for today or past (sortOrder = 1)
-              // 2. Uncompleted chores for today or past (sortOrder = 2)
-              // 3. Upcoming uncompleted tasks (sortOrder = 3)
-              // 4. Upcoming uncompleted chores (sortOrder = 4)
-              // 5. All completed items (sortOrder = 5)
               allItems.sort((a, b) => {
                 // First sort by category (sortOrder)
                 if (a.sortOrder !== b.sortOrder) {

@@ -136,7 +136,13 @@ node init-db.mjs      # Initialize/reset production database with sample data
 
 ## Code Style
 
-- **Comments**: Only for complex logic or valuable context.
+- **Comments**: Avoid obvious comments. Only add comments for:
+  - Complex algorithms that aren't immediately clear
+  - Important business logic decisions
+  - Workarounds or hacks that need explanation
+  - Never comment what the code does (e.g., "// Fetch data", "// Add button")
+  - Never use divider comments for sections (e.g., "/* Settings */")
+  - Let component names, function names, and JSX structure self-document
 
 ## Code Quality Tools
 - **ESLint**: Configured for Next.js and TypeScript with React rules
