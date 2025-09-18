@@ -5,11 +5,12 @@ A simple, mobile-first web app for tracking family chores, screen time, and inst
 ## Features
 
 ### Current
-- **Chore Management**: Parents can create and assign chores for specific days of the week
+- **Chore Management**: Parents can create, edit, and delete chores for specific days of the week
 - **Daily Chore View**: Kids see today's chores plus any incomplete chores from earlier in the week
 - **Simple Check-off System**: Tap to mark chores complete/incomplete
 - **Visual Status Indicators**: Green for complete, red for overdue chores
 - **Multi-kid Support**: Track chores for multiple children
+- **E2E Testing**: Comprehensive test suite using Playwright
 
 ### Coming Soon
 - Screen time reporting
@@ -75,6 +76,7 @@ Open [http://localhost:3000](http://localhost:3000) to see the app.
 ### For Parents
 Navigate to `/parents` to:
 - Add new chores with specific days and kid assignments
+- Edit existing chores (name, description, kid, day)
 - View all scheduled chores organized by child
 - Delete chores
 
@@ -124,6 +126,11 @@ npm run lint:fix     # Auto-fix linting issues
 npm run format       # Format code with Prettier
 npm run format:check # Check formatting
 
+# Testing
+npm run test:e2e     # Run end-to-end tests
+npm run test:e2e:ui  # Run tests with interactive UI
+npm run test:e2e:debug # Debug tests
+
 # Database
 node init-db.mjs     # Initialize/reset database with sample data
 ```
@@ -136,6 +143,15 @@ This project uses automated code quality tools:
 - **Prettier**: Automatic code formatting (2 spaces, double quotes)
 
 Run `npm run check` before committing to ensure code quality.
+
+### Testing
+
+E2E tests use Playwright and require a separate Neon test database:
+
+1. Create a test database in Neon
+2. Add the connection string to `.env.test`
+3. Run the schema.sql in the test database
+4. Run `npm run test:e2e`
 
 ## Deployment
 

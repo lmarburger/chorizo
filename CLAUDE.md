@@ -13,6 +13,7 @@ Chorizo is a family chore tracking web application designed primarily for mobile
 
 2. **Parent View** (`/parents`)
    - Add new chores with name, description, kid assignment, and day of week
+   - Edit existing chores (all fields editable)
    - View all chores organized by kid
    - Delete chores
    - Add new kid names or select from existing
@@ -26,6 +27,11 @@ Chorizo is a family chore tracking web application designed primarily for mobile
 4. **Home Page**
    - Simple navigation to Kid and Parent views
    - Mobile-optimized design
+
+5. **Testing**
+   - Simple database tests verifying CRUD operations
+   - Tests against remote Neon test database
+   - No complex E2E framework needed
 
 ### 🚧 Planned Features
 - Screen time reporting
@@ -52,15 +58,19 @@ npm run build     # Build for production
 npm start         # Start production server
 
 # Code Quality (IMPORTANT: Run before committing!)
-npm run check     # Run all checks (typecheck + lint + format check)
+npm run check     # Run all checks (typecheck + lint + format check) - uses wrapper script for proper error handling
 npm run typecheck # Check TypeScript types
 npm run lint      # Run ESLint
 npm run lint:fix  # Run ESLint and auto-fix issues
 npm run format    # Format code with Prettier
 npm run format:check # Check if code is formatted
 
+# Testing
+npm test          # Run simple database tests
+
 # Database
-node init-db.mjs  # Initialize/reset database with sample data
+node init-db.mjs      # Initialize/reset production database with sample data
+node init-test-db.mjs # Initialize/reset test database
 ```
 
 ## Code Quality Tools
@@ -97,9 +107,9 @@ This ensures:
 3. Code is properly formatted (`npm run format:check`)
 
 ### Hooks Configuration (for Claude Code CLI)
-The project has PostToolUse hooks configured to auto-format files after editing:
-- Formats `.ts`, `.tsx`, `.js`, `.jsx`, `.json`, `.css`, `.mjs` files
-- Runs `npm run check` on Stop to validate the entire codebase
+The project has hooks configured for code quality:
+- PostToolUse: Auto-formats `.ts`, `.tsx`, `.js`, `.jsx`, `.json`, `.css`, `.mjs` files
+- Stop hook: Runs `scripts/check-wrapper.sh` to validate the entire codebase with proper error handling
 
 ## Database Management
 - Database URL is stored in `.env.local` (pulled from Vercel)
@@ -116,7 +126,8 @@ app/
 │   ├── page.tsx
 │   ├── actions.ts     # Server actions
 │   ├── chore-list.tsx
-│   └── add-chore-form.tsx
+│   ├── add-chore-form.tsx
+│   └── edit-chore-form.tsx
 ├── kids/              # Kid view
 │   ├── page.tsx
 │   ├── actions.ts
@@ -146,7 +157,14 @@ app/
 - Implement reward system
 
 ## Testing Approach
-Manual testing on:
+
+### Database Testing
+- **Framework**: Simple Node.js script (`test.mjs`)
+- **Test Database**: Separate Neon database branch for tests
+- **Coverage**: Tests all CRUD operations
+- **Setup**: Add test database URL to `.env.test`
+
+### Manual Testing
 - iPhone Safari
 - Desktop Chrome (mobile view)
 - Actual device testing recommended

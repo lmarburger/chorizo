@@ -166,3 +166,18 @@ export async function getUniqueKidNames(): Promise<string[]> {
   `;
   return result.map(r => r.kid_name) as string[];
 }
+
+export async function updateChore(id: number, chore: Omit<Chore, "id" | "created_at" | "updated_at">): Promise<Chore> {
+  const sql = getDb();
+  const result = await sql`
+    UPDATE chores 
+    SET name = ${chore.name}, 
+        description = ${chore.description}, 
+        kid_name = ${chore.kid_name}, 
+        day_of_week = ${chore.day_of_week},
+        updated_at = NOW()
+    WHERE id = ${id}
+    RETURNING *
+  `;
+  return result[0] as Chore;
+}

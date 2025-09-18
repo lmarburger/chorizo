@@ -21,7 +21,7 @@ export default async function ParentsPage() {
         <AddChoreForm kidNames={kidNames} />
 
         <div className="mt-8">
-          <ChoreList chores={chores} />
+          <ChoreList chores={chores} kidNames={kidNames} />
         </div>
       </div>
     </div>

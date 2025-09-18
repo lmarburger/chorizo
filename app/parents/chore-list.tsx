@@ -2,12 +2,17 @@
 
 import { Chore } from "../lib/db";
 import { deleteChoreAction } from "./actions";
+import { EditChoreForm } from "./edit-chore-form";
+import { useState } from "react";
 
 interface ChoreListProps {
   chores: Chore[];
+  kidNames: string[];
 }
 
-export function ChoreList({ chores }: ChoreListProps) {
+export function ChoreList({ chores, kidNames }: ChoreListProps) {
+  const [editingChoreId, setEditingChoreId] = useState<number | null>(null);
+
   const choresByKid = chores.reduce(
     (acc, chore) => {
       if (!acc[chore.kid_name]) {
@@ -40,25 +45,38 @@ export function ChoreList({ chores }: ChoreListProps) {
             {kidChores
               .sort((a, b) => dayOrder.indexOf(a.day_of_week) - dayOrder.indexOf(b.day_of_week))
               .map(chore => (
-                <div
-                  key={chore.id}
-                  className="flex items-center justify-between rounded-md bg-gray-50 p-3 dark:bg-gray-700">
-                  <div className="flex-1">
-                    <div className="font-medium text-gray-900 dark:text-white">{chore.name}</div>
-                    {chore.description && (
-                      <div className="text-sm text-gray-600 dark:text-gray-400">{chore.description}</div>
-                    )}
-                    <div className="mt-1 text-sm font-medium text-blue-600 dark:text-blue-400">
-                      {dayLabels[chore.day_of_week]}
-                    </div>
-                  </div>
+                <div key={chore.id}>
+                  {editingChoreId === chore.id ? (
+                    <EditChoreForm chore={chore} kidNames={kidNames} onCancel={() => setEditingChoreId(null)} />
+                  ) : (
+                    <div className="flex items-center justify-between rounded-md bg-gray-50 p-3 dark:bg-gray-700">
+                      <div className="flex-1">
+                        <div className="font-medium text-gray-900 dark:text-white">{chore.name}</div>
+                        {chore.description && (
+                          <div className="text-sm text-gray-600 dark:text-gray-400">{chore.description}</div>
+                        )}
+                        <div className="mt-1 text-sm font-medium text-blue-600 dark:text-blue-400">
+                          {dayLabels[chore.day_of_week]}
+                        </div>
+                      </div>
 
-                  <form action={deleteChoreAction}>
-                    <input type="hidden" name="choreId" value={chore.id} />
-                    <button type="submit" className="px-3 py-1 text-sm font-medium text-red-500 hover:text-red-600">
-                      Delete
-                    </button>
-                  </form>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setEditingChoreId(chore.id)}
+                          className="px-3 py-1 text-sm font-medium text-blue-500 hover:text-blue-600">
+                          Edit
+                        </button>
+                        <form action={deleteChoreAction}>
+                          <input type="hidden" name="choreId" value={chore.id} />
+                          <button
+                            type="submit"
+                            className="px-3 py-1 text-sm font-medium text-red-500 hover:text-red-600">
+                            Delete
+                          </button>
+                        </form>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
           </div>

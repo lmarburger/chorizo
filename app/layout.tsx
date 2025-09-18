@@ -3,8 +3,8 @@ import "./globals.css";
 import { inter } from "./fonts";
 
 export const metadata: Metadata = {
-  title: "Vercel + Neon",
-  description: "Use Neon with Vercel",
+  title: "Chorizo - Chore Tracker",
+  description: "Track chores, screen time, and practice time for kids",
 };
 
 export default function RootLayout({
