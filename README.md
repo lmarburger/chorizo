@@ -43,7 +43,7 @@ A simple, mobile-first web app for tracking family chores, screen time, and inst
   - Day label aligned with title on same line
   - Description spans full width below title
   - No status labels - color coding tells the story
-  - Smart priority ordering (overdue/today first, then future)
+  - Stable, consistent sorting across all views
   - Feedback button (speech bubble) for sending ideas to parents
   
 - **Simplified Visual System**:

@@ -38,6 +38,7 @@ Chorizo is a family chore tracking web application designed primarily for mobile
      - Click entire green box to expand and show upcoming tasks (when they exist)
      - Click on any task to edit inline (rename, change description/date, delete)
      - Auto-refresh pauses during task editing
+     - **Uses same stable sorting as kid view for consistency**
    - **Chore Management:**
      - View all chores in "Schedule" section sorted alphabetically
      - Icon-based edit/delete buttons (no text labels)
@@ -69,12 +70,12 @@ Chorizo is a family chore tracking web application designed primarily for mobile
      - Day label aligned horizontally with title
      - Description takes full width below title
      - No status labels - color coding tells the story
-     - Smart ordering:
-       1. Uncompleted tasks for today or past (tasks prioritized)
-       2. Uncompleted chores for today or past
-       3. Upcoming uncompleted tasks (all future)
-       4. Upcoming uncompleted chores
-       5. All completed items mixed, sorted by completion time
+     - **Stable sorting order (shared with parent view):**
+       1. Incomplete tasks due today or earlier (alphabetically)
+       2. Incomplete chores due today or earlier (alphabetically)
+       3. Future tasks (by due date, then alphabetically)
+       4. Future chores (by day of week, then alphabetically)
+       5. Completed items (by completion time, most recent first)
    - **Color Scheme (simplified):**
      - Red background: Overdue (past due)
      - Blue background: Due today
@@ -103,8 +104,9 @@ Chorizo is a family chore tracking web application designed primarily for mobile
    - Tests exercise actual application functions from `app/lib/db.ts`, not raw SQL
    - Each test runs in isolation with a fresh database state (no test interference)
    - Tests cover CRUD operations, completion tracking, priority sorting, kid-specific filtering
+   - **Unified sorting test verifies stable, consistent ordering across views**
    - Tests against remote Neon test database configured via TEST_DATABASE_URL
-   - All 13 integration tests pass (7 chore tests, 6 task tests)
+   - All 16 integration tests pass (8 chore tests, 6 task tests, 1 error test, 1 sorting test)
    - Single test file `test.ts` for simplicity
    - Database automatically uses TEST_DATABASE_URL when available for test isolation
 
@@ -256,11 +258,13 @@ app/
 │   └── add-task-form.tsx
 ├── kids/              # Kid view
 │   ├── page.tsx       # Kid's chore/task view
+│   ├── kids-client.tsx # Client component with sorting logic
 │   ├── actions.ts
 │   ├── chore-card.tsx
 │   └── task-card.tsx
 └── lib/
-    └── db.ts          # Database queries and types (chores + tasks)
+    ├── db.ts          # Database queries and types (chores + tasks)
+    └── sorting.ts     # Unified sorting logic for chores and tasks
 ```
 
 ## Design Principles

@@ -612,6 +612,157 @@ async function testErrorHandling() {
   console.log("  ✅ Error handling works");
 }
 
+// Test unified sorting logic for chores and tasks
+async function testUnifiedSorting() {
+  await resetTestDatabase();
+  console.log("\n🧪 Testing: Unified sorting for chores and tasks");
+
+  const kidName = "Sorting Kid";
+
+  // Create chores with different schedules
+  const bedChore = await addChore({
+    name: "Make Bed",
+    description: null,
+  });
+  const dishesChore = await addChore({
+    name: "Do Dishes",
+    description: null,
+  });
+  const roomChore = await addChore({
+    name: "Clean Room",
+    description: null,
+  });
+
+  // Get current day and calculate relative days
+  const today = new Date();
+  const dayOfWeek = today.getDay();
+  const dayNames: DayOfWeek[] = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+  const todayName = dayNames[dayOfWeek];
+  const yesterdayName = dayNames[dayOfWeek === 0 ? 6 : dayOfWeek - 1];
+  const tomorrowName = dayNames[dayOfWeek === 6 ? 0 : dayOfWeek + 1];
+
+  // Add chore schedules for different days
+  await addChoreSchedule(bedChore.id, kidName, yesterdayName); // Overdue
+  await addChoreSchedule(dishesChore.id, kidName, todayName); // Today
+  await addChoreSchedule(roomChore.id, kidName, tomorrowName); // Future
+
+  // Create tasks with different due dates
+  await addTask({
+    title: "Homework",
+    description: null,
+    kid_name: kidName,
+    due_date: getYesterdayString(), // Overdue
+  });
+  await addTask({
+    title: "Library Books",
+    description: null,
+    kid_name: kidName,
+    due_date: getTodayString(), // Today
+  });
+  await addTask({
+    title: "Science Project",
+    description: null,
+    kid_name: kidName,
+    due_date: getTomorrowString(), // Future
+  });
+
+  // Add another task due today to test alphabetical sorting within same priority
+  await addTask({
+    title: "Art Project",
+    description: null,
+    kid_name: kidName,
+    due_date: getTodayString(), // Today
+  });
+
+  // Get the combined chores and tasks (getCurrentWeekChores takes no arguments)
+  const allChores = await getCurrentWeekChores();
+  const chores = allChores.filter(c => c.kid_name === kidName);
+  const tasks = await getTasksForKid(kidName);
+
+  // Import and test the sorting logic
+  const { createSortableItems, sortItems } = await import("./app/lib/sorting");
+
+  const sortableItems = createSortableItems(chores, tasks);
+  const sortedItems = sortItems(sortableItems);
+
+  // Filter to uncompleted items only
+  const uncompletedItems = sortedItems.filter(item => !item.isCompleted);
+
+  // Verify the expected order:
+  // 1. Tasks due today or earlier (alphabetical)
+  // 2. Chores due today or earlier (alphabetical)
+  // 3. Future tasks (by date, then alphabetical)
+  // 4. Future chores (by day, then alphabetical)
+
+  assert.equal(uncompletedItems.length, 7, "Should have 7 uncompleted items");
+
+  // Tasks due today or earlier, sorted alphabetically: "Art Project", "Homework", "Library Books"
+  assert.equal(uncompletedItems[0].type, "task");
+  assert.equal(uncompletedItems[0].name, "Art Project");
+  assert.equal(uncompletedItems[0].status, "today");
+
+  assert.equal(uncompletedItems[1].type, "task");
+  assert.equal(uncompletedItems[1].name, "Homework");
+  assert.equal(uncompletedItems[1].status, "overdue");
+
+  assert.equal(uncompletedItems[2].type, "task");
+  assert.equal(uncompletedItems[2].name, "Library Books");
+  assert.equal(uncompletedItems[2].status, "today");
+
+  // Chores due today or earlier, sorted alphabetically: "Do Dishes", "Make Bed"
+  assert.equal(uncompletedItems[3].type, "chore");
+  assert.equal(uncompletedItems[3].name, "Do Dishes");
+  assert.equal(uncompletedItems[3].status, "today");
+
+  assert.equal(uncompletedItems[4].type, "chore");
+  assert.equal(uncompletedItems[4].name, "Make Bed");
+  assert.equal(uncompletedItems[4].status, "overdue");
+
+  // Future task
+  assert.equal(uncompletedItems[5].type, "task");
+  assert.equal(uncompletedItems[5].name, "Science Project");
+  assert.equal(uncompletedItems[5].status, "upcoming");
+
+  // Future chore
+  assert.equal(uncompletedItems[6].type, "chore");
+  assert.equal(uncompletedItems[6].name, "Clean Room");
+  assert.equal(uncompletedItems[6].status, "upcoming");
+
+  console.log("  ✓ Items are sorted in correct priority order");
+  console.log("  ✓ Tasks come before chores within same priority group");
+  console.log("  ✓ Items are alphabetically sorted within same type and priority");
+
+  // Test that sorting is stable after completing an item
+  // completeChore expects (chore_schedule_id, completed_date)
+  // Need to get the actual schedule ID for this chore
+  const allSchedules = await getCurrentWeekChores();
+  const dishesSchedule = allSchedules.find(
+    s => s.chore_id === dishesChore.id && s.day_of_week === todayName && s.kid_name === kidName
+  );
+  if (!dishesSchedule) {
+    throw new Error("Could not find dishes schedule");
+  }
+  await completeChore(dishesSchedule.id, getTodayString());
+
+  const allChoresAfter = await getCurrentWeekChores();
+  const choresAfter = allChoresAfter.filter(c => c.kid_name === kidName);
+  const sortableItemsAfter = createSortableItems(choresAfter, tasks);
+  const sortedItemsAfter = sortItems(sortableItemsAfter);
+  const uncompletedItemsAfter = sortedItemsAfter.filter(item => !item.isCompleted);
+
+  // Verify order remains stable (minus the completed chore)
+  assert.equal(uncompletedItemsAfter.length, 6, "Should have 6 uncompleted items after completion");
+  assert.equal(uncompletedItemsAfter[0].name, "Art Project", "First item should still be Art Project");
+  assert.equal(uncompletedItemsAfter[1].name, "Homework", "Second item should still be Homework");
+  assert.equal(uncompletedItemsAfter[2].name, "Library Books", "Third item should still be Library Books");
+  // "Do Dishes" is now completed, so "Make Bed" is the only chore due today/earlier
+  assert.equal(uncompletedItemsAfter[3].name, "Make Bed", "Fourth item should still be Make Bed");
+  assert.equal(uncompletedItemsAfter[4].name, "Science Project", "Fifth item should be Science Project");
+  assert.equal(uncompletedItemsAfter[5].name, "Clean Room", "Sixth item should be Clean Room");
+
+  console.log("  ✓ Sorting remains stable after completing items");
+}
+
 // Main test runner
 async function runIntegrationTests() {
   console.log("🚀 Running database integration tests");
@@ -637,6 +788,8 @@ async function runIntegrationTests() {
     testTasksForParentView,
     // Error handling
     testErrorHandling,
+    // Unified sorting
+    testUnifiedSorting,
   ];
 
   try {

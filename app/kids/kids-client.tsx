@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { ChoreCard } from "./chore-card";
 import { TaskCard } from "./task-card";
 import { ChoreScheduleWithCompletion, Task } from "../lib/db";
-import { parseLocalDate } from "../lib/utils";
+import { createSortableItems, sortItems } from "../lib/sorting";
 
 export default function KidsClient() {
   const searchParams = useSearchParams();
@@ -62,8 +62,6 @@ export default function KidsClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kidName, router]);
 
-  const today = new Date().toLocaleDateString("en-US", { weekday: "long" }).toLowerCase();
-
   const handleSwitchUser = () => {
     localStorage.removeItem("selectedUser");
     localStorage.removeItem("userType");
@@ -103,27 +101,13 @@ export default function KidsClient() {
     );
   }
 
-  // Calculate chore status
-  const dayOrder = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
-  const todayIndex = dayOrder.indexOf(today);
+  // Calculate if all caught up
+  const sortableItems = createSortableItems(chores, tasks);
+  const uncompletedCurrentItems = sortableItems.filter(
+    item => !item.isCompleted && (item.status === "overdue" || item.status === "today")
+  );
 
-  const todayAndPastChores = chores.filter(chore => {
-    const choreIndex = dayOrder.indexOf(chore.day_of_week);
-    return choreIndex <= todayIndex;
-  });
-
-  const uncompletedTodayAndPast = todayAndPastChores.filter(c => !c.is_completed);
-
-  const today2 = new Date();
-  today2.setHours(0, 0, 0, 0);
-  const uncompletedTasks = tasks.filter(t => {
-    if (t.completed_at) return false;
-    const dueDate = parseLocalDate(t.due_date);
-    return dueDate <= today2;
-  });
-
-  const allCaughtUp =
-    uncompletedTodayAndPast.length === 0 && uncompletedTasks.length === 0 && (chores.length > 0 || tasks.length > 0);
+  const allCaughtUp = uncompletedCurrentItems.length === 0 && (chores.length > 0 || tasks.length > 0);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -205,82 +189,12 @@ export default function KidsClient() {
         ) : (
           <div className="space-y-2">
             {(() => {
-              const allItems: Array<{
-                type: "task" | "chore";
-                item: Task | ChoreScheduleWithCompletion;
-                isCompleted: boolean;
-                completedAt?: Date;
-                sortOrder: number;
-              }> = [];
+              const sortableItems = createSortableItems(chores, tasks);
+              const sortedItems = sortItems(sortableItems);
 
-              const isTaskCurrentOrOverdue = (task: Task): boolean => {
-                if (task.completed_at) return false;
-                const dueDate = parseLocalDate(task.due_date);
-                return dueDate <= today2;
-              };
-
-              const isChoreCurrentOrOverdue = (chore: ChoreScheduleWithCompletion): boolean => {
-                if (chore.is_completed) return false;
-                const choreIndex = dayOrder.indexOf(chore.day_of_week);
-                return choreIndex <= todayIndex;
-              };
-
-              tasks.forEach(task => {
-                let sortOrder: number;
-                if (task.completed_at) {
-                  sortOrder = 5; // Completed
-                } else if (isTaskCurrentOrOverdue(task)) {
-                  sortOrder = 1; // Current/overdue task
-                } else {
-                  sortOrder = 3; // Upcoming task
-                }
-
-                allItems.push({
-                  type: "task",
-                  item: task,
-                  isCompleted: !!task.completed_at,
-                  completedAt: task.completed_at ? new Date(task.completed_at) : undefined,
-                  sortOrder,
-                });
-              });
-
-              chores.forEach(chore => {
-                let sortOrder: number;
-                if (chore.is_completed) {
-                  sortOrder = 5; // Completed
-                } else if (isChoreCurrentOrOverdue(chore)) {
-                  sortOrder = 2; // Current/overdue chore
-                } else {
-                  sortOrder = 4; // Upcoming chore
-                }
-
-                allItems.push({
-                  type: "chore",
-                  item: chore,
-                  isCompleted: chore.is_completed,
-                  completedAt: chore.completed_at ? new Date(chore.completed_at) : undefined,
-                  sortOrder,
-                });
-              });
-
-              allItems.sort((a, b) => {
-                // First sort by category (sortOrder)
-                if (a.sortOrder !== b.sortOrder) {
-                  return a.sortOrder - b.sortOrder;
-                }
-
-                // Within completed items (sortOrder === 5), sort by completion time (most recent first)
-                if (a.sortOrder === 5 && a.completedAt && b.completedAt) {
-                  return b.completedAt.getTime() - a.completedAt.getTime();
-                }
-
-                // Within other categories, maintain original order
-                return 0;
-              });
-
-              return allItems.map(({ type, item }) => {
-                if (type === "task") {
-                  const task = item as Task;
+              return sortedItems.map(item => {
+                if (item.type === "task") {
+                  const task = item.data as Task;
                   return (
                     <TaskCard
                       key={`task-${task.id}`}
@@ -292,7 +206,7 @@ export default function KidsClient() {
                     />
                   );
                 } else {
-                  const chore = item as ChoreScheduleWithCompletion;
+                  const chore = item.data as ChoreScheduleWithCompletion;
                   return (
                     <ChoreCard
                       key={`chore-${chore.id}-${chore.day_of_week}`}

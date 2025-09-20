@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { format, parseISO, startOfDay } from "date-fns";
+import { parseISO } from "date-fns";
 import { FormInput, FormTextarea, FormButton } from "../components/form-components";
+import { createSortableItems, sortItems } from "../lib/sorting";
+import type { DayOfWeek } from "../lib/db";
 
 interface ChoreWithSchedule {
   id: number;
@@ -25,6 +27,8 @@ interface Task {
   kid_name: string;
   due_date: string;
   completed_at: Date | null;
+  created_at: Date;
+  updated_at: Date;
 }
 
 interface KidStatus {
@@ -172,79 +176,45 @@ export function Dashboard() {
           {!kid.allComplete && (kid.outstandingChores.length > 0 || kid.allIncompleteTasks.length > 0) && (
             <div className="space-y-1">
               {(() => {
-                const today = new Date();
-                const dayOfWeek = today.getDay() === 0 ? 7 : today.getDay();
-                const todayStart = startOfDay(today);
+                // Convert ChoreWithSchedule to ChoreScheduleWithCompletion format
+                const choreSchedules = kid.outstandingChores.map(chore => ({
+                  id: chore.id,
+                  chore_id: chore.chore_id,
+                  kid_name: chore.kid_name,
+                  day_of_week: ["", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"][
+                    chore.day_number
+                  ] as DayOfWeek,
+                  chore_name: chore.chore_name,
+                  chore_description: chore.chore_description,
+                  is_completed: chore.is_completed,
+                  completed_at: chore.completed_at ? new Date(chore.completed_at) : undefined,
+                  completion_id: chore.completion_id || undefined,
+                  created_at: new Date(), // Add required field
+                }));
 
-                type CombinedItem = {
-                  type: "chore" | "task";
-                  id: string;
-                  name: string;
-                  dayName?: string;
-                  dueDate?: Date;
-                  isToday: boolean;
-                  isPast: boolean;
-                  isFuture: boolean;
-                  sortOrder: number;
-                  data: ChoreWithSchedule | Task;
-                };
+                const sortableItems = createSortableItems(choreSchedules, kid.allIncompleteTasks);
+                const sortedItems = sortItems(sortableItems);
 
-                const items: CombinedItem[] = [];
-                kid.outstandingChores.forEach(chore => {
-                  const daysAgo = dayOfWeek - chore.day_number;
-                  const isToday = daysAgo === 0;
-                  const isPast = daysAgo > 0;
-                  const dayName = ["", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][chore.day_number];
+                // Filter to only show incomplete items
+                const incompleteItems = sortedItems.filter(item => !item.isCompleted);
 
-                  items.push({
-                    type: "chore",
-                    id: `chore-${chore.id}-${chore.day_number}`,
-                    name: chore.chore_name,
-                    dayName,
-                    isToday,
-                    isPast,
-                    isFuture: false,
-                    sortOrder: isPast ? 0 : isToday ? 1 : 3,
-                    data: chore,
-                  });
-                });
-
-                kid.allIncompleteTasks.forEach(task => {
-                  const dueDate = parseISO(task.due_date);
-                  const isToday = format(dueDate, "yyyy-MM-dd") === format(todayStart, "yyyy-MM-dd");
-                  const isPast = dueDate < todayStart;
-                  const isFuture = dueDate > todayStart;
-
-                  items.push({
-                    type: "task",
-                    id: `task-${task.id}`,
-                    name: task.title,
-                    dueDate,
-                    isToday,
-                    isPast,
-                    isFuture,
-                    sortOrder: isPast ? 0 : isToday ? 1 : isFuture ? 2 : 3,
-                    data: task,
-                  });
-                });
-
-                items.sort((a, b) => {
-                  if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
-                  return a.name.localeCompare(b.name);
-                });
-
-                return items.map(item => {
+                return incompleteItems.map(item => {
                   if (item.type === "chore") {
+                    const dayName = item.dayOfWeek
+                      ? item.dayOfWeek.charAt(0).toUpperCase() + item.dayOfWeek.slice(1, 3)
+                      : "";
                     return (
                       <div
                         key={item.id}
                         className={`flex items-center justify-between rounded px-2 py-1 text-sm ${
-                          item.isToday
+                          item.status === "today"
                             ? "bg-blue-100 text-blue-900 dark:bg-blue-900/30 dark:text-blue-100"
-                            : "bg-red-100 text-red-900 dark:bg-red-900/30 dark:text-red-100"
+                            : item.status === "overdue"
+                              ? "bg-red-100 text-red-900 dark:bg-red-900/30 dark:text-red-100"
+                              : "bg-gray-100 text-gray-700 dark:bg-gray-700/30 dark:text-gray-300"
                         }`}>
                         <span className="font-medium">{item.name}</span>
-                        <span className="text-xs opacity-75">Chore ({item.dayName})</span>
+                        <span className="text-xs opacity-75">Chore ({dayName})</span>
                       </div>
                     );
                   } else {
@@ -300,13 +270,11 @@ export function Dashboard() {
                         key={item.id}
                         onClick={() => handleEditTask(task)}
                         className={`flex cursor-pointer items-center justify-between rounded px-2 py-1 text-sm transition-opacity hover:opacity-80 ${
-                          item.isPast
+                          item.status === "overdue"
                             ? "bg-red-100 text-red-900 dark:bg-red-900/30 dark:text-red-100"
-                            : item.isToday
+                            : item.status === "today"
                               ? "bg-blue-100 text-blue-900 dark:bg-blue-900/30 dark:text-blue-100"
-                              : item.isFuture
-                                ? "bg-gray-100 text-gray-700 dark:bg-gray-700/30 dark:text-gray-300"
-                                : "bg-orange-100 text-orange-900 dark:bg-orange-900/30 dark:text-orange-100"
+                              : "bg-gray-100 text-gray-700 dark:bg-gray-700/30 dark:text-gray-300"
                         }`}>
                         <span className="font-medium">{item.name}</span>
                         <span className="rounded bg-purple-100 px-1.5 py-0.5 text-xs font-medium text-purple-800 dark:bg-purple-900 dark:text-purple-200">
