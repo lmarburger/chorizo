@@ -40,6 +40,7 @@ run_captured() {
 run_captured "TYPESCRIPT" npm run typecheck
 run_captured "ESLINT" npm run lint
 run_captured "PRETTIER" npm run format:check
+run_captured "TESTS" npm test
 
 printf '\nAll checks passed successfully!\n'
 exit 0
