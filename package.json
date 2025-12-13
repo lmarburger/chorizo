@@ -13,6 +13,7 @@
     "typecheck": "tsc --noEmit",
     "check": "./scripts/check-wrapper.sh",
     "test": "npx tsx test.ts",
+    "health-check": "./scripts/health-check.sh",
     "migrate": "node-pg-migrate up --envPath .env.local",
     "migrate:create": "node-pg-migrate create --migration-file-language sql"
   },

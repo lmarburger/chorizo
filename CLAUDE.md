@@ -359,4 +359,25 @@ To seed sample data manually, you can run the INSERT statements from schema.sql.
 - Actual device testing recommended
 
 ## Deployment
-Push to main branch triggers automatic Vercel deployment
+Push to main branch triggers automatic Vercel deployment.
+
+**CI/CD Pipeline:**
+- GitHub Actions runs on every push to main and on PRs
+- Checks: TypeScript, ESLint, Prettier, integration tests
+- Dependabot creates weekly PRs for dependency updates
+
+## Maintenance Tools
+
+### Health Check
+After deploying changes or when troubleshooting, verify production is working:
+```bash
+npm run health-check
+```
+This checks that the home page and key API endpoints return 200 responses.
+
+### For Detailed Troubleshooting
+See `MAINTENANCE.md` for:
+- Common issues and fixes
+- Database troubleshooting
+- How to handle Dependabot PRs
+- Links to Vercel and Neon dashboards

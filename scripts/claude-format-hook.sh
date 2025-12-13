@@ -13,6 +13,7 @@ set -euo pipefail
 #   - prettier: TypeScript, JavaScript, JSON, CSS, and config files
 #   - eslint: TypeScript and JavaScript files (auto-fix mode)
 #   - shellcheck: Shell scripts (.sh and files with shell shebangs)
+#   - sqlfluff: SQL files (.sql)
 #
 # How it works:
 #   1. Reads PostToolUse event JSON from stdin
@@ -29,6 +30,7 @@ set -euo pipefail
 #   - jq: For parsing JSON input (required)
 #   - npm: For running prettier and eslint (required)
 #   - shellcheck: For shell script validation (required if editing shell scripts)
+#   - sqlfluff: For SQL formatting (required if editing .sql files)
 
 declare -a TEMPS=()
 # shellcheck disable=SC2329  # cleanup is invoked via trap, not directly
@@ -103,9 +105,13 @@ fi
 prettier_files=()
 eslint_files=()
 shell_files=()
+# shellcheck disable=SC2034  # sql_files is used via nameref in run_formatter_batch
+sql_files=()
 prettier_failed=false
 eslint_failed=false
 shellcheck_failed=false
+# shellcheck disable=SC2034  # sqlfluff_failed is used via nameref in run_formatter_batch
+sqlfluff_failed=false
 
 # Categorize files by type
 for fp in "${files[@]}"; do
@@ -121,6 +127,9 @@ for fp in "${files[@]}"; do
       ;;
     *.sh)
       shell_files+=("$fp")
+      ;;
+    *.sql)
+      sql_files+=("$fp")
       ;;
     *)
       # Check for shell shebang in extensionless files
@@ -177,7 +186,13 @@ if [ ${#shell_files[@]} -gt 0 ]; then
   run_formatter_batch shellcheck shell_files shellcheck_failed 1>&2
 fi
 
-if [ "$prettier_failed" = true ] || [ "$eslint_failed" = true ] || [ "$shellcheck_failed" = true ]; then
+# Run sqlfluff for SQL files
+if [ ${#sql_files[@]} -gt 0 ]; then
+  have_cmd sqlfluff || fail_missing sqlfluff "Install sqlfluff (brew install sqlfluff)."
+  run_formatter_batch sqlfluff sql_files sqlfluff_failed fix
+fi
+
+if [ "$prettier_failed" = true ] || [ "$eslint_failed" = true ] || [ "$shellcheck_failed" = true ] || [ "$sqlfluff_failed" = true ]; then
   exit 2
 fi
 
