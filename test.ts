@@ -32,9 +32,8 @@ import {
   type DayOfWeek,
 } from "./app/lib/db";
 
-// Setup function to completely reset and initialize test database
+// Setup function to completely reset and initialize test database (run once at start)
 async function resetTestDatabase() {
-  // Use the same DATABASE_URL that the imported functions use (now overridden to test DB)
   const sql = neon(process.env.DATABASE_URL!);
 
   // Drop all tables first to ensure clean state
@@ -65,6 +64,12 @@ async function resetTestDatabase() {
   }
 }
 
+// Fast cleanup between tests - truncate is much faster than DROP/CREATE
+async function truncateAllTables() {
+  const sql = neon(process.env.DATABASE_URL!);
+  await sql`TRUNCATE chore_completions, chore_schedules, chores, tasks RESTART IDENTITY CASCADE`;
+}
+
 // Helper functions for dates
 function getTodayString(): string {
   return new Date().toISOString().split("T")[0];
@@ -90,7 +95,7 @@ function getDayString(daysOffset: number): string {
 
 // Test: Adding and retrieving a chore with schedules
 async function testAddChoreWithSchedules() {
-  await resetTestDatabase();
+  await truncateAllTables();
   console.log("\n🧪 Testing: Add chore with schedules");
 
   // Add a chore with unique name
@@ -123,7 +128,7 @@ async function testAddChoreWithSchedules() {
 
 // Test: Updating a chore
 async function testUpdateChore() {
-  await resetTestDatabase();
+  await truncateAllTables();
   console.log("\n🧪 Testing: Update chore");
 
   // Create initial chore with schedules
@@ -148,7 +153,7 @@ async function testUpdateChore() {
 
 // Test: Update chore schedules
 async function testUpdateChoreSchedules() {
-  await resetTestDatabase();
+  await truncateAllTables();
   console.log("\n🧪 Testing: Update chore schedules");
 
   // Create chore with initial schedules
@@ -179,7 +184,7 @@ async function testUpdateChoreSchedules() {
 
 // Test: Chore completion toggle
 async function testChoreCompletion() {
-  await resetTestDatabase();
+  await truncateAllTables();
   console.log("\n🧪 Testing: Chore completion toggle");
 
   // Create a chore with today's schedule
@@ -218,7 +223,7 @@ async function testChoreCompletion() {
 
 // Test: Get chores for specific kid
 async function testGetChoresForKid() {
-  await resetTestDatabase();
+  await truncateAllTables();
   console.log("\n🧪 Testing: Get chores for specific kid");
 
   // Create chores for different kids
@@ -253,7 +258,7 @@ async function testGetChoresForKid() {
 
 // Test: Get unique kid names
 async function testGetUniqueKidNames() {
-  await resetTestDatabase();
+  await truncateAllTables();
   console.log("\n🧪 Testing: Get unique kid names");
 
   // Create chores with various kid assignments
@@ -274,7 +279,7 @@ async function testGetUniqueKidNames() {
 
 // Test: Delete chore with cascade
 async function testDeleteChore() {
-  await resetTestDatabase();
+  await truncateAllTables();
   console.log("\n🧪 Testing: Delete chore (cascade)");
 
   // Create chore with schedules
@@ -301,7 +306,7 @@ async function testDeleteChore() {
 
 // Test: Add and get task
 async function testAddTask() {
-  await resetTestDatabase();
+  await truncateAllTables();
   console.log("\n🧪 Testing: Add and get task");
 
   const tomorrowStr = getTomorrowString();
@@ -330,7 +335,7 @@ async function testAddTask() {
 
 // Test: Update task
 async function testUpdateTask() {
-  await resetTestDatabase();
+  await truncateAllTables();
   console.log("\n🧪 Testing: Update task");
 
   // Create initial task
@@ -365,7 +370,7 @@ async function testUpdateTask() {
 
 // Test: Task completion toggle
 async function testTaskCompletion() {
-  await resetTestDatabase();
+  await truncateAllTables();
   console.log("\n🧪 Testing: Task completion toggle");
 
   const task = await addTask({
@@ -388,7 +393,7 @@ async function testTaskCompletion() {
 
 // Test: Get tasks for specific kid
 async function testGetTasksForKid() {
-  await resetTestDatabase();
+  await truncateAllTables();
   console.log("\n🧪 Testing: Get tasks for specific kid");
 
   // Create tasks for different kids
@@ -430,7 +435,7 @@ async function testGetTasksForKid() {
 
 // Test: Task priority sorting
 async function testTaskPrioritySorting() {
-  await resetTestDatabase();
+  await truncateAllTables();
   console.log("\n🧪 Testing: Task priority sorting");
 
   const kidName = "Sort Test Kid";
@@ -484,7 +489,7 @@ async function testTaskPrioritySorting() {
 
 // Test: Delete task
 async function testDeleteTask() {
-  await resetTestDatabase();
+  await truncateAllTables();
   console.log("\n🧪 Testing: Delete task");
 
   const task = await addTask({
@@ -510,7 +515,7 @@ async function testDeleteTask() {
 
 // Test: Get chore by ID
 async function testGetChoreById() {
-  await resetTestDatabase();
+  await truncateAllTables();
   console.log("\n🧪 Testing: Get chore by ID");
 
   // Create a chore
@@ -537,7 +542,7 @@ async function testGetChoreById() {
 
 // Test: Tasks for parent view (past week filtering)
 async function testTasksForParentView() {
-  await resetTestDatabase();
+  await truncateAllTables();
   console.log("\n🧪 Testing: Tasks for parent view");
 
   const kidName = "Test Kid";
@@ -583,7 +588,7 @@ async function testTasksForParentView() {
 
 // Test: Error handling and edge cases
 async function testErrorHandling() {
-  await resetTestDatabase();
+  await truncateAllTables();
   console.log("\n🧪 Testing: Error handling");
 
   // Test invalid chore schedule (invalid day)
@@ -614,7 +619,7 @@ async function testErrorHandling() {
 
 // Test unified sorting logic for chores and tasks
 async function testUnifiedSorting() {
-  await resetTestDatabase();
+  await truncateAllTables();
   console.log("\n🧪 Testing: Unified sorting for chores and tasks");
 
   const kidName = "Sorting Kid";
@@ -765,8 +770,10 @@ async function testUnifiedSorting() {
 
 // Main test runner
 async function runIntegrationTests() {
-  console.log("🚀 Running database integration tests");
-  console.log("Each test runs in a fresh database\n");
+  console.log("🚀 Running database integration tests\n");
+
+  // Reset schema once at start (expensive operation)
+  await resetTestDatabase();
 
   const tests = [
     // Chore tests
