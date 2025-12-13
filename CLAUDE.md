@@ -273,6 +273,18 @@ app/
 3. **Visual feedback**: Clear indicators for chore status
 4. **No authentication yet**: Single global user for MVP
 
+## Design Philosophy
+
+This codebase is designed for LLM maintainability first, human readability second. Automated checks (TypeScript, ESLint, Prettier, tests) run via hooks and catch mistakes, enabling LLMs to work autonomously with immediate feedback. Humans intervene for novel problems.
+
+1. **Simplicity Over Sophistication** - Compute at query time (no caching), no state management libraries, no premature abstraction
+
+2. **Tests Enable LLM Development** - Tests run automatically via stop hook; always add tests with features so regressions are caught before humans see them
+
+3. **Single Source of Truth** - Business logic lives in pure functions (db.ts, sorting.ts, utils.ts); check for existing patterns before creating new ones
+
+4. **Server Aggregates, Client Renders** - Push computation to server; client receives pre-computed data
+
 ## Sample Data
 - **Kids**: Alex, Sam
 - **Chores with Schedules**: 
