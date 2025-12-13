@@ -171,8 +171,9 @@ npm run format:check # Check if code is formatted
 # Testing
 npm test          # Run integration tests
 
-# Database
-node init-db.mjs      # Initialize/reset production database with sample data
+# Database Migrations
+npm run migrate              # Apply pending migrations (uses .env.local)
+npm run migrate:create -- name  # Create a new migration file
 ```
 
 ## Code Style
@@ -219,7 +220,7 @@ node init-db.mjs      # Initialize/reset production database with sample data
 - TypeScript strict mode enabled
 - React hooks rules enforced
 - Prettier integration (ESLint won't conflict with formatting)
-- Files excluded: `next-env.d.ts`, `next-dev.d.ts`, `init-db.mjs`, `test.ts`
+- Files excluded: `next-env.d.ts`, `next-dev.d.ts`, `test.ts`
 
 ### Important for Claude
 The `npm run check` command is automatically executed via the Stop hook (`scripts/check-wrapper.sh`).
@@ -260,8 +261,13 @@ The project has hooks configured for code quality:
 - Test database URL in `.env.test` as `TEST_DATABASE_URL`
 - `app/lib/db.ts` automatically uses TEST_DATABASE_URL when available (for test isolation)
 - Currently using same database for dev and prod (will separate later)
-- Schema file: `schema.sql`
+- Schema reference: `schema.sql` (full schema for documentation)
 - Database utilities: `app/lib/db.ts`
+- **Migrations**: Uses node-pg-migrate with SQL files in `migrations/`
+  - Migrations are tracked in `pgmigrations` table
+  - Run `npm run migrate` to apply pending migrations
+  - Create new migrations with `npm run migrate:create -- name`
+  - For prod: `DATABASE_URL=<prod-url> npm run migrate`
 
 ## Project Structure
 ```
@@ -295,6 +301,9 @@ app/
 └── lib/
     ├── db.ts          # Database queries and types (chores, tasks, incentives)
     └── sorting.ts     # Unified sorting logic with fixed/flexible support
+migrations/
+├── 1734100000000_initial-schema.sql  # Baseline schema
+└── 1734100001000_add-incentives.sql  # Incentive system additions
 ```
 
 ## Design Principles
@@ -316,18 +325,16 @@ This codebase is designed for LLM maintainability first, human readability secon
 4. **Server Aggregates, Client Renders** - Push computation to server; client receives pre-computed data
 
 ## Sample Data
+Sample data is defined in `schema.sql` (for reference) but migrations only create the schema structure.
+To seed sample data manually, you can run the INSERT statements from schema.sql.
 - **Kids**: Alex, Sam
-- **Chores with Schedules**: 
-  - **Make bed**: Alex (Mon-Fri)
-  - **Take out trash**: Alex (Wed, Sat)
-  - **Clean room**: Sam (Mon, Thu)
-  - **Feed pet**: Sam (Tue, Thu, Sat)
-  - **Do the dishes**: Alternates - Alex (Mon, Wed, Fri, Sun), Sam (Tue, Thu, Sat)
-  - **Practice piano**: Both kids (Mon-Fri)
-- **Sample Tasks** (from migration):
-  - **Pack for trip**: Alex (due in 3 days)
-  - **Science project**: Sam (due in 5 days)
-  - **Library books**: Alex (due tomorrow)
+- **Chores with Schedules**:
+  - **Make bed**: Alex (Mon-Fri) - fixed
+  - **Take out trash**: Alex (Wed, Sat) - fixed
+  - **Clean room**: Sam (Mon, Thu) - flexible
+  - **Feed pet**: Sam (Tue, Thu, Sat) - fixed
+  - **Do the dishes**: Alternates - Alex (Mon, Wed, Fri, Sun), Sam (Tue, Thu, Sat) - fixed
+  - **Practice piano**: Both kids (Mon-Fri) - flexible
 
 ## Known Issues/TODOs
 - Add authentication system
@@ -342,7 +349,7 @@ This codebase is designed for LLM maintainability first, human readability secon
 - **Framework**: TypeScript integration tests (`test.ts`)
 - **Test Database**: Separate Neon database configured via TEST_DATABASE_URL in `.env.test`
 - **Approach**: Tests actual application functions from `app/lib/db.ts`, not raw SQL
-- **Isolation**: Each test runs in a fresh database state (drops/recreates schema)
+- **Isolation**: Each test run drops all tables and runs migrations fresh
 - **Coverage**: 22 comprehensive tests covering chores, tasks, sorting, and incentive system
 - **Setup**: Add test database URL to `.env.test` as TEST_DATABASE_URL
 

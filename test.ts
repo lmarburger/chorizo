@@ -1,7 +1,7 @@
 import { config } from "dotenv";
 import assert from "assert";
 import { neon } from "@neondatabase/serverless";
-import { readFileSync } from "fs";
+import { execSync } from "child_process";
 
 // Load test environment
 config({ path: ".env.test" });
@@ -44,6 +44,7 @@ async function resetTestDatabase() {
   const sql = neon(process.env.DATABASE_URL!);
 
   // Drop all tables first to ensure clean state
+  await sql`DROP TABLE IF EXISTS pgmigrations CASCADE`;
   await sql`DROP TABLE IF EXISTS incentive_claims CASCADE`;
   await sql`DROP TABLE IF EXISTS chore_completions CASCADE`;
   await sql`DROP TABLE IF EXISTS chore_schedules CASCADE`;
@@ -52,25 +53,11 @@ async function resetTestDatabase() {
   await sql`DROP TABLE IF EXISTS feedback CASCADE`;
   await sql`DROP TYPE IF EXISTS day_of_week CASCADE`;
 
-  // Read and clean the schema
-  const schema = readFileSync("schema.sql", "utf-8");
-
-  // Find where sample data starts - look for the comment that precedes sample data
-  const sampleDataMarker = "-- Sample data for testing";
-  const sampleDataIndex = schema.indexOf(sampleDataMarker);
-
-  // If sample data marker found, only use schema before it, otherwise use whole schema
-  const schemaWithoutSampleData = sampleDataIndex > -1 ? schema.substring(0, sampleDataIndex).trim() : schema;
-
-  // Split into statements and execute
-  const statements = schemaWithoutSampleData.split(";").filter(s => s.trim());
-
-  for (const statement of statements) {
-    const trimmedStatement = statement.trim();
-    if (trimmedStatement) {
-      await sql.query(trimmedStatement + ";");
-    }
-  }
+  // Run migrations to set up schema
+  execSync("npm run migrate", {
+    env: { ...process.env, DATABASE_URL: process.env.DATABASE_URL },
+    stdio: "pipe",
+  });
 }
 
 // Fast cleanup between tests - truncate is much faster than DROP/CREATE

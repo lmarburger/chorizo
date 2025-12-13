@@ -12,7 +12,13 @@
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
     "check": "./scripts/check-wrapper.sh",
-    "test": "npx tsx test.ts"
+    "test": "npx tsx test.ts",
+    "migrate": "node-pg-migrate up --envPath .env.local",
+    "migrate:create": "node-pg-migrate create --migration-file-language sql"
+  },
+  "node-pg-migrate": {
+    "migrationsDir": "migrations",
+    "direction": "up"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.1",
@@ -21,6 +27,7 @@
     "dotenv": "^17.2.2",
     "jose": "^6.1.0",
     "next": "15.5.3",
+    "node-pg-migrate": "^8.0.4",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },
