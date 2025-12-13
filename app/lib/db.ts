@@ -371,32 +371,6 @@ export async function updateTask(
   task: Partial<Omit<Task, "id" | "created_at" | "updated_at">>
 ): Promise<Task> {
   const sql = getDb();
-  const updates: string[] = [];
-  const values: Record<string, unknown> = {};
-
-  if (task.title !== undefined) {
-    updates.push("title = ${title}");
-    values.title = task.title;
-  }
-  if (task.description !== undefined) {
-    updates.push("description = ${description}");
-    values.description = task.description;
-  }
-  if (task.kid_name !== undefined) {
-    updates.push("kid_name = ${kid_name}");
-    values.kid_name = task.kid_name;
-  }
-  if (task.due_date !== undefined) {
-    updates.push("due_date = ${due_date}");
-    values.due_date = task.due_date;
-  }
-  if (task.completed_at !== undefined) {
-    updates.push("completed_at = ${completed_at}");
-    values.completed_at = task.completed_at;
-  }
-
-  updates.push("updated_at = NOW()");
-
   const result = await sql`
     UPDATE tasks 
     SET title = ${task.title || sql`title`},

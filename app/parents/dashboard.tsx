@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { parseISO } from "date-fns";
-import { FormInput, FormTextarea, FormButton } from "../components/form-components";
-import { createSortableItems, sortItems } from "../lib/sorting";
-import type { DayOfWeek } from "../lib/db";
+import { TaskEditForm } from "./task-edit-form";
+import { KidStatusItems } from "./kid-status-items";
+import type { Task } from "../lib/db";
 
 interface ChoreWithSchedule {
   id: number;
@@ -18,17 +18,6 @@ interface ChoreWithSchedule {
   completion_id: number | null;
   completed_at: string | null;
   is_completed: boolean;
-}
-
-interface Task {
-  id: number;
-  title: string;
-  description: string | null;
-  kid_name: string;
-  due_date: string;
-  completed_at: Date | null;
-  created_at: Date;
-  updated_at: Date;
 }
 
 interface KidStatus {
@@ -45,11 +34,6 @@ export function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
   const [expandedKids, setExpandedKids] = useState<Set<string>>(new Set());
-  const [editForm, setEditForm] = useState({
-    title: "",
-    description: "",
-    due_date: "",
-  });
 
   const fetchDashboardData = async () => {
     try {
@@ -66,26 +50,12 @@ export function Dashboard() {
     }
   };
 
-  const handleEditTask = (task: Task) => {
-    setEditingTaskId(task.id);
-    const formattedDate = task.due_date.includes("T") ? task.due_date.split("T")[0] : task.due_date;
-    setEditForm({
-      title: task.title,
-      description: task.description || "",
-      due_date: formattedDate,
-    });
-  };
-
-  const handleUpdateTask = async () => {
-    if (!editingTaskId) return;
-
+  const handleUpdateTask = async (taskId: number, values: { title: string; description: string; due_date: string }) => {
     try {
-      const response = await fetch(`/api/tasks/${editingTaskId}`, {
+      const response = await fetch(`/api/tasks/${taskId}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(editForm),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values),
       });
 
       if (response.ok) {
@@ -175,117 +145,15 @@ export function Dashboard() {
 
           {!kid.allComplete && (kid.outstandingChores.length > 0 || kid.allIncompleteTasks.length > 0) && (
             <div className="space-y-1">
-              {(() => {
-                // Convert ChoreWithSchedule to ChoreScheduleWithCompletion format
-                const choreSchedules = kid.outstandingChores.map(chore => ({
-                  id: chore.id,
-                  chore_id: chore.chore_id,
-                  kid_name: chore.kid_name,
-                  day_of_week: ["", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"][
-                    chore.day_number
-                  ] as DayOfWeek,
-                  chore_name: chore.chore_name,
-                  chore_description: chore.chore_description,
-                  is_completed: chore.is_completed,
-                  completed_at: chore.completed_at ? new Date(chore.completed_at) : undefined,
-                  completion_id: chore.completion_id || undefined,
-                  created_at: new Date(), // Add required field
-                }));
-
-                const sortableItems = createSortableItems(choreSchedules, kid.allIncompleteTasks);
-                const sortedItems = sortItems(sortableItems);
-
-                // Filter to only show incomplete items
-                const incompleteItems = sortedItems.filter(item => !item.isCompleted);
-
-                return incompleteItems.map(item => {
-                  if (item.type === "chore") {
-                    const dayName = item.dayOfWeek
-                      ? item.dayOfWeek.charAt(0).toUpperCase() + item.dayOfWeek.slice(1, 3)
-                      : "";
-                    return (
-                      <div
-                        key={item.id}
-                        className={`flex items-center justify-between rounded px-2 py-1 text-sm ${
-                          item.status === "today"
-                            ? "bg-blue-100 text-blue-900 dark:bg-blue-900/30 dark:text-blue-100"
-                            : item.status === "overdue"
-                              ? "bg-red-100 text-red-900 dark:bg-red-900/30 dark:text-red-100"
-                              : "bg-gray-100 text-gray-700 dark:bg-gray-700/30 dark:text-gray-300"
-                        }`}>
-                        <span className="font-medium">{item.name}</span>
-                        <span className="text-xs opacity-75">Chore ({dayName})</span>
-                      </div>
-                    );
-                  } else {
-                    const task = item.data as Task;
-
-                    if (editingTaskId === task.id) {
-                      return (
-                        <div key={item.id} className="rounded-lg bg-white p-4 shadow dark:bg-gray-800">
-                          <div className="space-y-4">
-                            <FormInput
-                              name="title"
-                              label="Title"
-                              value={editForm.title}
-                              onChange={e => setEditForm({ ...editForm, title: e.target.value })}
-                            />
-
-                            <FormTextarea
-                              name="description"
-                              label="Description"
-                              value={editForm.description}
-                              onChange={e => setEditForm({ ...editForm, description: e.target.value })}
-                              rows={2}
-                            />
-
-                            <FormInput
-                              type="date"
-                              name="due_date"
-                              label="Due Date"
-                              value={editForm.due_date}
-                              onChange={e => setEditForm({ ...editForm, due_date: e.target.value })}
-                            />
-
-                            <div className="flex items-center justify-between">
-                              <FormButton variant="danger" onClick={() => handleDeleteTask(task.id)}>
-                                Delete
-                              </FormButton>
-                              <div className="flex gap-2">
-                                <FormButton variant="secondary" onClick={() => setEditingTaskId(null)}>
-                                  Cancel
-                                </FormButton>
-                                <FormButton variant="primary" onClick={handleUpdateTask}>
-                                  Save
-                                </FormButton>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    }
-
-                    return (
-                      <div
-                        key={item.id}
-                        onClick={() => handleEditTask(task)}
-                        className={`flex cursor-pointer items-center justify-between rounded px-2 py-1 text-sm transition-opacity hover:opacity-80 ${
-                          item.status === "overdue"
-                            ? "bg-red-100 text-red-900 dark:bg-red-900/30 dark:text-red-100"
-                            : item.status === "today"
-                              ? "bg-blue-100 text-blue-900 dark:bg-blue-900/30 dark:text-blue-100"
-                              : "bg-gray-100 text-gray-700 dark:bg-gray-700/30 dark:text-gray-300"
-                        }`}>
-                        <span className="font-medium">{item.name}</span>
-                        <span className="rounded bg-purple-100 px-1.5 py-0.5 text-xs font-medium text-purple-800 dark:bg-purple-900 dark:text-purple-200">
-                          Task (
-                          {item.dueDate ? item.dueDate.toLocaleDateString("en-US", { weekday: "short" }) : "unknown"})
-                        </span>
-                      </div>
-                    );
-                  }
-                });
-              })()}
+              <KidStatusItems
+                outstandingChores={kid.outstandingChores}
+                allIncompleteTasks={kid.allIncompleteTasks}
+                editingTaskId={editingTaskId}
+                onEditTask={setEditingTaskId}
+                onUpdateTask={handleUpdateTask}
+                onDeleteTask={handleDeleteTask}
+                onCancelEdit={() => setEditingTaskId(null)}
+              />
             </div>
           )}
 
@@ -297,49 +165,14 @@ export function Dashboard() {
 
                 if (editingTaskId === task.id) {
                   return (
-                    <div
+                    <TaskEditForm
                       key={`task-${task.id}`}
-                      onClick={e => e.stopPropagation()}
-                      className="rounded-lg bg-white p-4 shadow dark:bg-gray-800">
-                      <div className="space-y-4">
-                        <FormInput
-                          name="title"
-                          label="Title"
-                          value={editForm.title}
-                          onChange={e => setEditForm({ ...editForm, title: e.target.value })}
-                        />
-
-                        <FormTextarea
-                          name="description"
-                          label="Description"
-                          value={editForm.description}
-                          onChange={e => setEditForm({ ...editForm, description: e.target.value })}
-                          rows={2}
-                        />
-
-                        <FormInput
-                          type="date"
-                          name="due_date"
-                          label="Due Date"
-                          value={editForm.due_date}
-                          onChange={e => setEditForm({ ...editForm, due_date: e.target.value })}
-                        />
-
-                        <div className="flex items-center justify-between">
-                          <FormButton variant="danger" onClick={() => handleDeleteTask(task.id)}>
-                            Delete
-                          </FormButton>
-                          <div className="flex gap-2">
-                            <FormButton variant="secondary" onClick={() => setEditingTaskId(null)}>
-                              Cancel
-                            </FormButton>
-                            <FormButton variant="primary" onClick={handleUpdateTask}>
-                              Save
-                            </FormButton>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                      task={task}
+                      onSave={values => handleUpdateTask(task.id, values)}
+                      onCancel={() => setEditingTaskId(null)}
+                      onDelete={() => handleDeleteTask(task.id)}
+                      stopPropagation
+                    />
                   );
                 }
 
@@ -348,7 +181,7 @@ export function Dashboard() {
                     key={`task-${task.id}`}
                     onClick={e => {
                       e.stopPropagation();
-                      handleEditTask(task);
+                      setEditingTaskId(task.id);
                     }}
                     className="flex cursor-pointer items-center justify-between rounded bg-gray-100 px-2 py-1 text-sm transition-opacity hover:opacity-80 dark:bg-gray-700/30 dark:text-gray-300">
                     <span className="font-medium">{task.title}</span>

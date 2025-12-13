@@ -7,9 +7,11 @@ import { ChoreList } from "./chore-list";
 import { AddChoreForm } from "./add-chore-form";
 import { AddTaskForm } from "./add-task-form";
 import { FeedbackSection } from "./feedback-section";
+import { useUserSession } from "../hooks/use-user-session";
 
 export default function ParentsPage() {
   const router = useRouter();
+  const { switchUser } = useUserSession();
   const [choreListKey, setChoreListKey] = useState(0);
   const [dashboardKey, setDashboardKey] = useState(0);
 
@@ -32,18 +34,12 @@ export default function ParentsPage() {
     }
   }, [router]);
 
-  const handleSwitchUser = () => {
-    localStorage.removeItem("selectedUser");
-    localStorage.removeItem("userType");
-    router.push("/");
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="mx-auto max-w-2xl px-4 py-6">
         <div className="mb-6 flex items-center">
           <button
-            onClick={handleSwitchUser}
+            onClick={switchUser}
             className="rounded-full p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20"
             title="Switch User">
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

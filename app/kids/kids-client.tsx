@@ -1,15 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { ChoreCard } from "./chore-card";
 import { TaskCard } from "./task-card";
 import { ChoreScheduleWithCompletion, Task } from "../lib/db";
 import { createSortableItems, sortItems } from "../lib/sorting";
+import { useUserSession } from "../hooks/use-user-session";
 
 export default function KidsClient() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { switchUser } = useUserSession();
   const kidName = searchParams.get("name");
 
   const [chores, setChores] = useState<ChoreScheduleWithCompletion[]>([]);
@@ -62,12 +64,6 @@ export default function KidsClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kidName, router]);
 
-  const handleSwitchUser = () => {
-    localStorage.removeItem("selectedUser");
-    localStorage.removeItem("userType");
-    router.push("/");
-  };
-
   const handleSubmitFeedback = async () => {
     if (!feedbackMessage.trim() || !kidName) return;
 
@@ -93,6 +89,16 @@ export default function KidsClient() {
     }
   };
 
+  const { sortedItems, allCaughtUp } = useMemo(() => {
+    const sortableItems = createSortableItems(chores, tasks);
+    const sorted = sortItems(sortableItems);
+    const uncompletedCurrentItems = sortableItems.filter(
+      item => !item.isCompleted && (item.status === "overdue" || item.status === "today")
+    );
+    const caughtUp = uncompletedCurrentItems.length === 0 && (chores.length > 0 || tasks.length > 0);
+    return { sortedItems: sorted, allCaughtUp: caughtUp };
+  }, [chores, tasks]);
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
@@ -101,20 +107,12 @@ export default function KidsClient() {
     );
   }
 
-  // Calculate if all caught up
-  const sortableItems = createSortableItems(chores, tasks);
-  const uncompletedCurrentItems = sortableItems.filter(
-    item => !item.isCompleted && (item.status === "overdue" || item.status === "today")
-  );
-
-  const allCaughtUp = uncompletedCurrentItems.length === 0 && (chores.length > 0 || tasks.length > 0);
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="mx-auto max-w-md px-4 py-6">
         <div className="mb-6 flex items-center justify-between">
           <button
-            onClick={handleSwitchUser}
+            onClick={switchUser}
             className="rounded-full p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20"
             title="Switch User">
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -188,38 +186,33 @@ export default function KidsClient() {
           </p>
         ) : (
           <div className="space-y-2">
-            {(() => {
-              const sortableItems = createSortableItems(chores, tasks);
-              const sortedItems = sortItems(sortableItems);
-
-              return sortedItems.map(item => {
-                if (item.type === "task") {
-                  const task = item.data as Task;
-                  return (
-                    <TaskCard
-                      key={`task-${task.id}`}
-                      task={task}
-                      onToggle={() => {
-                        fetchTasks();
-                        fetchChores();
-                      }}
-                    />
-                  );
-                } else {
-                  const chore = item.data as ChoreScheduleWithCompletion;
-                  return (
-                    <ChoreCard
-                      key={`chore-${chore.id}-${chore.day_of_week}`}
-                      chore={chore}
-                      onToggle={() => {
-                        fetchChores();
-                        fetchTasks();
-                      }}
-                    />
-                  );
-                }
-              });
-            })()}
+            {sortedItems.map(item => {
+              if (item.type === "task") {
+                const task = item.data as Task;
+                return (
+                  <TaskCard
+                    key={`task-${task.id}`}
+                    task={task}
+                    onToggle={() => {
+                      fetchTasks();
+                      fetchChores();
+                    }}
+                  />
+                );
+              } else {
+                const chore = item.data as ChoreScheduleWithCompletion;
+                return (
+                  <ChoreCard
+                    key={`chore-${chore.id}-${chore.day_of_week}`}
+                    chore={chore}
+                    onToggle={() => {
+                      fetchChores();
+                      fetchTasks();
+                    }}
+                  />
+                );
+              }
+            })}
           </div>
         )}
       </div>
