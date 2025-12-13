@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { completeChore, uncompleteChore } from "@/app/lib/db";
+import { getCurrentDate } from "@/app/lib/time-server";
 
 export async function POST(request: Request) {
   try {
@@ -7,7 +8,7 @@ export async function POST(request: Request) {
 
     // Calculate the date for this chore based on the day of week
     // We need to find the date of this day in the current week (Mon-Sun)
-    const today = new Date();
+    const today = await getCurrentDate();
     const currentDay = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
     const daysOfWeek = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
     const targetDayIndex = daysOfWeek.indexOf(dayOfWeek);

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { inter } from "./fonts";
+import { DevDatePicker } from "./components/dev-date-picker";
 
 export const metadata: Metadata = {
   title: "Chorizo",
@@ -31,7 +32,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${inter.variable} dark`}>
-      <body>{children}</body>
+      <body>
+        {children}
+        <DevDatePicker />
+      </body>
     </html>
   );
 }

@@ -7,6 +7,7 @@ import {
   ChoreScheduleWithCompletion,
 } from "@/app/lib/db";
 import { parseLocalDate } from "@/app/lib/utils";
+import { getCurrentDate } from "@/app/lib/time-server";
 import { startOfDay, isAfter } from "date-fns";
 
 // Extend the type to include day_number which is returned by the SQL query
@@ -27,7 +28,7 @@ export async function GET() {
     const allChores = allChoresData as ChoreWithDayNumber[];
 
     // Get today's date info
-    const today = new Date();
+    const today = await getCurrentDate();
     const dayOfWeek = today.getDay() === 0 ? 7 : today.getDay();
     const todayStart = startOfDay(today);
 

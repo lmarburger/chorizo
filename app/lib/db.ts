@@ -1,4 +1,5 @@
 import { neon } from "@neondatabase/serverless";
+import { getCurrentDate } from "./time-server";
 
 export type DayOfWeek = "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday";
 
@@ -119,7 +120,8 @@ export async function getCurrentWeekChores(): Promise<ChoreScheduleWithCompletio
   const sql = getDb();
 
   // Get the Monday of current week
-  const mondayDate = new Date();
+  const now = await getCurrentDate();
+  const mondayDate = new Date(now);
   const daysSinceMonday = (mondayDate.getDay() + 6) % 7; // Convert Sunday=0 to Monday=0
   mondayDate.setDate(mondayDate.getDate() - daysSinceMonday);
   const mondayStr = mondayDate.toLocaleDateString("en-CA");
@@ -339,7 +341,8 @@ export async function getTasksForKid(kidName: string): Promise<Task[]> {
 
 export async function getTasksForParentView(): Promise<Task[]> {
   const sql = getDb();
-  const oneWeekAgo = new Date();
+  const now = await getCurrentDate();
+  const oneWeekAgo = new Date(now);
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
   const result = await sql`
@@ -466,7 +469,8 @@ export async function addKid(kidName: string): Promise<void> {
   }
 
   // Create a welcome task for the new kid that's due tomorrow
-  const tomorrow = new Date();
+  const now = await getCurrentDate();
+  const tomorrow = new Date(now);
   tomorrow.setDate(tomorrow.getDate() + 1);
   const tomorrowStr = tomorrow.toISOString().split("T")[0];
 
@@ -633,8 +637,8 @@ export interface MissedItem {
   kidName: string;
 }
 
-function getMondayOfWeek(date: Date = new Date()): string {
-  const d = new Date(date);
+async function getMondayOfWeek(date?: Date): Promise<string> {
+  const d = new Date(date ?? (await getCurrentDate()));
   const daysSinceMonday = (d.getDay() + 6) % 7;
   d.setDate(d.getDate() - daysSinceMonday);
   return d.toLocaleDateString("en-CA");
@@ -648,9 +652,9 @@ function getFridayOfWeek(mondayStr: string): string {
 
 export async function getWeeklyQualification(kidName: string, weekStart?: string): Promise<QualificationStatus> {
   const sql = getDb();
-  const mondayStr = weekStart || getMondayOfWeek();
+  const mondayStr = weekStart || (await getMondayOfWeek());
   const fridayStr = getFridayOfWeek(mondayStr);
-  const today = new Date().toLocaleDateString("en-CA");
+  const today = (await getCurrentDate()).toLocaleDateString("en-CA");
 
   // Get all chores for Mon-Fri of the week
   const chores = await sql`
@@ -796,7 +800,7 @@ export async function getWeeklyQualification(kidName: string, weekStart?: string
 
 export async function claimIncentive(kidName: string, rewardType: RewardType): Promise<IncentiveClaim> {
   const sql = getDb();
-  const mondayStr = getMondayOfWeek();
+  const mondayStr = await getMondayOfWeek();
 
   const result = await sql`
     INSERT INTO incentive_claims (kid_name, week_start_date, reward_type)
@@ -810,7 +814,7 @@ export async function claimIncentive(kidName: string, rewardType: RewardType): P
 
 export async function getIncentiveClaim(kidName: string, weekStart?: string): Promise<IncentiveClaim | null> {
   const sql = getDb();
-  const mondayStr = weekStart || getMondayOfWeek();
+  const mondayStr = weekStart || (await getMondayOfWeek());
 
   const result = await sql`
     SELECT * FROM incentive_claims
@@ -832,7 +836,7 @@ export async function dismissClaim(claimId: number): Promise<IncentiveClaim> {
 
 export async function getAllIncentiveClaims(weekStart?: string): Promise<IncentiveClaim[]> {
   const sql = getDb();
-  const mondayStr = weekStart || getMondayOfWeek();
+  const mondayStr = weekStart || (await getMondayOfWeek());
 
   const result = await sql`
     SELECT * FROM incentive_claims

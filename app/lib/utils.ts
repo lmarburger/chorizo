@@ -2,13 +2,15 @@
  * Shared utility functions for the Chorizo app
  */
 
+import { getClientCurrentDate } from "./time";
+
 /**
  * Format relative time from a date
  * @param date - The date to format
  * @returns A human-readable relative time string (e.g., "2 hours ago")
  */
 export function getRelativeTime(date: Date): string {
-  const now = new Date();
+  const now = getClientCurrentDate();
   const diffMs = now.getTime() - new Date(date).getTime();
   const diffSecs = Math.floor(diffMs / 1000);
   const diffMins = Math.floor(diffSecs / 60);
@@ -28,7 +30,7 @@ export function getRelativeTime(date: Date): string {
  * @returns Number of days until due (negative if overdue)
  */
 export function getDaysUntilDue(dueDate: string): number {
-  const today = new Date();
+  const today = getClientCurrentDate();
   today.setHours(0, 0, 0, 0);
   const due = parseLocalDate(dueDate);
   const diffMs = due.getTime() - today.getTime();
@@ -65,7 +67,7 @@ export const DAY_LABELS_FULL: Record<DayOfWeek, string> = {
  * Get the current day of week as lowercase string
  */
 export function getCurrentDayOfWeek(): DayOfWeek {
-  const dayIndex = new Date().getDay();
+  const dayIndex = getClientCurrentDate().getDay();
   // Convert Sunday (0) to 6, and shift Monday (1) to 0
   const adjustedIndex = dayIndex === 0 ? 6 : dayIndex - 1;
   return DAYS_OF_WEEK[adjustedIndex];
@@ -157,7 +159,7 @@ export function parseLocalDate(dateString: string): Date {
  * Commonly used for default due dates
  */
 export function getTomorrowDateString(): string {
-  const tomorrow = new Date();
+  const tomorrow = getClientCurrentDate();
   tomorrow.setDate(tomorrow.getDate() + 1);
   return tomorrow.toISOString().split("T")[0];
 }
@@ -166,7 +168,7 @@ export function getTomorrowDateString(): string {
  * Check if a date string represents today
  */
 export function isToday(dateString: string): boolean {
-  const today = new Date().toISOString().split("T")[0];
+  const today = getClientCurrentDate().toISOString().split("T")[0];
   const inputDate = formatDateForInput(dateString);
   return today === inputDate;
 }
@@ -175,7 +177,7 @@ export function isToday(dateString: string): boolean {
  * Check if a date string is in the past (before today)
  */
 export function isPastDate(dateString: string): boolean {
-  const today = new Date();
+  const today = getClientCurrentDate();
   today.setHours(0, 0, 0, 0);
   const inputDate = parseLocalDate(formatDateForInput(dateString));
   return inputDate < today;

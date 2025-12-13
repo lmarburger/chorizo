@@ -1,5 +1,6 @@
 import { ChoreScheduleWithCompletion, Task } from "./db";
 import { parseLocalDate } from "./utils";
+import { getClientCurrentDate } from "./time";
 
 export type ItemStatus = "overdue" | "today" | "upcoming" | "completed";
 
@@ -58,7 +59,7 @@ function isChoreCompletable(chore: ChoreScheduleWithCompletion, todayIndex: numb
 export function createSortableItems(
   chores: ChoreScheduleWithCompletion[],
   tasks: Task[],
-  today: Date = new Date()
+  today: Date = getClientCurrentDate()
 ): SortableItem[] {
   const dayOrder = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
   const currentDay = today.toLocaleDateString("en-US", { weekday: "long" }).toLowerCase();
