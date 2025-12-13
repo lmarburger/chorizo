@@ -265,9 +265,9 @@ The project has hooks configured for code quality:
 - Database utilities: `app/lib/db.ts`
 - **Migrations**: Uses node-pg-migrate with SQL files in `migrations/`
   - Migrations are tracked in `pgmigrations` table
-  - Run `npm run migrate` to apply pending migrations
+  - Run `npm run migrate` to apply pending migrations (uses `.env.local`)
+  - Run `npm run migrate -- --envPath .env.prod` to migrate production
   - Create new migrations with `npm run migrate:create -- name`
-  - For prod: `DATABASE_URL=<prod-url> npm run migrate`
 
 ## Project Structure
 ```
