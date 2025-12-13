@@ -9,11 +9,11 @@ DROP TYPE IF EXISTS day_of_week CASCADE;
 
 -- Feedback table for kids to submit ideas and feedback
 CREATE TABLE feedback (
-  id SERIAL PRIMARY KEY,
-  kid_name VARCHAR(100) NOT NULL,
-  message TEXT NOT NULL,
-  completed_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+    id serial PRIMARY KEY,
+    kid_name varchar(100) NOT NULL,
+    message text NOT NULL,
+    completed_at timestamptz,
+    created_at timestamptz DEFAULT NOW()
 );
 
 -- Create enum for days of the week
@@ -21,58 +21,58 @@ CREATE TYPE day_of_week AS ENUM ('monday', 'tuesday', 'wednesday', 'thursday', '
 
 -- Chores table to store chore definitions
 CREATE TABLE chores (
-  id SERIAL PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
-  description TEXT,
-  flexible BOOLEAN DEFAULT true,  -- true = can do any day this week, false = must do on scheduled day
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW(),
-  UNIQUE(name) -- Chore names should be unique
+    id serial PRIMARY KEY,
+    name varchar(255) NOT NULL, -- noqa: RF04
+    description text,
+    flexible boolean DEFAULT true,  -- true = can do any day this week, false = must do on scheduled day
+    created_at timestamp DEFAULT NOW(),
+    updated_at timestamp DEFAULT NOW(),
+    UNIQUE(name) -- Chore names should be unique
 );
 
 -- Chore schedules table to define which kid does what chore on which day
 CREATE TABLE chore_schedules (
-  id SERIAL PRIMARY KEY,
-  chore_id INTEGER NOT NULL REFERENCES chores(id) ON DELETE CASCADE,
-  kid_name VARCHAR(100) NOT NULL,
-  day_of_week day_of_week NOT NULL,
-  created_at TIMESTAMP DEFAULT NOW(),
-  UNIQUE(chore_id, kid_name, day_of_week) -- Prevent duplicate schedules
+    id serial PRIMARY KEY,
+    chore_id integer NOT NULL REFERENCES chores(id) ON DELETE CASCADE,
+    kid_name varchar(100) NOT NULL,
+    day_of_week day_of_week NOT NULL,
+    created_at timestamp DEFAULT NOW(),
+    UNIQUE(chore_id, kid_name, day_of_week) -- Prevent duplicate schedules
 );
 
 -- Chore completions table to track when chores are completed
 CREATE TABLE chore_completions (
-  id SERIAL PRIMARY KEY,
-  chore_schedule_id INTEGER NOT NULL REFERENCES chore_schedules(id) ON DELETE CASCADE,
-  completed_date DATE NOT NULL,
-  completed_at TIMESTAMP DEFAULT NOW(),
-  notes TEXT,
-  excused BOOLEAN DEFAULT false,  -- true if parent excused this chore (counts as done for qualification)
-  UNIQUE(chore_schedule_id, completed_date)
+    id serial PRIMARY KEY,
+    chore_schedule_id integer NOT NULL REFERENCES chore_schedules(id) ON DELETE CASCADE,
+    completed_date date NOT NULL,
+    completed_at timestamp DEFAULT NOW(),
+    notes text,
+    excused boolean DEFAULT false,  -- true if parent excused this chore (counts as done for qualification)
+    UNIQUE(chore_schedule_id, completed_date)
 );
 
 -- Tasks table to store one-off tasks with due dates
 CREATE TABLE tasks (
-  id SERIAL PRIMARY KEY,
-  title VARCHAR(255) NOT NULL,
-  description TEXT,
-  kid_name VARCHAR(100) NOT NULL,
-  due_date DATE NOT NULL,
-  completed_at TIMESTAMPTZ,
-  excused_at TIMESTAMPTZ,  -- if set, parent excused this task (counts as done for qualification)
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+    id serial PRIMARY KEY,
+    title varchar(255) NOT NULL,
+    description text,
+    kid_name varchar(100) NOT NULL,
+    due_date date NOT NULL,
+    completed_at timestamptz,
+    excused_at timestamptz,  -- if set, parent excused this task (counts as done for qualification)
+    created_at timestamptz DEFAULT NOW(),
+    updated_at timestamptz DEFAULT NOW()
 );
 
 -- Incentive claims table to track weekly rewards
 CREATE TABLE incentive_claims (
-  id SERIAL PRIMARY KEY,
-  kid_name VARCHAR(100) NOT NULL,
-  week_start_date DATE NOT NULL,  -- Monday of the week
-  reward_type VARCHAR(20) NOT NULL CHECK (reward_type IN ('screen_time', 'money')),
-  claimed_at TIMESTAMPTZ DEFAULT NOW(),
-  dismissed_at TIMESTAMPTZ,  -- when parent acknowledged the claim
-  UNIQUE(kid_name, week_start_date)
+    id serial PRIMARY KEY,
+    kid_name varchar(100) NOT NULL,
+    week_start_date date NOT NULL,  -- Monday of the week
+    reward_type varchar(20) NOT NULL CHECK (reward_type IN ('screen_time', 'money')),
+    claimed_at timestamptz DEFAULT NOW(),
+    dismissed_at timestamptz,  -- when parent acknowledged the claim
+    UNIQUE(kid_name, week_start_date)
 );
 
 -- Indexes for better query performance
@@ -93,52 +93,53 @@ CREATE INDEX idx_feedback_created ON feedback(created_at);
 -- Sample data for testing
 -- First, create the chores (flexible = true by default, some are fixed)
 INSERT INTO chores (name, description, flexible) VALUES
-  ('Make bed', 'Make your bed neatly', false),  -- fixed: must be done each morning
-  ('Take out trash', 'Take the kitchen trash to the outside bin', false),  -- fixed: trash day is specific
-  ('Clean room', 'Pick up toys and clothes, organize desk', true),  -- flexible: can do any day
-  ('Feed pet', 'Feed and give fresh water', false),  -- fixed: must be done daily
-  ('Do the dishes', 'Wash, dry, and put away dishes', false),  -- fixed: must be done after meals
-  ('Practice piano', 'Practice for at least 30 minutes', true);  -- flexible: can do any day
+('Make bed', 'Make your bed neatly', false),  -- fixed: must be done each morning
+('Take out trash', 'Take the kitchen trash to the outside bin', false),  -- fixed: trash day is specific
+('Clean room', 'Pick up toys and clothes, organize desk', true),  -- flexible: can do any day
+('Feed pet', 'Feed and give fresh water', false),  -- fixed: must be done daily
+('Do the dishes', 'Wash, dry, and put away dishes', false),  -- fixed: must be done after meals
+('Practice piano', 'Practice for at least 30 minutes', true);  -- flexible: can do any day
 
 -- Then create the schedules
 INSERT INTO chore_schedules (chore_id, kid_name, day_of_week)
 SELECT c.id, s.kid_name, s.day_of_week
-FROM chores c
-CROSS JOIN (VALUES
-  -- Make bed - Alex Monday through Friday
-  ('Make bed', 'Alex', 'monday'::day_of_week),
-  ('Make bed', 'Alex', 'tuesday'::day_of_week),
-  ('Make bed', 'Alex', 'wednesday'::day_of_week),
-  ('Make bed', 'Alex', 'thursday'::day_of_week),
-  ('Make bed', 'Alex', 'friday'::day_of_week),
-  -- Take out trash - Alex on Wednesday and Saturday
-  ('Take out trash', 'Alex', 'wednesday'::day_of_week),
-  ('Take out trash', 'Alex', 'saturday'::day_of_week),
-  -- Clean room - Sam on Monday and Thursday
-  ('Clean room', 'Sam', 'monday'::day_of_week),
-  ('Clean room', 'Sam', 'thursday'::day_of_week),
-  -- Feed pet - Sam on Tuesday, Thursday, and Saturday
-  ('Feed pet', 'Sam', 'tuesday'::day_of_week),
-  ('Feed pet', 'Sam', 'thursday'::day_of_week),
-  ('Feed pet', 'Sam', 'saturday'::day_of_week),
-  -- Do the dishes - alternating kids each day
-  ('Do the dishes', 'Alex', 'monday'::day_of_week),
-  ('Do the dishes', 'Sam', 'tuesday'::day_of_week),
-  ('Do the dishes', 'Alex', 'wednesday'::day_of_week),
-  ('Do the dishes', 'Sam', 'thursday'::day_of_week),
-  ('Do the dishes', 'Alex', 'friday'::day_of_week),
-  ('Do the dishes', 'Sam', 'saturday'::day_of_week),
-  ('Do the dishes', 'Alex', 'sunday'::day_of_week),
-  -- Practice piano - both kids Monday through Friday
-  ('Practice piano', 'Alex', 'monday'::day_of_week),
-  ('Practice piano', 'Alex', 'tuesday'::day_of_week),
-  ('Practice piano', 'Alex', 'wednesday'::day_of_week),
-  ('Practice piano', 'Alex', 'thursday'::day_of_week),
-  ('Practice piano', 'Alex', 'friday'::day_of_week),
-  ('Practice piano', 'Sam', 'monday'::day_of_week),
-  ('Practice piano', 'Sam', 'tuesday'::day_of_week),
-  ('Practice piano', 'Sam', 'wednesday'::day_of_week),
-  ('Practice piano', 'Sam', 'thursday'::day_of_week),
-  ('Practice piano', 'Sam', 'friday'::day_of_week)
+FROM chores AS c
+CROSS JOIN (
+    VALUES
+    -- Make bed - Alex Monday through Friday
+    ('Make bed', 'Alex', 'monday'::day_of_week),
+    ('Make bed', 'Alex', 'tuesday'::day_of_week),
+    ('Make bed', 'Alex', 'wednesday'::day_of_week),
+    ('Make bed', 'Alex', 'thursday'::day_of_week),
+    ('Make bed', 'Alex', 'friday'::day_of_week),
+    -- Take out trash - Alex on Wednesday and Saturday
+    ('Take out trash', 'Alex', 'wednesday'::day_of_week),
+    ('Take out trash', 'Alex', 'saturday'::day_of_week),
+    -- Clean room - Sam on Monday and Thursday
+    ('Clean room', 'Sam', 'monday'::day_of_week),
+    ('Clean room', 'Sam', 'thursday'::day_of_week),
+    -- Feed pet - Sam on Tuesday, Thursday, and Saturday
+    ('Feed pet', 'Sam', 'tuesday'::day_of_week),
+    ('Feed pet', 'Sam', 'thursday'::day_of_week),
+    ('Feed pet', 'Sam', 'saturday'::day_of_week),
+    -- Do the dishes - alternating kids each day
+    ('Do the dishes', 'Alex', 'monday'::day_of_week),
+    ('Do the dishes', 'Sam', 'tuesday'::day_of_week),
+    ('Do the dishes', 'Alex', 'wednesday'::day_of_week),
+    ('Do the dishes', 'Sam', 'thursday'::day_of_week),
+    ('Do the dishes', 'Alex', 'friday'::day_of_week),
+    ('Do the dishes', 'Sam', 'saturday'::day_of_week),
+    ('Do the dishes', 'Alex', 'sunday'::day_of_week),
+    -- Practice piano - both kids Monday through Friday
+    ('Practice piano', 'Alex', 'monday'::day_of_week),
+    ('Practice piano', 'Alex', 'tuesday'::day_of_week),
+    ('Practice piano', 'Alex', 'wednesday'::day_of_week),
+    ('Practice piano', 'Alex', 'thursday'::day_of_week),
+    ('Practice piano', 'Alex', 'friday'::day_of_week),
+    ('Practice piano', 'Sam', 'monday'::day_of_week),
+    ('Practice piano', 'Sam', 'tuesday'::day_of_week),
+    ('Practice piano', 'Sam', 'wednesday'::day_of_week),
+    ('Practice piano', 'Sam', 'thursday'::day_of_week),
+    ('Practice piano', 'Sam', 'friday'::day_of_week)
 ) AS s(chore_name, kid_name, day_of_week)
 WHERE c.name = s.chore_name;

@@ -11,22 +11,22 @@ ALTER TABLE tasks ADD COLUMN IF NOT EXISTS excused_at TIMESTAMPTZ;
 
 -- Feedback table for kids to submit ideas and feedback
 CREATE TABLE IF NOT EXISTS feedback (
-  id SERIAL PRIMARY KEY,
-  kid_name VARCHAR(100) NOT NULL,
-  message TEXT NOT NULL,
-  completed_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+    id SERIAL PRIMARY KEY,
+    kid_name VARCHAR(100) NOT NULL,
+    message TEXT NOT NULL,
+    completed_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Incentive claims table to track weekly rewards
 CREATE TABLE IF NOT EXISTS incentive_claims (
-  id SERIAL PRIMARY KEY,
-  kid_name VARCHAR(100) NOT NULL,
-  week_start_date DATE NOT NULL,
-  reward_type VARCHAR(20) NOT NULL CHECK (reward_type IN ('screen_time', 'money')),
-  claimed_at TIMESTAMPTZ DEFAULT NOW(),
-  dismissed_at TIMESTAMPTZ,
-  UNIQUE(kid_name, week_start_date)
+    id SERIAL PRIMARY KEY,
+    kid_name VARCHAR(100) NOT NULL,
+    week_start_date DATE NOT NULL,
+    reward_type VARCHAR(20) NOT NULL CHECK (reward_type IN ('screen_time', 'money')),
+    claimed_at TIMESTAMPTZ DEFAULT NOW(),
+    dismissed_at TIMESTAMPTZ,
+    UNIQUE(kid_name, week_start_date)
 );
 
 -- Indexes for new tables
@@ -37,4 +37,5 @@ CREATE INDEX IF NOT EXISTS idx_feedback_completed ON feedback(completed_at);
 CREATE INDEX IF NOT EXISTS idx_feedback_created ON feedback(created_at);
 
 -- Set fixed chores (must be done on scheduled day exactly)
-UPDATE chores SET flexible = false WHERE name IN ('Make bed', 'Take out trash', 'Feed pet', 'Do the dishes');
+UPDATE chores SET flexible = false
+WHERE name IN ('Make bed', 'Take out trash', 'Feed pet', 'Do the dishes');

@@ -1,0 +1,8 @@
+[sqlfluff]
+dialect = postgres
+templater = raw
+max_line_length = 120
+large_file_skip_byte_limit = 50000
+
+# Disable specific rules for the whole project
+exclude_rules = LT01,LT08,LT09
