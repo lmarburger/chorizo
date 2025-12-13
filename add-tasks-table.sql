@@ -17,6 +17,6 @@ CREATE INDEX idx_tasks_completed_at ON tasks(completed_at);
 
 -- Add some sample tasks (optional - comment out if not needed)
 INSERT INTO tasks (title, description, kid_name, due_date) VALUES
-    ('Pack for trip', 'Pack clothes and toiletries for weekend trip', 'Alex', CURRENT_DATE + INTERVAL '3 days'),
-    ('Science project', 'Complete volcano model for science fair', 'Sam', CURRENT_DATE + INTERVAL '5 days'),
-    ('Library books', 'Return library books before they are overdue', 'Alex', CURRENT_DATE + INTERVAL '1 day');
+('Pack for trip', 'Pack clothes and toiletries for weekend trip', 'Alex', CURRENT_DATE + INTERVAL '3 days'),
+('Science project', 'Complete volcano model for science fair', 'Sam', CURRENT_DATE + INTERVAL '5 days'),
+('Library books', 'Return library books before they are overdue', 'Alex', CURRENT_DATE + INTERVAL '1 day');

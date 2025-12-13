@@ -53,8 +53,8 @@ async function resetTestDatabase() {
   await sql`DROP TABLE IF EXISTS feedback CASCADE`;
   await sql`DROP TYPE IF EXISTS day_of_week CASCADE`;
 
-  // Run migrations to set up schema
-  execSync("npm run migrate", {
+  // Run migrations to set up schema using test database (--no-lock avoids lock issues when pgmigrations is dropped)
+  execSync("npx node-pg-migrate up --no-lock", {
     env: { ...process.env, DATABASE_URL: process.env.DATABASE_URL },
     stdio: "pipe",
   });

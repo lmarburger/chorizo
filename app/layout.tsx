@@ -1,18 +1,20 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { inter } from "./fonts";
 import { DevDatePicker } from "./components/dev-date-picker";
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+  themeColor: "#1e293b",
+};
+
 export const metadata: Metadata = {
   title: "Chorizo",
   description: "Track chores for kids",
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-    viewportFit: "cover",
-  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -21,7 +23,6 @@ export const metadata: Metadata = {
   formatDetection: {
     telephone: false,
   },
-  themeColor: "#1e293b",
   manifest: "/manifest.json",
 };
 
