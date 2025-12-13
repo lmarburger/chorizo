@@ -35,6 +35,7 @@ export function EditChoreForm({ chore, kidNames: existingKidNames, onCancel, onS
   });
 
   const [schedules, setSchedules] = useState<ScheduleEntry[]>(initialSchedules);
+  const [isFixed, setIsFixed] = useState(!chore.flexible);
 
   const allKidNames = [...new Set([...existingKidNames, ...schedules.map(s => s.kid_name)])];
 
@@ -118,6 +119,22 @@ export function EditChoreForm({ chore, kidNames: existingKidNames, onCancel, onS
             rows={2}
             className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
           />
+        </div>
+
+        <div className="flex items-center gap-3">
+          <label className="flex cursor-pointer items-center gap-2">
+            <input
+              type="checkbox"
+              checked={isFixed}
+              onChange={e => setIsFixed(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">🔒 Fixed</span>
+          </label>
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            {isFixed ? "Must be done on scheduled day" : "Can be done any day during the week"}
+          </span>
+          <input type="hidden" name="flexible" value={isFixed ? "false" : "true"} />
         </div>
 
         <div>

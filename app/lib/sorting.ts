@@ -13,11 +13,14 @@ export interface SortableItem {
   dayOfWeek?: string;
   dueDate?: Date;
   dayNumber?: number;
+  isFixed: boolean;
+  isExcused: boolean;
+  isCompletable: boolean;
   data: ChoreScheduleWithCompletion | Task;
 }
 
 function getChoreStatus(chore: ChoreScheduleWithCompletion, todayIndex: number, dayOrder: string[]): ItemStatus {
-  if (chore.is_completed) return "completed";
+  if (chore.is_completed || chore.excused) return "completed";
 
   const choreIndex = dayOrder.indexOf(chore.day_of_week);
   if (choreIndex < todayIndex) return "overdue";
@@ -26,7 +29,7 @@ function getChoreStatus(chore: ChoreScheduleWithCompletion, todayIndex: number, 
 }
 
 function getTaskStatus(task: Task, today: Date): ItemStatus {
-  if (task.completed_at) return "completed";
+  if (task.completed_at || task.excused_at) return "completed";
 
   const dueDate = parseLocalDate(task.due_date);
   const todayStart = new Date(today);
@@ -35,6 +38,21 @@ function getTaskStatus(task: Task, today: Date): ItemStatus {
   if (dueDate < todayStart) return "overdue";
   if (dueDate.getTime() === todayStart.getTime()) return "today";
   return "upcoming";
+}
+
+function isChoreCompletable(chore: ChoreScheduleWithCompletion, todayIndex: number, dayOrder: string[]): boolean {
+  if (chore.is_completed || chore.excused) return false;
+
+  const choreIndex = dayOrder.indexOf(chore.day_of_week);
+
+  // Fixed chores can only be completed on their scheduled day
+  if (!chore.flexible) {
+    return choreIndex === todayIndex;
+  }
+
+  // Flexible chores can be completed any time up to and including their scheduled day
+  // or on any day during the week (past or present)
+  return choreIndex <= todayIndex || choreIndex >= 0;
 }
 
 export function createSortableItems(
@@ -55,12 +73,15 @@ export function createSortableItems(
     items.push({
       type: "chore",
       id: `chore-${chore.id}-${chore.day_of_week}`,
-      name: chore.chore_name, // Use the correct field name
+      name: chore.chore_name,
       status,
-      isCompleted: chore.is_completed,
+      isCompleted: chore.is_completed || chore.excused,
       completedAt: chore.completed_at ? new Date(chore.completed_at) : undefined,
       dayOfWeek: chore.day_of_week,
       dayNumber: choreIndex,
+      isFixed: !chore.flexible,
+      isExcused: chore.excused,
+      isCompletable: isChoreCompletable(chore, todayIndex, dayOrder),
       data: chore,
     });
   });
@@ -68,14 +89,18 @@ export function createSortableItems(
   // Add tasks
   tasks.forEach(task => {
     const status = getTaskStatus(task, today);
+    const isCompleted = !!task.completed_at || !!task.excused_at;
     items.push({
       type: "task",
       id: `task-${task.id}`,
       name: task.title,
       status,
-      isCompleted: !!task.completed_at,
+      isCompleted,
       completedAt: task.completed_at ? new Date(task.completed_at) : undefined,
       dueDate: parseLocalDate(task.due_date),
+      isFixed: false, // Tasks are never "fixed"
+      isExcused: !!task.excused_at,
+      isCompletable: !isCompleted, // Tasks can be completed anytime
       data: task,
     });
   });
@@ -98,56 +123,49 @@ export function sortItems(items: SortableItem[]): SortableItem[] {
       return 0;
     }
 
-    // For incomplete items, determine if they're current/overdue or future
-    const aIsCurrentOrPast = a.status === "overdue" || a.status === "today";
-    const bIsCurrentOrPast = b.status === "overdue" || b.status === "today";
-
-    // Sort order for incomplete items:
-    // 1. Tasks due today or earlier
-    // 2. Chores due today or earlier
-    // 3. Future tasks
-    // 4. Future chores
-
-    if (aIsCurrentOrPast && bIsCurrentOrPast) {
-      // Both are current/overdue
-      if (a.type !== b.type) {
-        // Tasks come before chores
-        return a.type === "task" ? -1 : 1;
+    // For incomplete items, primary sort by day
+    // Get the day number for sorting (0-6 for Mon-Sun)
+    const getDayNumber = (item: SortableItem): number => {
+      if (item.type === "chore") {
+        return item.dayNumber ?? 0;
+      } else {
+        // For tasks, get day of week from due date
+        if (item.dueDate) {
+          const day = item.dueDate.getDay();
+          return day === 0 ? 6 : day - 1; // Convert to Mon=0, Sun=6
+        }
+        return 0;
       }
-      // Same type, sort by name (with null safety)
-      const aName = a.name || "";
-      const bName = b.name || "";
-      return aName.localeCompare(bName);
+    };
+
+    const aDayNum = getDayNumber(a);
+    const bDayNum = getDayNumber(b);
+
+    // Primary sort: by day number
+    if (aDayNum !== bDayNum) {
+      return aDayNum - bDayNum;
     }
 
-    if (!aIsCurrentOrPast && !bIsCurrentOrPast) {
-      // Both are future
-      if (a.type !== b.type) {
-        // Tasks come before chores
-        return a.type === "task" ? -1 : 1;
-      }
+    // Secondary sort within the same day:
+    // 1. "Must do today" items (fixed chores for today + tasks due today) come first
+    // 2. Then by type (tasks before chores for visual consistency)
+    // 3. Then alphabetically
 
-      // Same type, sort by day then name
-      if (a.type === "task" && b.type === "task") {
-        // Sort tasks by due date
-        if (a.dueDate && b.dueDate) {
-          const dateDiff = a.dueDate.getTime() - b.dueDate.getTime();
-          if (dateDiff !== 0) return dateDiff;
-        }
-      } else if (a.type === "chore" && b.type === "chore") {
-        // Sort chores by day of week
-        if (a.dayNumber !== undefined && b.dayNumber !== undefined && a.dayNumber !== b.dayNumber) {
-          return a.dayNumber - b.dayNumber;
-        }
-      }
+    const aIsMustDoToday = (a.isFixed && a.status === "today") || (a.type === "task" && a.status === "today");
+    const bIsMustDoToday = (b.isFixed && b.status === "today") || (b.type === "task" && b.status === "today");
 
-      // Same day, sort by name (with null safety)
-      const aName = a.name || "";
-      const bName = b.name || "";
-      return aName.localeCompare(bName);
+    if (aIsMustDoToday !== bIsMustDoToday) {
+      return aIsMustDoToday ? -1 : 1;
     }
 
-    // One is current/past, one is future
-    return aIsCurrentOrPast ? -1 : 1;
+    // Then sort by type (tasks before chores)
+    if (a.type !== b.type) {
+      return a.type === "task" ? -1 : 1;
+    }
+
+    // Finally, sort by name
+    const aName = a.name || "";
+    const bName = b.name || "";
+    return aName.localeCompare(bName);
   });
 }

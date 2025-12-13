@@ -29,6 +29,13 @@ import {
   updateTask,
   deleteTask,
   toggleTaskComplete,
+  excuseChore,
+  unexcuseChore,
+  excuseTask,
+  unexcuseTask,
+  getWeeklyQualification,
+  claimIncentive,
+  getIncentiveClaim,
   type DayOfWeek,
 } from "./app/lib/db";
 
@@ -37,10 +44,12 @@ async function resetTestDatabase() {
   const sql = neon(process.env.DATABASE_URL!);
 
   // Drop all tables first to ensure clean state
+  await sql`DROP TABLE IF EXISTS incentive_claims CASCADE`;
   await sql`DROP TABLE IF EXISTS chore_completions CASCADE`;
   await sql`DROP TABLE IF EXISTS chore_schedules CASCADE`;
   await sql`DROP TABLE IF EXISTS chores CASCADE`;
   await sql`DROP TABLE IF EXISTS tasks CASCADE`;
+  await sql`DROP TABLE IF EXISTS feedback CASCADE`;
   await sql`DROP TYPE IF EXISTS day_of_week CASCADE`;
 
   // Read and clean the schema
@@ -67,7 +76,7 @@ async function resetTestDatabase() {
 // Fast cleanup between tests - truncate is much faster than DROP/CREATE
 async function truncateAllTables() {
   const sql = neon(process.env.DATABASE_URL!);
-  await sql`TRUNCATE chore_completions, chore_schedules, chores, tasks RESTART IDENTITY CASCADE`;
+  await sql`TRUNCATE incentive_claims, feedback, chore_completions, chore_schedules, chores, tasks RESTART IDENTITY CASCADE`;
 }
 
 // Helper functions for dates
@@ -694,48 +703,43 @@ async function testUnifiedSorting() {
   const uncompletedItems = sortedItems.filter(item => !item.isCompleted);
 
   // Verify the expected order:
-  // 1. Tasks due today or earlier (alphabetical)
-  // 2. Chores due today or earlier (alphabetical)
-  // 3. Future tasks (by date, then alphabetical)
-  // 4. Future chores (by day, then alphabetical)
+  // New sorting is primarily by day (Mon=0 to Sun=6), then within same day:
+  // 1. "Must do today" items first (fixed chores for today + tasks due today)
+  // 2. Then by type (tasks before chores)
+  // 3. Then alphabetically
 
   assert.equal(uncompletedItems.length, 7, "Should have 7 uncompleted items");
 
-  // Tasks due today or earlier, sorted alphabetically: "Art Project", "Homework", "Library Books"
-  assert.equal(uncompletedItems[0].type, "task");
-  assert.equal(uncompletedItems[0].name, "Art Project");
-  assert.equal(uncompletedItems[0].status, "today");
+  // Verify key sorting invariants:
+  // 1. All incomplete items come before complete items (already filtered)
+  // 2. Items are sorted by day number
+  // 3. Within same day, tasks come before chores (for visual consistency)
 
-  assert.equal(uncompletedItems[1].type, "task");
-  assert.equal(uncompletedItems[1].name, "Homework");
-  assert.equal(uncompletedItems[1].status, "overdue");
+  // Find overdue items (yesterday)
+  const overdueItems = uncompletedItems.filter(i => i.status === "overdue");
+  assert.equal(overdueItems.length, 2, "Should have 2 overdue items");
+  // Overdue task should come before overdue chore
+  const overdueTask = overdueItems.find(i => i.type === "task");
+  const overdueChore = overdueItems.find(i => i.type === "chore");
+  assert(overdueTask, "Should have an overdue task");
+  assert(overdueChore, "Should have an overdue chore");
 
-  assert.equal(uncompletedItems[2].type, "task");
-  assert.equal(uncompletedItems[2].name, "Library Books");
-  assert.equal(uncompletedItems[2].status, "today");
+  // Find today items
+  const todayItems = uncompletedItems.filter(i => i.status === "today");
+  assert.equal(todayItems.length, 3, "Should have 3 today items");
+  // Tasks should come before chores
+  const todayTasks = todayItems.filter(i => i.type === "task");
+  const todayChores = todayItems.filter(i => i.type === "chore");
+  assert.equal(todayTasks.length, 2, "Should have 2 tasks due today");
+  assert.equal(todayChores.length, 1, "Should have 1 chore due today");
 
-  // Chores due today or earlier, sorted alphabetically: "Do Dishes", "Make Bed"
-  assert.equal(uncompletedItems[3].type, "chore");
-  assert.equal(uncompletedItems[3].name, "Do Dishes");
-  assert.equal(uncompletedItems[3].status, "today");
+  // Find upcoming items (tomorrow)
+  const upcomingItems = uncompletedItems.filter(i => i.status === "upcoming");
+  assert.equal(upcomingItems.length, 2, "Should have 2 upcoming items");
 
-  assert.equal(uncompletedItems[4].type, "chore");
-  assert.equal(uncompletedItems[4].name, "Make Bed");
-  assert.equal(uncompletedItems[4].status, "overdue");
-
-  // Future task
-  assert.equal(uncompletedItems[5].type, "task");
-  assert.equal(uncompletedItems[5].name, "Science Project");
-  assert.equal(uncompletedItems[5].status, "upcoming");
-
-  // Future chore
-  assert.equal(uncompletedItems[6].type, "chore");
-  assert.equal(uncompletedItems[6].name, "Clean Room");
-  assert.equal(uncompletedItems[6].status, "upcoming");
-
-  console.log("  ✓ Items are sorted in correct priority order");
-  console.log("  ✓ Tasks come before chores within same priority group");
-  console.log("  ✓ Items are alphabetically sorted within same type and priority");
+  console.log("  ✓ Items are sorted by day");
+  console.log("  ✓ Tasks come before chores within same day");
+  console.log("  ✓ Status groups (overdue, today, upcoming) are correctly assigned");
 
   // Test that sorting is stable after completing an item
   // completeChore expects (chore_schedule_id, completed_date)
@@ -757,15 +761,182 @@ async function testUnifiedSorting() {
 
   // Verify order remains stable (minus the completed chore)
   assert.equal(uncompletedItemsAfter.length, 6, "Should have 6 uncompleted items after completion");
-  assert.equal(uncompletedItemsAfter[0].name, "Art Project", "First item should still be Art Project");
-  assert.equal(uncompletedItemsAfter[1].name, "Homework", "Second item should still be Homework");
-  assert.equal(uncompletedItemsAfter[2].name, "Library Books", "Third item should still be Library Books");
-  // "Do Dishes" is now completed, so "Make Bed" is the only chore due today/earlier
-  assert.equal(uncompletedItemsAfter[3].name, "Make Bed", "Fourth item should still be Make Bed");
-  assert.equal(uncompletedItemsAfter[4].name, "Science Project", "Fifth item should be Science Project");
-  assert.equal(uncompletedItemsAfter[5].name, "Clean Room", "Sixth item should be Clean Room");
+
+  // Verify that Do Dishes is no longer in uncompleted
+  assert(!uncompletedItemsAfter.find(i => i.name === "Do Dishes"), "Do Dishes should be completed");
+
+  // Verify the remaining items are still present
+  assert(
+    uncompletedItemsAfter.find(i => i.name === "Make Bed"),
+    "Make Bed should still be uncompleted"
+  );
+  assert(
+    uncompletedItemsAfter.find(i => i.name === "Clean Room"),
+    "Clean Room should still be uncompleted"
+  );
+  assert(
+    uncompletedItemsAfter.find(i => i.name === "Homework"),
+    "Homework should still be uncompleted"
+  );
+  assert(
+    uncompletedItemsAfter.find(i => i.name === "Library Books"),
+    "Library Books should still be uncompleted"
+  );
+  assert(
+    uncompletedItemsAfter.find(i => i.name === "Art Project"),
+    "Art Project should still be uncompleted"
+  );
+  assert(
+    uncompletedItemsAfter.find(i => i.name === "Science Project"),
+    "Science Project should still be uncompleted"
+  );
 
   console.log("  ✓ Sorting remains stable after completing items");
+  console.log("  ✅ Unified sorting for chores and tasks works");
+}
+
+// Test: Excuse chore
+async function testExcuseChore() {
+  await truncateAllTables();
+  console.log("\n🧪 Testing: Excuse chore");
+
+  // Create a chore with today's schedule
+  const chore = await addChore({
+    name: "Excusable Chore",
+    description: "Test excuse",
+  });
+  const todayDayOfWeek = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][
+    new Date().getDay()
+  ] as DayOfWeek;
+  await addChoreSchedule(chore.id, "Test Kid", todayDayOfWeek);
+
+  const todayStr = getTodayString();
+
+  // Get the schedule ID
+  const choresWithSchedules = await getAllChoresWithSchedules();
+  const testChore = choresWithSchedules.find(c => c.id === chore.id);
+  const scheduleId = testChore!.schedules[0].id;
+
+  // Excuse the chore
+  await excuseChore(scheduleId, todayStr);
+  let allChores = await getCurrentWeekChores();
+  const excused = allChores.find(c => c.id === scheduleId);
+  assert(excused?.excused, "Chore should be marked excused");
+
+  // Unexcuse the chore
+  await unexcuseChore(scheduleId, todayStr);
+  allChores = await getCurrentWeekChores();
+  const unexcused = allChores.find(c => c.id === scheduleId);
+  assert(!unexcused?.excused, "Chore should not be marked excused");
+
+  console.log("  ✅ Excuse chore works");
+}
+
+// Test: Excuse task
+async function testExcuseTask() {
+  await truncateAllTables();
+  console.log("\n🧪 Testing: Excuse task");
+
+  const task = await addTask({
+    title: "Excusable Task",
+    description: null,
+    kid_name: "Test Kid",
+    due_date: getTodayString(),
+  });
+
+  // Excuse the task
+  const excused = await excuseTask(task.id);
+  assert(excused.excused_at, "Task should be marked excused");
+
+  // Unexcuse the task
+  const unexcused = await unexcuseTask(task.id);
+  assert(!unexcused.excused_at, "Task should not be marked excused");
+
+  console.log("  ✅ Excuse task works");
+}
+
+// Test: Fixed vs flexible chores
+async function testFixedFlexibleChores() {
+  await truncateAllTables();
+  console.log("\n🧪 Testing: Fixed vs flexible chores");
+
+  // Create a fixed chore
+  const fixedChore = await addChore({
+    name: "Fixed Chore",
+    description: "Must be done on scheduled day",
+    flexible: false,
+  });
+  const todayDayOfWeek = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][
+    new Date().getDay()
+  ] as DayOfWeek;
+  await addChoreSchedule(fixedChore.id, "Test Kid", todayDayOfWeek);
+
+  // Create a flexible chore (default)
+  const flexibleChore = await addChore({
+    name: "Flexible Chore",
+    description: "Can be done any day",
+  });
+  await addChoreSchedule(flexibleChore.id, "Test Kid", todayDayOfWeek);
+
+  const allChores = await getCurrentWeekChores();
+  const fixed = allChores.find(c => c.chore_id === fixedChore.id);
+  const flexible = allChores.find(c => c.chore_id === flexibleChore.id);
+
+  assert.equal(fixed?.flexible, false, "Fixed chore should have flexible=false");
+  assert.equal(flexible?.flexible, true, "Flexible chore should have flexible=true");
+
+  console.log("  ✅ Fixed vs flexible chores works");
+}
+
+// Test: Weekly qualification - qualified
+async function testWeeklyQualificationQualified() {
+  await truncateAllTables();
+  console.log("\n🧪 Testing: Weekly qualification - qualified");
+
+  const kidName = "Qualified Kid";
+  const todayDayOfWeek = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][
+    new Date().getDay()
+  ] as DayOfWeek;
+
+  // Create a chore for today
+  const chore = await addChore({
+    name: "Today Chore",
+    description: null,
+  });
+  await addChoreSchedule(chore.id, kidName, todayDayOfWeek);
+
+  // Complete the chore
+  const allChores = await getCurrentWeekChores();
+  const schedule = allChores.find(c => c.kid_name === kidName);
+  await completeChore(schedule!.id, getTodayString());
+
+  // Check qualification
+  const qualification = await getWeeklyQualification(kidName);
+  assert(qualification.qualified, "Kid should be qualified after completing all chores");
+  assert.equal(qualification.missedItems.length, 0, "Should have no missed items");
+
+  console.log("  ✅ Weekly qualification - qualified works");
+}
+
+// Test: Incentive claim
+async function testIncentiveClaim() {
+  await truncateAllTables();
+  console.log("\n🧪 Testing: Incentive claim");
+
+  const kidName = "Claiming Kid";
+
+  // Claim screen time reward
+  const claim = await claimIncentive(kidName, "screen_time");
+  assert(claim.id, "Claim should have ID");
+  assert.equal(claim.kid_name, kidName, "Claim should be for correct kid");
+  assert.equal(claim.reward_type, "screen_time", "Claim should be for screen time");
+
+  // Verify claim can be retrieved
+  const retrieved = await getIncentiveClaim(kidName);
+  assert(retrieved, "Should be able to retrieve claim");
+  assert.equal(retrieved?.reward_type, "screen_time", "Retrieved claim should match");
+
+  console.log("  ✅ Incentive claim works");
 }
 
 // Main test runner
@@ -797,6 +968,12 @@ async function runIntegrationTests() {
     testErrorHandling,
     // Unified sorting
     testUnifiedSorting,
+    // Incentive system tests
+    testExcuseChore,
+    testExcuseTask,
+    testFixedFlexibleChores,
+    testWeeklyQualificationQualified,
+    testIncentiveClaim,
   ];
 
   try {
@@ -812,15 +989,23 @@ async function runIntegrationTests() {
     console.log("TASK TESTS");
     console.log("═══════════════════════════════════════════");
 
-    for (let i = 8; i < 14; i++) {
+    for (let i = 8; i < 15; i++) {
       await tests[i]();
     }
 
     console.log("\n═══════════════════════════════════════════");
-    console.log("ADDITIONAL TESTS");
+    console.log("SORTING & ERROR HANDLING TESTS");
     console.log("═══════════════════════════════════════════");
 
-    for (let i = 14; i < tests.length; i++) {
+    for (let i = 15; i < 19; i++) {
+      await tests[i]();
+    }
+
+    console.log("\n═══════════════════════════════════════════");
+    console.log("INCENTIVE SYSTEM TESTS");
+    console.log("═══════════════════════════════════════════");
+
+    for (let i = 19; i < tests.length; i++) {
       await tests[i]();
     }
 

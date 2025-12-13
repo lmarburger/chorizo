@@ -14,7 +14,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, description, schedules } = body;
+    const { name, description, schedules, flexible } = body;
 
     if (!name || typeof name !== "string" || !name.trim()) {
       return NextResponse.json({ error: "Invalid chore name" }, { status: 400 });
@@ -24,6 +24,7 @@ export async function POST(request: Request) {
     const chore = await addChore({
       name: name.trim(),
       description: description || null,
+      flexible: flexible !== false, // Default to true if not specified
     });
 
     // Add schedules if provided

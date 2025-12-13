@@ -16,6 +16,7 @@ interface AddChoreFormProps {
 
 export function AddChoreForm({ onSuccess }: AddChoreFormProps = {}) {
   const [schedules, setSchedules] = useState<ScheduleEntry[]>([]);
+  const [isFixed, setIsFixed] = useState(false);
   const { kidNames: existingKidNames } = useKidNames();
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -23,6 +24,7 @@ export function AddChoreForm({ onSuccess }: AddChoreFormProps = {}) {
     await addChoreWithSchedulesAction(formData);
     // Reset form state and inputs after successful submission
     setSchedules([]);
+    setIsFixed(false);
     formRef.current?.reset();
     // Call the success callback to refresh the chore list
     onSuccess?.();
@@ -75,6 +77,22 @@ export function AddChoreForm({ onSuccess }: AddChoreFormProps = {}) {
           rows={2}
           placeholder="Wash, dry, and put away all dishes"
         />
+
+        <div className="flex items-center gap-3">
+          <label className="flex cursor-pointer items-center gap-2">
+            <input
+              type="checkbox"
+              checked={isFixed}
+              onChange={e => setIsFixed(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">🔒 Fixed</span>
+          </label>
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            {isFixed ? "Must be done on scheduled day" : "Can be done any day during the week"}
+          </span>
+          <input type="hidden" name="flexible" value={isFixed ? "false" : "true"} />
+        </div>
 
         <div>
           <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Schedule</label>

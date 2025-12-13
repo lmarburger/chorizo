@@ -66,6 +66,7 @@ export default [
       "next-env.d.ts",
       "next-dev.d.ts",
       "init-db.mjs",
+      "migrate-incentives.mjs",
       "test.ts",
       "scripts/*.js",
     ],

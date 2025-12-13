@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { ChoreCard } from "./chore-card";
 import { TaskCard } from "./task-card";
-import { ChoreScheduleWithCompletion, Task } from "../lib/db";
+import { ChoreScheduleWithCompletion, Task, QualificationStatus, RewardType } from "../lib/db";
 import { createSortableItems, sortItems } from "../lib/sorting";
 import { useUserSession } from "../hooks/use-user-session";
 
@@ -20,6 +20,8 @@ export default function KidsClient() {
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
+  const [qualification, setQualification] = useState<QualificationStatus | null>(null);
+  const [claimingReward, setClaimingReward] = useState(false);
 
   const fetchChores = () => {
     if (kidName) {
@@ -46,6 +48,17 @@ export default function KidsClient() {
     }
   };
 
+  const fetchQualification = () => {
+    if (kidName) {
+      fetch(`/api/kids/${encodeURIComponent(kidName)}`)
+        .then(res => res.json())
+        .then(data => {
+          setQualification(data.qualification || null);
+        })
+        .catch(console.error);
+    }
+  };
+
   useEffect(() => {
     if (!kidName) {
       const storedUser = localStorage.getItem("selectedUser");
@@ -61,8 +74,30 @@ export default function KidsClient() {
 
     fetchChores();
     fetchTasks();
+    fetchQualification();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kidName, router]);
+
+  const handleClaimReward = async (rewardType: RewardType) => {
+    if (!kidName || claimingReward) return;
+
+    setClaimingReward(true);
+    try {
+      const response = await fetch("/api/incentive-claims", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kidName, rewardType }),
+      });
+
+      if (response.ok) {
+        fetchQualification();
+      }
+    } catch (error) {
+      console.error("Failed to claim reward:", error);
+    } finally {
+      setClaimingReward(false);
+    }
+  };
 
   const handleSubmitFeedback = async () => {
     if (!feedbackMessage.trim() || !kidName) return;
@@ -167,6 +202,40 @@ export default function KidsClient() {
                 Cancel
               </button>
             </div>
+          </div>
+        )}
+
+        {qualification?.qualified && !qualification.claim && (
+          <div className="mb-6 rounded-lg border-2 border-yellow-400 bg-gradient-to-r from-yellow-50 to-purple-50 p-4 dark:border-yellow-500 dark:from-yellow-900/30 dark:to-purple-900/30">
+            <div className="mb-3 text-center">
+              <div className="mb-1 text-2xl">🎉</div>
+              <p className="text-lg font-bold text-yellow-800 dark:text-yellow-200">You did it!</p>
+              <p className="text-sm text-yellow-700 dark:text-yellow-300">Pick your reward:</p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => handleClaimReward("screen_time")}
+                disabled={claimingReward}
+                className="flex-1 rounded-lg bg-purple-500 px-4 py-3 text-sm font-bold text-white shadow-md hover:bg-purple-600 disabled:opacity-50">
+                📺 1 Hour Screen Time
+              </button>
+              <button
+                onClick={() => handleClaimReward("money")}
+                disabled={claimingReward}
+                className="flex-1 rounded-lg bg-green-500 px-4 py-3 text-sm font-bold text-white shadow-md hover:bg-green-600 disabled:opacity-50">
+                💵 $5
+              </button>
+            </div>
+          </div>
+        )}
+
+        {qualification?.claim && (
+          <div className="mb-6 rounded-lg border-2 border-green-400 bg-green-50 p-4 text-center dark:border-green-500 dark:bg-green-900/30">
+            <div className="mb-1 text-2xl">✨</div>
+            <p className="text-lg font-bold text-green-800 dark:text-green-200">
+              You chose {qualification.claim.reward_type === "screen_time" ? "1 Hour Screen Time 📺" : "$5 💵"}!
+            </p>
+            <p className="text-sm text-green-700 dark:text-green-300">Nice work this week!</p>
           </div>
         )}
 

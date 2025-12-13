@@ -23,12 +23,21 @@ A simple, mobile-first web app for tracking family chores, screen time, and inst
   - Auto-refresh pauses during editing
   - Completed feedback section at bottom for reference
   
-- **Schedule-Based Chore Management**: 
+- **Schedule-Based Chore Management**:
   - Single chore can be assigned to multiple kids on different days
-  - Flexible scheduling (e.g., "Do dishes" alternates between kids)
+  - **Fixed vs Flexible chores**: Fixed (🔒) must be done on scheduled day, flexible can be done any day
   - Visual weekly schedule grid sorted alphabetically
   - Kids sorted alphabetically in edit forms
   - Icon-based controls (edit/delete) for cleaner UI
+
+- **Weekly Incentive System**:
+  - Kids earn rewards by completing all chores and tasks Mon-Fri
+  - Choose between 1 hour of screen time (Sat/Sun) OR $5
+  - **Fixed chores**: Must be done on the exact scheduled day
+  - **Flexible chores**: Can be done any day during the week (default)
+  - **Excuse mechanism**: Parents can excuse missed items (counts as done)
+  - Qualification status shown on parent dashboard (green/red borders)
+  - Kids see reward claim banner when qualified
   
 - **One-Off Tasks**:
   - "Add One-Time Task" heading inside form box
@@ -76,7 +85,6 @@ A simple, mobile-first web app for tracking family chores, screen time, and inst
 - Screen time reporting
 - Instrument practice tracking
 - Weekly summaries and reports
-- Reward/points system
 
 ## Getting Started
 
@@ -123,6 +131,11 @@ node init-db.mjs
 ```
 This creates the necessary tables and adds sample data (Alex and Sam with example chores).
 
+**For existing databases:** If upgrading from a previous version, run the migration script:
+```bash
+node migrate-incentives.mjs
+```
+
 5. Start the development server:
 ```bash
 npm run dev
@@ -144,12 +157,14 @@ Navigate to `/parents` to:
 - See centered "Parents" heading
 - Review feedback from kids at top of page (yellow when unread)
 - View dashboard showing each kid's outstanding chores and tasks
-- See at a glance who's done (green border indicates completion)
+- See qualification status at a glance (green=qualified, red=disqualified, normal=in progress)
+- See claimed rewards displayed as badges next to kid names
+- Excuse overdue chores/tasks directly from dashboard
 - Click green box to expand and see upcoming tasks (if any exist)
 - Click any task in dashboard to edit inline
-- Create recurring chores ("Add Chore" heading in form)
+- Create recurring chores with Fixed/Flexible toggle ("Add Chore" heading)
 - Add one-off tasks ("Add One-Time Task" heading in form)
-- View chore schedule sorted alphabetically
+- View chore schedule with 🔒 indicator for fixed chores
 - Use icon buttons for all actions (edit, delete, remove)
 - Access completed feedback archive at bottom
 - Access settings via gear icon at bottom
@@ -162,6 +177,7 @@ Navigate to `/kids` to:
 - Read full-width descriptions below titles
 - Identify status by color alone (red=overdue, blue=today, gray=future)
 - Get personal congratulations when all current work is complete
+- **Claim weekly reward** when qualified (choose screen time or $5)
 - Send feedback to parents via speech bubble button
 - Navigate back with arrow icon
 
@@ -172,28 +188,35 @@ app/
 ├── page.tsx              # User selection screen
 ├── parents/              # Parent management views
 │   ├── page.tsx
-│   ├── dashboard.tsx     # Kids status overview
-│   ├── chore-list.tsx    # Chore schedule display
+│   ├── dashboard.tsx     # Kids status with qualification
+│   ├── kid-status-items.tsx # Items with excuse button
+│   ├── chore-list.tsx    # Schedule with fixed indicator
 │   └── add-task-form.tsx # Task creation form
 ├── kids/                 # Kid views
 │   ├── page.tsx
+│   ├── kids-client.tsx   # Incentive claim UI
 │   ├── chore-card.tsx    # Unified card for chores
 │   └── task-card.tsx     # Unified card for tasks
 ├── api/                  # API endpoints
-│   ├── kids/             # Get kid names
+│   ├── kids/             # Get kid data + qualification
 │   ├── tasks/            # Task CRUD operations
-│   └── chores/           # Chore operations
+│   ├── chores/           # Chore operations
+│   ├── excuse/           # Excuse chores/tasks
+│   ├── incentive-claims/ # Claim rewards
+│   └── dashboard/        # Parent dashboard data
 └── lib/
-    └── db.ts             # Database queries and types
+    ├── db.ts             # Database queries and types
+    └── sorting.ts        # Unified sorting logic
 ```
 
 ## Database Schema
 
-- **chores**: Stores unique chore definitions (name, description)
+- **chores**: Chore definitions (name, description, flexible)
 - **chore_schedules**: Maps chores to kids and days (chore_id, kid_name, day_of_week)
-- **chore_completions**: Tracks completions with timestamps (chore_schedule_id, completed_date, completed_at)
-- **tasks**: One-off tasks with due dates (title, description, kid_name, due_date, completed_at)
+- **chore_completions**: Tracks completions (chore_schedule_id, completed_date, completed_at, excused)
+- **tasks**: One-off tasks (title, description, kid_name, due_date, completed_at, excused_at)
 - **feedback**: Kid feedback/suggestions (kid_name, message, completed_at, created_at)
+- **incentive_claims**: Weekly reward claims (kid_name, week_start_date, reward_type, claimed_at)
 
 ## Technology Stack
 
@@ -245,8 +268,8 @@ The project includes comprehensive integration tests that exercise the actual ap
 
 **Test Features:**
 - **True Integration Testing**: Tests use actual application functions from `app/lib/db.ts`, not raw SQL
-- **Test Isolation**: Each test runs in a fresh database state to prevent test interference  
-- **Comprehensive Coverage**: 13 tests covering all CRUD operations, completion tracking, priority sorting, and kid-specific filtering for both chores and tasks
+- **Test Isolation**: Each test runs in a fresh database state to prevent test interference
+- **Comprehensive Coverage**: 22 tests covering chores, tasks, sorting, and incentive system (excuse, qualification, claims)
 - **Automatic Database Reset**: Tests automatically reset the database schema between runs (no sample data included)
 - **Simple Setup**: Single `test.ts` file handles everything
 - **Smart DB Selection**: `app/lib/db.ts` automatically uses TEST_DATABASE_URL when available

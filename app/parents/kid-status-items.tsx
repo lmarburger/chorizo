@@ -17,6 +17,8 @@ interface ChoreWithSchedule {
   completion_id: number | null;
   completed_at: string | null;
   is_completed: boolean;
+  flexible?: boolean;
+  excused?: boolean;
 }
 
 interface KidStatusItemsProps {
@@ -27,6 +29,7 @@ interface KidStatusItemsProps {
   onUpdateTask: (taskId: number, values: { title: string; description: string; due_date: string }) => void;
   onDeleteTask: (taskId: number) => void;
   onCancelEdit: () => void;
+  onExcuse?: (type: "chore" | "task", id: number, date?: string) => void;
 }
 
 export function KidStatusItems({
@@ -37,6 +40,7 @@ export function KidStatusItems({
   onUpdateTask,
   onDeleteTask,
   onCancelEdit,
+  onExcuse,
 }: KidStatusItemsProps) {
   const incompleteItems = useMemo(() => {
     const choreSchedules = outstandingChores.map(chore => ({
@@ -52,6 +56,9 @@ export function KidStatusItems({
       completed_at: chore.completed_at ? new Date(chore.completed_at) : undefined,
       completion_id: chore.completion_id || undefined,
       created_at: new Date(),
+      flexible: chore.flexible ?? true,
+      excused: chore.excused ?? false,
+      chore_date: chore.chore_date,
     }));
 
     const sortableItems = createSortableItems(choreSchedules, allIncompleteTasks);
@@ -64,6 +71,7 @@ export function KidStatusItems({
       {incompleteItems.map(item => {
         if (item.type === "chore") {
           const dayName = item.dayOfWeek ? item.dayOfWeek.charAt(0).toUpperCase() + item.dayOfWeek.slice(1, 3) : "";
+          const choreData = item.data as unknown as ChoreWithSchedule & { chore_date?: string };
           return (
             <div
               key={item.id}
@@ -74,8 +82,21 @@ export function KidStatusItems({
                     ? "bg-red-100 text-red-900 dark:bg-red-900/30 dark:text-red-100"
                     : "bg-gray-100 text-gray-700 dark:bg-gray-700/30 dark:text-gray-300"
               }`}>
-              <span className="font-medium">{item.name}</span>
-              <span className="text-xs opacity-75">Chore ({dayName})</span>
+              <span className="font-medium">
+                {!item.isFixed ? "" : "🔒 "}
+                {item.name}
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs opacity-75">Chore ({dayName})</span>
+                {onExcuse && item.status === "overdue" && (
+                  <button
+                    onClick={() => onExcuse("chore", choreData.id, choreData.chore_date)}
+                    className="rounded bg-yellow-500 px-1.5 py-0.5 text-xs font-medium text-white hover:bg-yellow-600"
+                    title="Excuse this chore">
+                    Excuse
+                  </button>
+                )}
+              </div>
             </div>
           );
         } else {
@@ -105,9 +126,22 @@ export function KidStatusItems({
                     : "bg-gray-100 text-gray-700 dark:bg-gray-700/30 dark:text-gray-300"
               }`}>
               <span className="font-medium">{item.name}</span>
-              <span className="rounded bg-purple-100 px-1.5 py-0.5 text-xs font-medium text-purple-800 dark:bg-purple-900 dark:text-purple-200">
-                Task ({item.dueDate ? item.dueDate.toLocaleDateString("en-US", { weekday: "short" }) : "unknown"})
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="rounded bg-purple-100 px-1.5 py-0.5 text-xs font-medium text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                  Task ({item.dueDate ? item.dueDate.toLocaleDateString("en-US", { weekday: "short" }) : "unknown"})
+                </span>
+                {onExcuse && item.status === "overdue" && (
+                  <button
+                    onClick={e => {
+                      e.stopPropagation();
+                      onExcuse("task", task.id);
+                    }}
+                    className="rounded bg-yellow-500 px-1.5 py-0.5 text-xs font-medium text-white hover:bg-yellow-600"
+                    title="Excuse this task">
+                    Excuse
+                  </button>
+                )}
+              </div>
             </div>
           );
         }

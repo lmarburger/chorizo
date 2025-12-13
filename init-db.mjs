@@ -22,9 +22,12 @@ async function initDb() {
     console.log("Initializing database...");
 
     // Drop existing tables
+    await sql`DROP TABLE IF EXISTS incentive_claims CASCADE`;
+    await sql`DROP TABLE IF EXISTS feedback CASCADE`;
     await sql`DROP TABLE IF EXISTS chore_completions CASCADE`;
     await sql`DROP TABLE IF EXISTS chore_schedules CASCADE`;
     await sql`DROP TABLE IF EXISTS chores CASCADE`;
+    await sql`DROP TABLE IF EXISTS tasks CASCADE`;
     await sql`DROP TYPE IF EXISTS day_of_week CASCADE`;
 
     // Create enum for days of the week
@@ -36,6 +39,7 @@ async function initDb() {
         id SERIAL PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         description TEXT,
+        flexible BOOLEAN DEFAULT true,
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW(),
         UNIQUE(name)
@@ -62,7 +66,47 @@ async function initDb() {
         completed_date DATE NOT NULL,
         completed_at TIMESTAMP DEFAULT NOW(),
         notes TEXT,
+        excused BOOLEAN DEFAULT false,
         UNIQUE(chore_schedule_id, completed_date)
+      )
+    `;
+
+    // Create tasks table
+    await sql`
+      CREATE TABLE tasks (
+        id SERIAL PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        kid_name VARCHAR(100) NOT NULL,
+        due_date DATE NOT NULL,
+        completed_at TIMESTAMPTZ,
+        excused_at TIMESTAMPTZ,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `;
+
+    // Create incentive_claims table
+    await sql`
+      CREATE TABLE incentive_claims (
+        id SERIAL PRIMARY KEY,
+        kid_name VARCHAR(100) NOT NULL,
+        week_start_date DATE NOT NULL,
+        reward_type VARCHAR(20) NOT NULL CHECK (reward_type IN ('screen_time', 'money')),
+        claimed_at TIMESTAMPTZ DEFAULT NOW(),
+        dismissed_at TIMESTAMPTZ,
+        UNIQUE(kid_name, week_start_date)
+      )
+    `;
+
+    // Create feedback table
+    await sql`
+      CREATE TABLE feedback (
+        id SERIAL PRIMARY KEY,
+        kid_name VARCHAR(100) NOT NULL,
+        message TEXT NOT NULL,
+        completed_at TIMESTAMPTZ,
+        created_at TIMESTAMPTZ DEFAULT NOW()
       )
     `;
 
@@ -72,22 +116,30 @@ async function initDb() {
     await sql`CREATE INDEX idx_schedules_chore_id ON chore_schedules(chore_id)`;
     await sql`CREATE INDEX idx_completions_date ON chore_completions(completed_date)`;
     await sql`CREATE INDEX idx_completions_schedule_id ON chore_completions(chore_schedule_id)`;
+    await sql`CREATE INDEX idx_tasks_kid_name ON tasks(kid_name)`;
+    await sql`CREATE INDEX idx_tasks_due_date ON tasks(due_date)`;
+    await sql`CREATE INDEX idx_tasks_completed ON tasks(completed_at)`;
+    await sql`CREATE INDEX idx_claims_kid_name ON incentive_claims(kid_name)`;
+    await sql`CREATE INDEX idx_claims_week ON incentive_claims(week_start_date)`;
+    await sql`CREATE INDEX idx_feedback_kid_name ON feedback(kid_name)`;
+    await sql`CREATE INDEX idx_feedback_completed ON feedback(completed_at)`;
+    await sql`CREATE INDEX idx_feedback_created ON feedback(created_at)`;
 
-    // Insert sample chores
+    // Insert sample chores (flexible = true by default, some are fixed)
     const chores = [
-      { name: "Make bed", description: "Make your bed neatly" },
-      { name: "Take out trash", description: "Take the kitchen trash to the outside bin" },
-      { name: "Clean room", description: "Pick up toys and clothes, organize desk" },
-      { name: "Feed pet", description: "Feed and give fresh water" },
-      { name: "Do the dishes", description: "Wash, dry, and put away dishes" },
-      { name: "Practice piano", description: "Practice for at least 30 minutes" },
+      { name: "Make bed", description: "Make your bed neatly", flexible: false },
+      { name: "Take out trash", description: "Take the kitchen trash to the outside bin", flexible: false },
+      { name: "Clean room", description: "Pick up toys and clothes, organize desk", flexible: true },
+      { name: "Feed pet", description: "Feed and give fresh water", flexible: false },
+      { name: "Do the dishes", description: "Wash, dry, and put away dishes", flexible: false },
+      { name: "Practice piano", description: "Practice for at least 30 minutes", flexible: true },
     ];
 
     const choreIds = {};
     for (const chore of chores) {
       const result = await sql`
-        INSERT INTO chores (name, description)
-        VALUES (${chore.name}, ${chore.description})
+        INSERT INTO chores (name, description, flexible)
+        VALUES (${chore.name}, ${chore.description}, ${chore.flexible})
         RETURNING id
       `;
       choreIds[chore.name] = result[0].id;

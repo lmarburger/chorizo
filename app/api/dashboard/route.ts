@@ -1,5 +1,11 @@
 import { NextResponse } from "next/server";
-import { getCurrentWeekChores, getAllTasks, getUniqueKidNames, ChoreScheduleWithCompletion } from "@/app/lib/db";
+import {
+  getCurrentWeekChores,
+  getAllTasks,
+  getUniqueKidNames,
+  getWeeklyQualification,
+  ChoreScheduleWithCompletion,
+} from "@/app/lib/db";
 import { parseLocalDate } from "@/app/lib/utils";
 import { startOfDay, isAfter } from "date-fns";
 
@@ -25,48 +31,54 @@ export async function GET() {
     const dayOfWeek = today.getDay() === 0 ? 7 : today.getDay();
     const todayStart = startOfDay(today);
 
-    // Build dashboard data for each kid
-    const dashboardData = kidNames.map(kidName => {
-      // Filter chores for this kid
-      const kidChores = allChores.filter(chore => chore.kid_name === kidName);
+    // Build dashboard data for each kid (including qualification status)
+    const dashboardData = await Promise.all(
+      kidNames.map(async kidName => {
+        // Filter chores for this kid
+        const kidChores = allChores.filter(chore => chore.kid_name === kidName);
 
-      // Filter tasks for this kid
-      const kidTasks = allTasks.filter(task => task.kid_name === kidName);
+        // Filter tasks for this kid
+        const kidTasks = allTasks.filter(task => task.kid_name === kidName);
 
-      // Filter for outstanding items (today or past, not completed)
-      const outstandingChores = kidChores.filter(chore => {
-        // Only consider chores for today or past days
-        if (chore.day_number > dayOfWeek) return false;
+        // Filter for outstanding items (today or past, not completed)
+        const outstandingChores = kidChores.filter(chore => {
+          // Only consider chores for today or past days
+          if (chore.day_number > dayOfWeek) return false;
 
-        // Check if not completed
-        return !chore.is_completed;
-      });
+          // Check if not completed
+          return !chore.is_completed;
+        });
 
-      const outstandingTasks = kidTasks.filter(task => {
-        // Not completed and due today or in the past
-        // due_date is now always a string in YYYY-MM-DD format
-        const dueDate = parseLocalDate(task.due_date);
-        return !task.completed_at && !isAfter(dueDate, todayStart);
-      });
+        const outstandingTasks = kidTasks.filter(task => {
+          // Not completed and due today or in the past
+          // due_date is now always a string in YYYY-MM-DD format
+          const dueDate = parseLocalDate(task.due_date);
+          return !task.completed_at && !task.excused_at && !isAfter(dueDate, todayStart);
+        });
 
-      // All incomplete tasks (including future ones) for display in dashboard
-      const allIncompleteTasks = kidTasks.filter(task => !task.completed_at);
+        // All incomplete tasks (including future ones) for display in dashboard
+        const allIncompleteTasks = kidTasks.filter(task => !task.completed_at && !task.excused_at);
 
-      // Upcoming tasks (future tasks not due yet)
-      const upcomingTasks = kidTasks.filter(task => {
-        const dueDate = parseLocalDate(task.due_date);
-        return !task.completed_at && isAfter(dueDate, todayStart);
-      });
+        // Upcoming tasks (future tasks not due yet)
+        const upcomingTasks = kidTasks.filter(task => {
+          const dueDate = parseLocalDate(task.due_date);
+          return !task.completed_at && !task.excused_at && isAfter(dueDate, todayStart);
+        });
 
-      return {
-        name: kidName,
-        outstandingChores,
-        outstandingTasks,
-        allIncompleteTasks, // Add all incomplete tasks for dashboard display
-        upcomingTasks, // Add upcoming tasks for green box display
-        allComplete: outstandingChores.length === 0 && outstandingTasks.length === 0,
-      };
-    });
+        // Get qualification status
+        const qualification = await getWeeklyQualification(kidName);
+
+        return {
+          name: kidName,
+          outstandingChores,
+          outstandingTasks,
+          allIncompleteTasks,
+          upcomingTasks,
+          allComplete: outstandingChores.length === 0 && outstandingTasks.length === 0,
+          qualification,
+        };
+      })
+    );
 
     // Sort kids: alphabetically by name, but with completed kids at the end
     dashboardData.sort((a, b) => {

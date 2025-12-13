@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { parseISO } from "date-fns";
 import { TaskEditForm } from "./task-edit-form";
 import { KidStatusItems } from "./kid-status-items";
-import type { Task } from "../lib/db";
+import type { Task, QualificationStatus } from "../lib/db";
 
 interface ChoreWithSchedule {
   id: number;
@@ -27,6 +27,7 @@ interface KidStatus {
   allIncompleteTasks: Task[];
   allComplete: boolean;
   upcomingTasks: Task[];
+  qualification: QualificationStatus;
 }
 
 export function Dashboard() {
@@ -84,6 +85,22 @@ export function Dashboard() {
     }
   };
 
+  const handleExcuse = async (type: "chore" | "task", id: number, date?: string) => {
+    try {
+      const response = await fetch("/api/excuse", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type, id, date }),
+      });
+
+      if (response.ok) {
+        fetchDashboardData();
+      }
+    } catch (error) {
+      console.error("Failed to excuse item:", error);
+    }
+  };
+
   useEffect(() => {
     fetchDashboardData();
     if (!editingTaskId) {
@@ -119,14 +136,24 @@ export function Dashboard() {
               : undefined
           }
           className={`rounded-lg p-4 ${
-            kid.allComplete
-              ? kid.upcomingTasks.length > 0
+            kid.qualification?.qualified
+              ? kid.upcomingTasks.length > 0 && kid.allComplete
                 ? "cursor-pointer border-2 border-green-500 bg-green-50 transition-opacity hover:opacity-90 dark:bg-green-900/20"
                 : "border-2 border-green-500 bg-green-50 dark:bg-green-900/20"
-              : "border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800"
+              : kid.qualification?.missedItems?.length > 0
+                ? "border-2 border-red-400 bg-red-50 dark:border-red-500 dark:bg-red-900/20"
+                : "border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800"
           }`}>
-          <div className={`flex items-center justify-between ${!kid.allComplete ? "mb-3" : ""}`}>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{kid.name}</h3>
+          <div
+            className={`flex items-center justify-between ${!kid.allComplete || kid.qualification?.claim ? "mb-3" : ""}`}>
+            <div className="flex items-center gap-2">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{kid.name}</h3>
+              {kid.qualification?.claim && (
+                <span className="rounded-full bg-purple-500 px-2 py-0.5 text-xs font-medium text-white">
+                  {kid.qualification.claim.reward_type === "screen_time" ? "📺 Screen Time" : "💵 $5"}
+                </span>
+              )}
+            </div>
             {kid.allComplete && kid.upcomingTasks.length > 0 && (
               <div className="flex items-center gap-2">
                 <span className="rounded-full bg-green-500 px-2 py-0.5 text-xs font-medium text-white">
@@ -153,6 +180,7 @@ export function Dashboard() {
                 onUpdateTask={handleUpdateTask}
                 onDeleteTask={handleDeleteTask}
                 onCancelEdit={() => setEditingTaskId(null)}
+                onExcuse={handleExcuse}
               />
             </div>
           )}

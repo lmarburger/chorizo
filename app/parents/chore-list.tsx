@@ -117,7 +117,14 @@ export function ChoreList() {
             </div>
 
             <div className="pr-16">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">{chore.name}</h3>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                {chore.name}
+                {!chore.flexible && (
+                  <span className="ml-1" title="Fixed - must be done on scheduled day">
+                    🔒
+                  </span>
+                )}
+              </h3>
             </div>
             {chore.description && <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">{chore.description}</p>}
 

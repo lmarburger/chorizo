@@ -6,12 +6,15 @@ import { addChore, deleteChore, updateChore, updateChoreSchedules, type DayOfWee
 export async function addChoreWithSchedulesAction(formData: FormData) {
   const name = formData.get("name") as string;
   const description = formData.get("description") as string;
+  const flexibleStr = formData.get("flexible") as string;
+  const flexible = flexibleStr !== "false"; // Default to true
   const schedulesJson = formData.getAll("schedules") as string[];
 
   // Create the chore
   const chore = await addChore({
     name,
     description: description || null,
+    flexible,
   });
 
   // Parse and add schedules
@@ -34,12 +37,15 @@ export async function updateChoreWithSchedulesAction(formData: FormData) {
 
   const name = formData.get("name") as string;
   const description = formData.get("description") as string;
+  const flexibleStr = formData.get("flexible") as string;
+  const flexible = flexibleStr !== "false"; // Default to true
   const schedulesJson = formData.getAll("schedules") as string[];
 
   // Update the chore
   await updateChore(choreId, {
     name,
     description: description || null,
+    flexible,
   });
 
   // Parse and update schedules

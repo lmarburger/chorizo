@@ -7,11 +7,12 @@ Chorizo is a family chore tracking web application designed primarily for mobile
 
 ### ✅ Completed Features
 1. **Database Schema**
-   - `chores` table: Stores unique chore definitions (name, description)
+   - `chores` table: Stores unique chore definitions (name, description, flexible flag)
    - `chore_schedules` table: Maps chores to kids and days (one chore can have multiple schedules)
-   - `chore_completions` table: Tracks when chores are marked complete with timestamps
-   - `tasks` table: One-off tasks with due dates (title, description, kid_name, due_date, completed_at)
+   - `chore_completions` table: Tracks when chores are marked complete with timestamps, includes excused flag
+   - `tasks` table: One-off tasks with due dates (title, description, kid_name, due_date, completed_at, excused_at)
    - `feedback` table: Kid feedback/suggestions (kid_name, message, completed_at, created_at)
+   - `incentive_claims` table: Tracks weekly reward claims (kid_name, week_start_date, reward_type, claimed_at)
    - Week runs Monday through Sunday
 
 2. **User Selection System** (No Login Required)
@@ -71,11 +72,11 @@ Chorizo is a family chore tracking web application designed primarily for mobile
      - Description takes full width below title
      - No status labels - color coding tells the story
      - **Stable sorting order (shared with parent view):**
-       1. Incomplete tasks due today or earlier (alphabetically)
-       2. Incomplete chores due today or earlier (alphabetically)
-       3. Future tasks (by due date, then alphabetically)
-       4. Future chores (by day of week, then alphabetically)
-       5. Completed items (by completion time, most recent first)
+       1. Incomplete items sorted by day (Mon-Sun)
+       2. Within same day: "must do today" items first (fixed chores + tasks due today)
+       3. Within same day: tasks before chores
+       4. Within same type: alphabetically
+       5. Completed items at bottom (by completion time, most recent first)
    - **Color Scheme (simplified):**
      - Red background: Overdue (past due)
      - Blue background: Due today
@@ -100,22 +101,47 @@ Chorizo is a family chore tracking web application designed primarily for mobile
      - Can complete tasks early (before due date)
 
 5. **Testing**
-   - Comprehensive integration tests for both chores and tasks
+   - Comprehensive integration tests for chores, tasks, and incentives
    - Tests exercise actual application functions from `app/lib/db.ts`, not raw SQL
    - Each test runs in isolation with a fresh database state (no test interference)
    - Tests cover CRUD operations, completion tracking, priority sorting, kid-specific filtering
    - **Unified sorting test verifies stable, consistent ordering across views**
    - Tests against remote Neon test database configured via TEST_DATABASE_URL
-   - All 16 integration tests pass (8 chore tests, 6 task tests, 1 error test, 1 sorting test)
+   - All 22 integration tests pass (8 chore tests, 7 task tests, 2 error/sorting tests, 5 incentive tests)
    - Single test file `test.ts` for simplicity
    - Database automatically uses TEST_DATABASE_URL when available for test isolation
+
+6. **Weekly Incentive System**
+   - Kids earn 1 hour of screen time (Sat/Sun) OR $5 by completing all their weekly obligations
+   - **Fixed vs Flexible Chores:**
+     - Fixed chores (🔒): Must be done on the scheduled day exactly
+     - Flexible chores: Can be done any day during the week (default)
+   - **Excuse Mechanism:** Parents can excuse missed chores/tasks (counts as completed for qualification)
+   - **Qualification Rules:**
+     - Period is Monday through Friday only (weekend chores/tasks don't count)
+     - All fixed chores must be completed on their scheduled day OR excused
+     - All flexible chores must be completed sometime Mon-Fri OR excused
+     - All tasks due Mon-Fri must be completed by due date OR excused
+   - **Kid View:**
+     - Qualified kids see a reward claim banner with two options: "1 Hour Screen Time" or "$5"
+     - After claiming, shows confirmation of chosen reward
+     - Items sorted by day with visual distinction for "must do today" items
+   - **Parent View:**
+     - Kid cards show qualification status via border color (green=qualified, red=disqualified, normal=in progress)
+     - Claimed reward shown as badge next to kid name
+     - Excuse button appears on overdue items in dashboard
+     - Fixed chores show 🔒 indicator in chore list and forms
+   - **API Endpoints:**
+     - `GET /api/kids/[name]` - Returns qualification status for kid
+     - `POST/DELETE /api/excuse` - Excuse or un-excuse chores/tasks
+     - `POST /api/incentive-claims` - Claim a reward
+     - `POST /api/incentive-claims/[id]/dismiss` - Parent dismisses claim notification
 
 ### 🚧 Planned Features
 - Screen time reporting
 - Instrument practice tracking
 - Authentication (separate kid/parent accounts)
 - Weekly summary/reporting
-- Rewards/points system
 - Push notifications for reminders
 
 ## Technical Stack
@@ -246,25 +272,29 @@ app/
 │   ├── chores/        # Chores endpoints
 │   ├── kids/          # Kids data and kid-specific endpoints
 │   ├── tasks/         # Tasks CRUD endpoints
-│   └── feedback/      # Feedback CRUD endpoints
+│   ├── feedback/      # Feedback CRUD endpoints
+│   ├── excuse/        # Excuse chores/tasks endpoint
+│   ├── incentive-claims/ # Incentive claim endpoints
+│   └── dashboard/     # Parent dashboard data
 ├── parents/           # Parent view
 │   ├── page.tsx       # Parent dashboard
-│   ├── dashboard.tsx  # Kids status overview
+│   ├── dashboard.tsx  # Kids status overview with qualification
+│   ├── kid-status-items.tsx # Kid items with excuse button
 │   ├── feedback-section.tsx # Feedback display component
 │   ├── actions.ts     # Server actions
-│   ├── chore-list.tsx # Chore schedule display
-│   ├── add-chore-form.tsx
-│   ├── edit-chore-form.tsx
+│   ├── chore-list.tsx # Chore schedule display with fixed indicator
+│   ├── add-chore-form.tsx  # Includes fixed toggle
+│   ├── edit-chore-form.tsx # Includes fixed toggle
 │   └── add-task-form.tsx
 ├── kids/              # Kid view
 │   ├── page.tsx       # Kid's chore/task view
-│   ├── kids-client.tsx # Client component with sorting logic
+│   ├── kids-client.tsx # Client component with incentive claim UI
 │   ├── actions.ts
 │   ├── chore-card.tsx
 │   └── task-card.tsx
 └── lib/
-    ├── db.ts          # Database queries and types (chores + tasks)
-    └── sorting.ts     # Unified sorting logic for chores and tasks
+    ├── db.ts          # Database queries and types (chores, tasks, incentives)
+    └── sorting.ts     # Unified sorting logic with fixed/flexible support
 ```
 
 ## Design Principles
@@ -305,7 +335,6 @@ This codebase is designed for LLM maintainability first, human readability secon
 - Add instrument practice logging
 - Create weekly reports/summaries
 - Add data persistence across weeks
-- Implement reward system
 
 ## Testing Approach
 
@@ -314,7 +343,7 @@ This codebase is designed for LLM maintainability first, human readability secon
 - **Test Database**: Separate Neon database configured via TEST_DATABASE_URL in `.env.test`
 - **Approach**: Tests actual application functions from `app/lib/db.ts`, not raw SQL
 - **Isolation**: Each test runs in a fresh database state (drops/recreates schema)
-- **Coverage**: 13 comprehensive tests covering all CRUD operations for both chores and tasks
+- **Coverage**: 22 comprehensive tests covering chores, tasks, sorting, and incentive system
 - **Setup**: Add test database URL to `.env.test` as TEST_DATABASE_URL
 
 ### Manual Testing

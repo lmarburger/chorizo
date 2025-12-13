@@ -1,9 +1,20 @@
 -- Drop existing tables if they exist (for development)
+DROP TABLE IF EXISTS incentive_claims CASCADE;
+DROP TABLE IF EXISTS feedback CASCADE;
 DROP TABLE IF EXISTS chore_completions CASCADE;
 DROP TABLE IF EXISTS chore_schedules CASCADE;
 DROP TABLE IF EXISTS chores CASCADE;
 DROP TABLE IF EXISTS tasks CASCADE;
 DROP TYPE IF EXISTS day_of_week CASCADE;
+
+-- Feedback table for kids to submit ideas and feedback
+CREATE TABLE feedback (
+  id SERIAL PRIMARY KEY,
+  kid_name VARCHAR(100) NOT NULL,
+  message TEXT NOT NULL,
+  completed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
 
 -- Create enum for days of the week
 CREATE TYPE day_of_week AS ENUM ('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday');
@@ -13,6 +24,7 @@ CREATE TABLE chores (
   id SERIAL PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
   description TEXT,
+  flexible BOOLEAN DEFAULT true,  -- true = can do any day this week, false = must do on scheduled day
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW(),
   UNIQUE(name) -- Chore names should be unique
@@ -35,6 +47,7 @@ CREATE TABLE chore_completions (
   completed_date DATE NOT NULL,
   completed_at TIMESTAMP DEFAULT NOW(),
   notes TEXT,
+  excused BOOLEAN DEFAULT false,  -- true if parent excused this chore (counts as done for qualification)
   UNIQUE(chore_schedule_id, completed_date)
 );
 
@@ -46,8 +59,20 @@ CREATE TABLE tasks (
   kid_name VARCHAR(100) NOT NULL,
   due_date DATE NOT NULL,
   completed_at TIMESTAMPTZ,
+  excused_at TIMESTAMPTZ,  -- if set, parent excused this task (counts as done for qualification)
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Incentive claims table to track weekly rewards
+CREATE TABLE incentive_claims (
+  id SERIAL PRIMARY KEY,
+  kid_name VARCHAR(100) NOT NULL,
+  week_start_date DATE NOT NULL,  -- Monday of the week
+  reward_type VARCHAR(20) NOT NULL CHECK (reward_type IN ('screen_time', 'money')),
+  claimed_at TIMESTAMPTZ DEFAULT NOW(),
+  dismissed_at TIMESTAMPTZ,  -- when parent acknowledged the claim
+  UNIQUE(kid_name, week_start_date)
 );
 
 -- Indexes for better query performance
@@ -59,16 +84,21 @@ CREATE INDEX idx_completions_schedule_id ON chore_completions(chore_schedule_id)
 CREATE INDEX idx_tasks_kid_name ON tasks(kid_name);
 CREATE INDEX idx_tasks_due_date ON tasks(due_date);
 CREATE INDEX idx_tasks_completed ON tasks(completed_at);
+CREATE INDEX idx_claims_kid_name ON incentive_claims(kid_name);
+CREATE INDEX idx_claims_week ON incentive_claims(week_start_date);
+CREATE INDEX idx_feedback_kid_name ON feedback(kid_name);
+CREATE INDEX idx_feedback_completed ON feedback(completed_at);
+CREATE INDEX idx_feedback_created ON feedback(created_at);
 
 -- Sample data for testing
--- First, create the chores
-INSERT INTO chores (name, description) VALUES
-  ('Make bed', 'Make your bed neatly'),
-  ('Take out trash', 'Take the kitchen trash to the outside bin'),
-  ('Clean room', 'Pick up toys and clothes, organize desk'),
-  ('Feed pet', 'Feed and give fresh water'),
-  ('Do the dishes', 'Wash, dry, and put away dishes'),
-  ('Practice piano', 'Practice for at least 30 minutes');
+-- First, create the chores (flexible = true by default, some are fixed)
+INSERT INTO chores (name, description, flexible) VALUES
+  ('Make bed', 'Make your bed neatly', false),  -- fixed: must be done each morning
+  ('Take out trash', 'Take the kitchen trash to the outside bin', false),  -- fixed: trash day is specific
+  ('Clean room', 'Pick up toys and clothes, organize desk', true),  -- flexible: can do any day
+  ('Feed pet', 'Feed and give fresh water', false),  -- fixed: must be done daily
+  ('Do the dishes', 'Wash, dry, and put away dishes', false),  -- fixed: must be done after meals
+  ('Practice piano', 'Practice for at least 30 minutes', true);  -- flexible: can do any day
 
 -- Then create the schedules
 INSERT INTO chore_schedules (chore_id, kid_name, day_of_week)
