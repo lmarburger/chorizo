@@ -1,6 +1,14 @@
 import { neon } from "@neondatabase/serverless";
 import { getCurrentDate } from "./time-server";
 import { formatDateString } from "./date-utils";
+import {
+  calculateQualification,
+  type ChoreRow,
+  type TaskRow,
+  type IncentiveClaim,
+  type QualificationStatus,
+  type RewardType,
+} from "./qualification";
 
 const TIMEZONE = process.env.APP_TIMEZONE || "America/New_York";
 
@@ -640,33 +648,8 @@ export async function unexcuseTask(taskId: number): Promise<Task> {
   return result[0] as Task;
 }
 
-// Incentive claims types and functions
-export type RewardType = "screen_time" | "money";
-
-export interface IncentiveClaim {
-  id: number;
-  kid_name: string;
-  week_start_date: string;
-  reward_type: RewardType;
-  claimed_at: Date;
-  dismissed_at: Date | null;
-}
-
-export interface QualificationStatus {
-  qualified: boolean;
-  disqualified: boolean;
-  inProgress: boolean;
-  missedItems: MissedItem[];
-  claim: IncentiveClaim | null;
-}
-
-export interface MissedItem {
-  type: "chore" | "task";
-  id: number;
-  name: string;
-  scheduledDate: string;
-  kidName: string;
-}
+// Re-export types from qualification.ts for backwards compatibility
+export type { RewardType, IncentiveClaim, QualificationStatus, MissedItem } from "./qualification";
 
 async function getMondayOfWeek(date?: Date): Promise<string> {
   const d = new Date(date ?? (await getCurrentDate()));
@@ -752,90 +735,14 @@ export async function getWeeklyQualification(kidName: string, weekStart?: string
   `;
   const claim = claimResult.length > 0 ? (claimResult[0] as IncentiveClaim) : null;
 
-  const missedItems: MissedItem[] = [];
-  let isDisqualified = false;
-
-  // Check fixed chores - must be done on their scheduled day
-  for (const chore of chores) {
-    if (chore.flexible) continue;
-    const scheduledDate = chore.scheduled_date;
-    const isPast = scheduledDate < today;
-    const isCompleted = chore.completion_id !== null && !chore.excused;
-    const isExcused = chore.excused === true;
-    const isLateCompletion = chore.is_late_completion === true;
-
-    // Disqualify if: missed (past and not completed) OR completed late (unless excused)
-    if ((isPast && !isCompleted && !isExcused) || (isLateCompletion && !isExcused)) {
-      isDisqualified = true;
-      missedItems.push({
-        type: "chore",
-        id: chore.schedule_id,
-        name: chore.chore_name,
-        scheduledDate: scheduledDate,
-        kidName: kidName,
-      });
-    }
-  }
-
-  // Check flexible chores - can be done any day, check at end of Friday
-  const isFridayOrLater = today >= fridayStr;
-  if (isFridayOrLater) {
-    for (const chore of chores) {
-      if (!chore.flexible) continue;
-      const isCompleted = chore.completion_id !== null && !chore.excused;
-      const isExcused = chore.excused === true;
-
-      if (!isCompleted && !isExcused) {
-        isDisqualified = true;
-        missedItems.push({
-          type: "chore",
-          id: chore.schedule_id,
-          name: chore.chore_name,
-          scheduledDate: chore.scheduled_date,
-          kidName: kidName,
-        });
-      }
-    }
-  }
-
-  // Check tasks - must be done by due date
-  for (const task of tasks) {
-    const dueDate = task.due_date;
-    const isPast = dueDate < today;
-    const isCompleted = task.completed_at !== null;
-    const isExcused = task.excused_at !== null;
-
-    if (isPast && !isCompleted && !isExcused) {
-      isDisqualified = true;
-      missedItems.push({
-        type: "task",
-        id: task.id,
-        name: task.title,
-        scheduledDate: dueDate,
-        kidName: kidName,
-      });
-    }
-  }
-
-  // Calculate if all items are complete (qualified)
-  const allChoresComplete = chores.every(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (c: any) => c.completion_id !== null || c.excused === true
-  );
-  const allTasksComplete = tasks.every(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (t: any) => t.completed_at !== null || t.excused_at !== null
-  );
-  const isQualified = !isDisqualified && allChoresComplete && allTasksComplete;
-  const inProgress = !isDisqualified && !isQualified;
-
-  return {
-    qualified: isQualified,
-    disqualified: isDisqualified,
-    inProgress,
-    missedItems,
-    claim,
-  };
+  return calculateQualification({
+    kidName,
+    chores: chores as ChoreRow[],
+    tasks: tasks as TaskRow[],
+    today,
+    fridayStr,
+    existingClaim: claim,
+  });
 }
 
 export async function claimIncentive(kidName: string, rewardType: RewardType): Promise<IncentiveClaim> {
