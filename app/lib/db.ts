@@ -4,6 +4,12 @@ import { formatDateString } from "./date-utils";
 
 const TIMEZONE = process.env.APP_TIMEZONE || "America/New_York";
 
+function getDayOfWeekInTimezone(date: Date): number {
+  const dayName = date.toLocaleDateString("en-US", { weekday: "long", timeZone: TIMEZONE }).toLowerCase();
+  const dayNames = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+  return dayNames.indexOf(dayName);
+}
+
 export type DayOfWeek = "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday";
 
 export interface Chore {
@@ -126,7 +132,7 @@ export async function getCurrentWeekChores(): Promise<ChoreScheduleWithCompletio
   // Get the Monday of current week
   const now = await getCurrentDate();
   const mondayDate = new Date(now);
-  const daysSinceMonday = (mondayDate.getDay() + 6) % 7; // Convert Sunday=0 to Monday=0
+  const daysSinceMonday = (getDayOfWeekInTimezone(mondayDate) + 6) % 7; // Convert Sunday=0 to Monday=0
   mondayDate.setDate(mondayDate.getDate() - daysSinceMonday);
   const mondayStr = formatDateString(mondayDate);
 
@@ -664,7 +670,7 @@ export interface MissedItem {
 
 async function getMondayOfWeek(date?: Date): Promise<string> {
   const d = new Date(date ?? (await getCurrentDate()));
-  const daysSinceMonday = (d.getDay() + 6) % 7;
+  const daysSinceMonday = (getDayOfWeekInTimezone(d) + 6) % 7;
   d.setDate(d.getDate() - daysSinceMonday);
   return formatDateString(d);
 }

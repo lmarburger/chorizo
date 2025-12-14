@@ -68,8 +68,44 @@ async function truncateAllTables() {
 }
 
 // Helper functions for dates - use formatDateString for timezone consistency
+const TIMEZONE = process.env.APP_TIMEZONE || "America/New_York";
+
 function getTodayString(): string {
   return formatDateString(new Date());
+}
+
+// Get day of week (0-6, Sunday-Saturday) in the configured timezone
+function getDayOfWeekInTimezone(): number {
+  const dayName = new Date().toLocaleDateString("en-US", { weekday: "long", timeZone: TIMEZONE }).toLowerCase();
+  const dayNames = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+  return dayNames.indexOf(dayName);
+}
+
+// Get day name for a relative offset from today (in configured timezone)
+function getDayNameForOffset(offset: number): DayOfWeek {
+  const dayNames: DayOfWeek[] = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+  const todayIdx = getDayOfWeekInTimezone();
+  return dayNames[(todayIdx + offset + 7) % 7];
+}
+
+// Find the most recent past weekday (Mon-Fri) and return { dayName, dateStr, daysBack }
+function getMostRecentPastWeekday(): { dayName: DayOfWeek; dateStr: string; daysBack: number } {
+  const dayNames: DayOfWeek[] = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+  const todayIdx = getDayOfWeekInTimezone();
+
+  let daysBack = 1;
+  let targetDayIdx = (todayIdx - daysBack + 7) % 7;
+  // Skip weekends
+  while (targetDayIdx === 0 || targetDayIdx === 6) {
+    daysBack++;
+    targetDayIdx = (todayIdx - daysBack + 7) % 7;
+  }
+
+  return {
+    dayName: dayNames[targetDayIdx],
+    dateStr: getDayString(-daysBack),
+    daysBack,
+  };
 }
 
 function getTomorrowString(): string {
@@ -190,7 +226,7 @@ async function testChoreCompletion() {
     description: "Test completion",
   });
   const todayDayOfWeek = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][
-    new Date().getDay()
+    getDayOfWeekInTimezone()
   ] as DayOfWeek;
   await addChoreSchedule(chore.id, "Test Kid", todayDayOfWeek);
 
@@ -681,9 +717,8 @@ async function testUnifiedSorting() {
     description: null,
   });
 
-  // Get current day and calculate relative days
-  const today = new Date();
-  const dayOfWeek = today.getDay();
+  // Get current day and calculate relative days (using configured timezone)
+  const dayOfWeek = getDayOfWeekInTimezone();
   const dayNames: DayOfWeek[] = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
   const todayName = dayNames[dayOfWeek];
   const yesterdayName = dayNames[dayOfWeek === 0 ? 6 : dayOfWeek - 1];
@@ -730,7 +765,7 @@ async function testUnifiedSorting() {
   // Import and test the sorting logic
   const { createSortableItems, sortItems } = await import("./app/lib/sorting");
 
-  const sortableItems = createSortableItems(chores, tasks);
+  const sortableItems = createSortableItems(chores, tasks, new Date(), TIMEZONE);
   const sortedItems = sortItems(sortableItems);
 
   // Filter to uncompleted items only
@@ -789,7 +824,7 @@ async function testUnifiedSorting() {
 
   const allChoresAfter = await getCurrentWeekChores();
   const choresAfter = allChoresAfter.filter(c => c.kid_name === kidName);
-  const sortableItemsAfter = createSortableItems(choresAfter, tasks);
+  const sortableItemsAfter = createSortableItems(choresAfter, tasks, new Date(), TIMEZONE);
   const sortedItemsAfter = sortItems(sortableItemsAfter);
   const uncompletedItemsAfter = sortedItemsAfter.filter(item => !item.isCompleted);
 
@@ -840,7 +875,7 @@ async function testExcuseChore() {
     description: "Test excuse",
   });
   const todayDayOfWeek = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][
-    new Date().getDay()
+    getDayOfWeekInTimezone()
   ] as DayOfWeek;
   await addChoreSchedule(chore.id, "Test Kid", todayDayOfWeek);
 
@@ -901,7 +936,7 @@ async function testFixedFlexibleChores() {
     flexible: false,
   });
   const todayDayOfWeek = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][
-    new Date().getDay()
+    getDayOfWeekInTimezone()
   ] as DayOfWeek;
   await addChoreSchedule(fixedChore.id, "Test Kid", todayDayOfWeek);
 
@@ -929,7 +964,7 @@ async function testWeeklyQualificationQualified() {
 
   const kidName = "Qualified Kid";
   const todayDayOfWeek = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][
-    new Date().getDay()
+    getDayOfWeekInTimezone()
   ] as DayOfWeek;
 
   // Create a chore for today
@@ -981,12 +1016,8 @@ async function testLateCompletionDetection() {
   const sql = neon(process.env.DATABASE_URL!);
   const kidName = "Late Test Kid";
 
-  // Get yesterday's day of week
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayDayOfWeek = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][
-    yesterday.getDay()
-  ] as DayOfWeek;
+  // Get yesterday's day of week (using configured timezone)
+  const yesterdayDayOfWeek = getDayNameForOffset(-1);
 
   // Create a fixed chore for yesterday
   const fixedChore = await addChore({
@@ -1026,23 +1057,8 @@ async function testLateCompletionDisqualifies() {
   const sql = neon(process.env.DATABASE_URL!);
   const kidName = "Disqualified Kid";
 
-  // Get yesterday's day of week (ensure it's a weekday Mon-Fri for qualification)
-  const today = new Date();
-  const dayOfWeek = today.getDay();
-  // If today is Sunday (0), Saturday (6), or Monday (1), skip back to a weekday for "yesterday"
-  // We need yesterday to be a weekday (Mon-Fri) for qualification purposes
-  let daysBack = 1;
-  let yesterdayDayNum = (dayOfWeek - daysBack + 7) % 7;
-  while (yesterdayDayNum === 0 || yesterdayDayNum === 6) {
-    daysBack++;
-    yesterdayDayNum = (dayOfWeek - daysBack + 7) % 7;
-  }
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - daysBack);
-  const yesterdayDayOfWeek = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][
-    yesterday.getDay()
-  ] as DayOfWeek;
-  const yesterdayStr = formatDateString(yesterday);
+  // Get most recent past weekday (Mon-Fri for qualification purposes)
+  const { dayName: yesterdayDayOfWeek, dateStr: yesterdayStr } = getMostRecentPastWeekday();
 
   // Create a fixed chore for that weekday
   const fixedChore = await addChore({
@@ -1081,20 +1097,7 @@ async function testExcuseLateCompletionRestoresQualification() {
   const kidName = "Excuse Late Kid";
 
   // Get a weekday from the past
-  const today = new Date();
-  const dayOfWeek = today.getDay();
-  let daysBack = 1;
-  let yesterdayDayNum = (dayOfWeek - daysBack + 7) % 7;
-  while (yesterdayDayNum === 0 || yesterdayDayNum === 6) {
-    daysBack++;
-    yesterdayDayNum = (dayOfWeek - daysBack + 7) % 7;
-  }
-  const targetDay = new Date();
-  targetDay.setDate(targetDay.getDate() - daysBack);
-  const targetDayOfWeek = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][
-    targetDay.getDay()
-  ] as DayOfWeek;
-  const targetDayStr = formatDateString(targetDay);
+  const { dayName: targetDayOfWeek, dateStr: targetDayStr } = getMostRecentPastWeekday();
 
   // Create a fixed chore
   const fixedChore = await addChore({
@@ -1139,12 +1142,8 @@ async function testFlexibleChoresNotMarkedLate() {
   const sql = neon(process.env.DATABASE_URL!);
   const kidName = "Flexible Test Kid";
 
-  // Get yesterday
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayDayOfWeek = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][
-    yesterday.getDay()
-  ] as DayOfWeek;
+  // Get yesterday (using configured timezone)
+  const yesterdayDayOfWeek = getDayNameForOffset(-1);
   const yesterdayStr = getYesterdayString();
 
   // Create a FLEXIBLE chore for yesterday

@@ -30,15 +30,16 @@ function getChoreStatus(chore: ChoreScheduleWithCompletion, todayIndex: number, 
   return "upcoming";
 }
 
-function getTaskStatus(task: Task, today: Date): ItemStatus {
+function getTaskStatus(task: Task, today: Date, timezone?: string): ItemStatus {
   if (task.completed_at || task.excused_at) return "completed";
 
-  const dueDate = parseLocalDate(task.due_date);
-  const todayStart = new Date(today);
-  todayStart.setHours(0, 0, 0, 0);
+  // Compare dates as strings in the specified timezone to avoid timezone conversion issues
+  const todayStr = timezone
+    ? today.toLocaleDateString("en-CA", { timeZone: timezone })
+    : today.toLocaleDateString("en-CA");
 
-  if (dueDate < todayStart) return "overdue";
-  if (dueDate.getTime() === todayStart.getTime()) return "today";
+  if (task.due_date < todayStr) return "overdue";
+  if (task.due_date === todayStr) return "today";
   return "upcoming";
 }
 
@@ -60,10 +61,13 @@ function isChoreCompletable(chore: ChoreScheduleWithCompletion, todayIndex: numb
 export function createSortableItems(
   chores: ChoreScheduleWithCompletion[],
   tasks: Task[],
-  today: Date = getClientCurrentDate()
+  today: Date = getClientCurrentDate(),
+  timezone?: string
 ): SortableItem[] {
   const dayOrder = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
-  const currentDay = today.toLocaleDateString("en-US", { weekday: "long" }).toLowerCase();
+  const localeOptions: Intl.DateTimeFormatOptions = { weekday: "long" };
+  if (timezone) localeOptions.timeZone = timezone;
+  const currentDay = today.toLocaleDateString("en-US", localeOptions).toLowerCase();
   const todayIndex = dayOrder.indexOf(currentDay);
 
   const items: SortableItem[] = [];
@@ -91,7 +95,7 @@ export function createSortableItems(
 
   // Add tasks
   tasks.forEach(task => {
-    const status = getTaskStatus(task, today);
+    const status = getTaskStatus(task, today, timezone);
     const isCompleted = !!task.completed_at || !!task.excused_at;
     items.push({
       type: "task",
