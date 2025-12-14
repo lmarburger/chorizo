@@ -70,13 +70,21 @@ async function truncateAllTables() {
 // Helper functions for dates - use formatDateString for timezone consistency
 const TIMEZONE = process.env.APP_TIMEZONE || "America/New_York";
 
-function getTodayString(): string {
-  return formatDateString(new Date());
+// Use TEST_DATE env var to get consistent test behavior regardless of actual day
+// Default to a Wednesday to avoid Sunday edge cases with week boundaries
+const TEST_DATE = process.env.TEST_DATE || "2025-12-10"; // Wednesday
+
+function getTestDate(): Date {
+  return new Date(TEST_DATE + "T12:00:00");
 }
 
-// Get day of week (0-6, Sunday-Saturday) in the configured timezone
+function getTodayString(): string {
+  return formatDateString(getTestDate());
+}
+
+// Get day of week (0-6, Sunday-Saturday) for the test date
 function getDayOfWeekInTimezone(): number {
-  const dayName = new Date().toLocaleDateString("en-US", { weekday: "long", timeZone: TIMEZONE }).toLowerCase();
+  const dayName = getTestDate().toLocaleDateString("en-US", { weekday: "long", timeZone: TIMEZONE }).toLowerCase();
   const dayNames = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
   return dayNames.indexOf(dayName);
 }
@@ -109,19 +117,19 @@ function getMostRecentPastWeekday(): { dayName: DayOfWeek; dateStr: string; days
 }
 
 function getTomorrowString(): string {
-  const tomorrow = new Date();
+  const tomorrow = getTestDate();
   tomorrow.setDate(tomorrow.getDate() + 1);
   return formatDateString(tomorrow);
 }
 
 function getYesterdayString(): string {
-  const yesterday = new Date();
+  const yesterday = getTestDate();
   yesterday.setDate(yesterday.getDate() - 1);
   return formatDateString(yesterday);
 }
 
 function getDayString(daysOffset: number): string {
-  const date = new Date();
+  const date = getTestDate();
   date.setDate(date.getDate() + daysOffset);
   return formatDateString(date);
 }
@@ -765,7 +773,7 @@ async function testUnifiedSorting() {
   // Import and test the sorting logic
   const { createSortableItems, sortItems } = await import("./app/lib/sorting");
 
-  const sortableItems = createSortableItems(chores, tasks, new Date(), TIMEZONE);
+  const sortableItems = createSortableItems(chores, tasks, getTestDate(), TIMEZONE);
   const sortedItems = sortItems(sortableItems);
 
   // Filter to uncompleted items only
@@ -824,7 +832,7 @@ async function testUnifiedSorting() {
 
   const allChoresAfter = await getCurrentWeekChores();
   const choresAfter = allChoresAfter.filter(c => c.kid_name === kidName);
-  const sortableItemsAfter = createSortableItems(choresAfter, tasks, new Date(), TIMEZONE);
+  const sortableItemsAfter = createSortableItems(choresAfter, tasks, getTestDate(), TIMEZONE);
   const sortedItemsAfter = sortItems(sortableItemsAfter);
   const uncompletedItemsAfter = sortedItemsAfter.filter(item => !item.isCompleted);
 
