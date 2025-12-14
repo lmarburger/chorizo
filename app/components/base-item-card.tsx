@@ -12,6 +12,8 @@ export interface BaseItemCardProps {
   isOverdue: boolean;
   isFuture: boolean;
   isDisabled?: boolean; // True for future fixed chores that can't be completed early
+  isLateCompletion?: boolean; // True for fixed chores completed after their scheduled day
+  isExcused?: boolean; // True if the item was excused by parent
   onToggle: () => void;
   toggleEndpoint: string;
   toggleBody: Record<string, unknown>;
@@ -29,6 +31,8 @@ export function BaseItemCard({
   isOverdue,
   isFuture,
   isDisabled,
+  isLateCompletion,
+  isExcused,
   onToggle,
   toggleEndpoint,
   toggleBody,
@@ -135,7 +139,20 @@ export function BaseItemCard({
 
         <div className="flex-1">
           <div className="flex items-start justify-between">
-            <div className={`font-medium ${getTitleClasses()}`}>{title}</div>
+            <div className={`font-medium ${getTitleClasses()}`}>
+              {title}
+              {isCompleted &&
+                isLateCompletion &&
+                (isExcused ? (
+                  <span className="ml-2 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/50 dark:text-green-300">
+                    Excused
+                  </span>
+                ) : (
+                  <span className="ml-2 rounded-full bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-800 dark:bg-orange-900/50 dark:text-orange-300">
+                    Late
+                  </span>
+                ))}
+            </div>
             <div className={`ml-2 text-sm font-medium ${getTextColor()}`}>{dayDisplay}</div>
           </div>
           {description && <div className={`mt-1 text-sm ${getDescriptionClasses()}`}>{description}</div>}

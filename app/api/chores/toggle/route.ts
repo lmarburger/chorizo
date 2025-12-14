@@ -28,8 +28,8 @@ export async function POST(request: Request) {
       // Uncomplete the chore
       await uncompleteChore(scheduleId, choreDateStr);
     } else {
-      // Complete the chore
-      await completeChore(scheduleId, choreDateStr);
+      // Complete the chore - pass current date for late completion detection
+      await completeChore(scheduleId, choreDateStr, undefined, today);
     }
 
     return NextResponse.json({ success: true });

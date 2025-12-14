@@ -265,6 +265,7 @@ export default function KidsClient() {
                     onToggle={() => {
                       fetchTasks();
                       fetchChores();
+                      fetchQualification();
                     }}
                   />
                 );
@@ -277,6 +278,7 @@ export default function KidsClient() {
                     onToggle={() => {
                       fetchChores();
                       fetchTasks();
+                      fetchQualification();
                     }}
                   />
                 );

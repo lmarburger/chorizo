@@ -17,6 +17,7 @@ export interface SortableItem {
   isFixed: boolean;
   isExcused: boolean;
   isCompletable: boolean;
+  isLateCompletion: boolean;
   data: ChoreScheduleWithCompletion | Task;
 }
 
@@ -83,6 +84,7 @@ export function createSortableItems(
       isFixed: !chore.flexible,
       isExcused: chore.excused,
       isCompletable: isChoreCompletable(chore, todayIndex, dayOrder),
+      isLateCompletion: !chore.flexible && chore.is_late_completion === true,
       data: chore,
     });
   });
@@ -102,6 +104,7 @@ export function createSortableItems(
       isFixed: false, // Tasks are never "fixed"
       isExcused: !!task.excused_at,
       isCompletable: !isCompleted, // Tasks can be completed anytime
+      isLateCompletion: false, // Tasks don't have late completion concept
       data: task,
     });
   });

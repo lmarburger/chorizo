@@ -82,6 +82,7 @@ Chorizo is a family chore tracking web application designed primarily for mobile
      - Blue background: Due today
      - Gray background: Future items
      - Green background: Completed items
+     - Green background + orange "Late" badge: Completed late (fixed chores only)
    - **UI Elements:**
      - Back arrow icon for navigation
      - Speech bubble icon for feedback (top-right)
@@ -107,7 +108,7 @@ Chorizo is a family chore tracking web application designed primarily for mobile
    - Tests cover CRUD operations, completion tracking, priority sorting, kid-specific filtering
    - **Unified sorting test verifies stable, consistent ordering across views**
    - Tests against remote Neon test database configured via TEST_DATABASE_URL
-   - All 22 integration tests pass (8 chore tests, 7 task tests, 2 error/sorting tests, 5 incentive tests)
+   - All 26 integration tests pass (8 chore tests, 8 task tests, 4 error/sorting tests, 5 incentive tests, 4 late completion tests)
    - Single test file `test.ts` for simplicity
    - Database automatically uses TEST_DATABASE_URL when available for test isolation
 
@@ -122,6 +123,12 @@ Chorizo is a family chore tracking web application designed primarily for mobile
      - All fixed chores must be completed on their scheduled day OR excused
      - All flexible chores must be completed sometime Mon-Fri OR excused
      - All tasks due Mon-Fri must be completed by due date OR excused
+   - **Late Completions:**
+     - Fixed chores completed after their scheduled day are marked as "late"
+     - Late completions still disqualify the kid (even though the chore is done)
+     - Parents can excuse late-completed chores to restore qualification
+     - Late-completed chores appear in parent dashboard with excuse button
+     - Kid view shows completed items with orange "Late" badge to explain disqualification
    - **Kid View:**
      - Qualified kids see a reward claim banner with two options: "1 Hour Screen Time" or "$5"
      - After claiming, shows confirmation of chosen reward

@@ -2,6 +2,8 @@ import { neon } from "@neondatabase/serverless";
 import { getCurrentDate } from "./time-server";
 import { formatDateString } from "./date-utils";
 
+const TIMEZONE = process.env.APP_TIMEZONE || "America/New_York";
+
 export type DayOfWeek = "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday";
 
 export interface Chore {
@@ -45,6 +47,7 @@ export interface ChoreScheduleWithCompletion extends ChoreScheduleWithChore {
   completed_at?: Date;
   flexible: boolean;
   excused: boolean;
+  is_late_completion: boolean;
 }
 
 function getDb() {
@@ -162,7 +165,14 @@ export async function getCurrentWeekChores(): Promise<ChoreScheduleWithCompletio
       cc.id as completion_id,
       cc.completed_at,
       COALESCE(cc.excused, false) as excused,
-      CASE WHEN cc.id IS NOT NULL THEN true ELSE false END as is_completed
+      CASE WHEN cc.id IS NOT NULL THEN true ELSE false END as is_completed,
+      CASE
+        WHEN cc.id IS NOT NULL
+          AND NOT ws.flexible
+          AND (cc.completed_at AT TIME ZONE ${TIMEZONE})::date > ws.chore_date
+        THEN true
+        ELSE false
+      END as is_late_completion
     FROM week_schedules ws
     LEFT JOIN chore_completions cc
       ON ws.id = cc.chore_schedule_id
@@ -248,13 +258,19 @@ export async function updateChoreSchedules(
   }
 }
 
-export async function completeChore(scheduleId: number, date: string, notes?: string): Promise<ChoreCompletion> {
+export async function completeChore(
+  scheduleId: number,
+  date: string,
+  notes?: string,
+  completedAt?: Date
+): Promise<ChoreCompletion> {
   const sql = getDb();
+  const completedAtStr = completedAt ? completedAt.toISOString() : null;
   const result = await sql`
-    INSERT INTO chore_completions (chore_schedule_id, completed_date, notes)
-    VALUES (${scheduleId}, ${date}, ${notes})
-    ON CONFLICT (chore_schedule_id, completed_date) 
-    DO UPDATE SET completed_at = NOW(), notes = ${notes}
+    INSERT INTO chore_completions (chore_schedule_id, completed_date, completed_at, notes)
+    VALUES (${scheduleId}, ${date}, COALESCE(${completedAtStr}::timestamptz, NOW()), ${notes})
+    ON CONFLICT (chore_schedule_id, completed_date)
+    DO UPDATE SET completed_at = COALESCE(${completedAtStr}::timestamptz, NOW()), notes = ${notes}
     RETURNING *
   `;
   return result[0] as ChoreCompletion;
@@ -693,7 +709,14 @@ export async function getWeeklyQualification(kidName: string, weekStart?: string
       ws.*,
       cc.id as completion_id,
       cc.excused,
-      cc.completed_at
+      cc.completed_at,
+      CASE
+        WHEN cc.id IS NOT NULL
+          AND NOT ws.flexible
+          AND (cc.completed_at AT TIME ZONE ${TIMEZONE})::date > ws.scheduled_date
+        THEN true
+        ELSE false
+      END as is_late_completion
     FROM week_schedules ws
     LEFT JOIN chore_completions cc
       ON ws.schedule_id = cc.chore_schedule_id
@@ -733,8 +756,10 @@ export async function getWeeklyQualification(kidName: string, weekStart?: string
     const isPast = scheduledDate < today;
     const isCompleted = chore.completion_id !== null && !chore.excused;
     const isExcused = chore.excused === true;
+    const isLateCompletion = chore.is_late_completion === true;
 
-    if (isPast && !isCompleted && !isExcused) {
+    // Disqualify if: missed (past and not completed) OR completed late (unless excused)
+    if ((isPast && !isCompleted && !isExcused) || (isLateCompletion && !isExcused)) {
       isDisqualified = true;
       missedItems.push({
         type: "chore",

@@ -24,6 +24,8 @@ export function ChoreCard({ chore, onToggle }: ChoreCardProps) {
       isOverdue={isOverdue}
       isFuture={isFuture}
       isDisabled={isDisabled}
+      isLateCompletion={!chore.flexible && chore.is_late_completion}
+      isExcused={chore.excused}
       onToggle={onToggle}
       toggleEndpoint="/api/chores/toggle"
       toggleBody={{

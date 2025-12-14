@@ -973,6 +973,209 @@ async function testIncentiveClaim() {
   console.log("  ✅ Incentive claim works");
 }
 
+// Test: Late completion detection for fixed chores
+async function testLateCompletionDetection() {
+  await truncateAllTables();
+  console.log("\n🧪 Testing: Late completion detection for fixed chores");
+
+  const sql = neon(process.env.DATABASE_URL!);
+  const kidName = "Late Test Kid";
+
+  // Get yesterday's day of week
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayDayOfWeek = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][
+    yesterday.getDay()
+  ] as DayOfWeek;
+
+  // Create a fixed chore for yesterday
+  const fixedChore = await addChore({
+    name: "Fixed Chore Yesterday",
+    description: null,
+    flexible: false,
+  });
+  await addChoreSchedule(fixedChore.id, kidName, yesterdayDayOfWeek);
+
+  // Get the schedule ID
+  const allChores = await getCurrentWeekChores();
+  const schedule = allChores.find(c => c.kid_name === kidName && c.chore_id === fixedChore.id);
+  assert(schedule, "Should find the schedule");
+
+  // Insert a completion with completed_at = today (simulating late completion)
+  const yesterdayStr = getYesterdayString();
+  const todayTimestamp = new Date().toISOString();
+  await sql`
+    INSERT INTO chore_completions (chore_schedule_id, completed_date, completed_at, excused)
+    VALUES (${schedule!.id}, ${yesterdayStr}, ${todayTimestamp}, false)
+  `;
+
+  // Fetch the chores again and verify is_late_completion
+  const updatedChores = await getCurrentWeekChores();
+  const completed = updatedChores.find(c => c.id === schedule!.id);
+  assert(completed?.is_completed, "Chore should be completed");
+  assert(completed?.is_late_completion, "Should be marked as late completion");
+
+  console.log("  ✅ Late completion detection works");
+}
+
+// Test: Late completion disqualifies kid
+async function testLateCompletionDisqualifies() {
+  await truncateAllTables();
+  console.log("\n🧪 Testing: Late completion disqualifies kid");
+
+  const sql = neon(process.env.DATABASE_URL!);
+  const kidName = "Disqualified Kid";
+
+  // Get yesterday's day of week (ensure it's a weekday Mon-Fri for qualification)
+  const today = new Date();
+  const dayOfWeek = today.getDay();
+  // If today is Sunday (0), Saturday (6), or Monday (1), skip back to a weekday for "yesterday"
+  // We need yesterday to be a weekday (Mon-Fri) for qualification purposes
+  let daysBack = 1;
+  let yesterdayDayNum = (dayOfWeek - daysBack + 7) % 7;
+  while (yesterdayDayNum === 0 || yesterdayDayNum === 6) {
+    daysBack++;
+    yesterdayDayNum = (dayOfWeek - daysBack + 7) % 7;
+  }
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - daysBack);
+  const yesterdayDayOfWeek = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][
+    yesterday.getDay()
+  ] as DayOfWeek;
+  const yesterdayStr = formatDateString(yesterday);
+
+  // Create a fixed chore for that weekday
+  const fixedChore = await addChore({
+    name: "Fixed Chore Weekday",
+    description: null,
+    flexible: false,
+  });
+  await addChoreSchedule(fixedChore.id, kidName, yesterdayDayOfWeek);
+
+  // Get the schedule ID
+  const allChores = await getCurrentWeekChores();
+  const schedule = allChores.find(c => c.kid_name === kidName && c.chore_id === fixedChore.id);
+  assert(schedule, "Should find the schedule");
+
+  // Insert a late completion (completed_at = today, completed_date = yesterday)
+  const todayTimestamp = new Date().toISOString();
+  await sql`
+    INSERT INTO chore_completions (chore_schedule_id, completed_date, completed_at, excused)
+    VALUES (${schedule!.id}, ${yesterdayStr}, ${todayTimestamp}, false)
+  `;
+
+  // Check qualification - should be disqualified due to late completion
+  const qualification = await getWeeklyQualification(kidName);
+  assert(qualification.disqualified, "Should be disqualified due to late completion");
+  assert(qualification.missedItems.length > 0, "Should have missed items");
+
+  console.log("  ✅ Late completion disqualifies works");
+}
+
+// Test: Excusing late completion restores qualification
+async function testExcuseLateCompletionRestoresQualification() {
+  await truncateAllTables();
+  console.log("\n🧪 Testing: Excusing late completion restores qualification");
+
+  const sql = neon(process.env.DATABASE_URL!);
+  const kidName = "Excuse Late Kid";
+
+  // Get a weekday from the past
+  const today = new Date();
+  const dayOfWeek = today.getDay();
+  let daysBack = 1;
+  let yesterdayDayNum = (dayOfWeek - daysBack + 7) % 7;
+  while (yesterdayDayNum === 0 || yesterdayDayNum === 6) {
+    daysBack++;
+    yesterdayDayNum = (dayOfWeek - daysBack + 7) % 7;
+  }
+  const targetDay = new Date();
+  targetDay.setDate(targetDay.getDate() - daysBack);
+  const targetDayOfWeek = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][
+    targetDay.getDay()
+  ] as DayOfWeek;
+  const targetDayStr = formatDateString(targetDay);
+
+  // Create a fixed chore
+  const fixedChore = await addChore({
+    name: "Fixed Chore To Excuse",
+    description: null,
+    flexible: false,
+  });
+  await addChoreSchedule(fixedChore.id, kidName, targetDayOfWeek);
+
+  // Get the schedule ID
+  const allChores = await getCurrentWeekChores();
+  const schedule = allChores.find(c => c.kid_name === kidName && c.chore_id === fixedChore.id);
+  assert(schedule, "Should find the schedule");
+
+  // Insert a late completion
+  const todayTimestamp = new Date().toISOString();
+  await sql`
+    INSERT INTO chore_completions (chore_schedule_id, completed_date, completed_at, excused)
+    VALUES (${schedule!.id}, ${targetDayStr}, ${todayTimestamp}, false)
+  `;
+
+  // Verify disqualified
+  let qualification = await getWeeklyQualification(kidName);
+  assert(qualification.disqualified, "Should be disqualified before excuse");
+
+  // Excuse the chore
+  await excuseChore(schedule!.id, targetDayStr);
+
+  // Verify now qualified
+  qualification = await getWeeklyQualification(kidName);
+  assert(!qualification.disqualified, "Should not be disqualified after excuse");
+  assert(qualification.qualified, "Should be qualified after excuse");
+
+  console.log("  ✅ Excusing late completion restores qualification works");
+}
+
+// Test: Flexible chores don't get marked as late
+async function testFlexibleChoresNotMarkedLate() {
+  await truncateAllTables();
+  console.log("\n🧪 Testing: Flexible chores are not marked as late completion");
+
+  const sql = neon(process.env.DATABASE_URL!);
+  const kidName = "Flexible Test Kid";
+
+  // Get yesterday
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayDayOfWeek = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][
+    yesterday.getDay()
+  ] as DayOfWeek;
+  const yesterdayStr = getYesterdayString();
+
+  // Create a FLEXIBLE chore for yesterday
+  const flexibleChore = await addChore({
+    name: "Flexible Chore Yesterday",
+    description: null,
+    flexible: true,
+  });
+  await addChoreSchedule(flexibleChore.id, kidName, yesterdayDayOfWeek);
+
+  // Get the schedule ID
+  const allChores = await getCurrentWeekChores();
+  const schedule = allChores.find(c => c.kid_name === kidName && c.chore_id === flexibleChore.id);
+  assert(schedule, "Should find the schedule");
+
+  // Insert a completion with completed_at = today (would be "late" for fixed)
+  const todayTimestamp = new Date().toISOString();
+  await sql`
+    INSERT INTO chore_completions (chore_schedule_id, completed_date, completed_at, excused)
+    VALUES (${schedule!.id}, ${yesterdayStr}, ${todayTimestamp}, false)
+  `;
+
+  // Fetch and verify NOT marked as late
+  const updatedChores = await getCurrentWeekChores();
+  const completed = updatedChores.find(c => c.id === schedule!.id);
+  assert(completed?.is_completed, "Chore should be completed");
+  assert(!completed?.is_late_completion, "Flexible chore should NOT be marked as late completion");
+
+  console.log("  ✅ Flexible chores not marked late works");
+}
+
 // Main test runner
 async function runIntegrationTests() {
   console.log("🚀 Running database integration tests\n");
@@ -1009,6 +1212,11 @@ async function runIntegrationTests() {
     testFixedFlexibleChores,
     testWeeklyQualificationQualified,
     testIncentiveClaim,
+    // Late completion tests
+    testLateCompletionDetection,
+    testLateCompletionDisqualifies,
+    testExcuseLateCompletionRestoresQualification,
+    testFlexibleChoresNotMarkedLate,
   ];
 
   try {
@@ -1040,7 +1248,15 @@ async function runIntegrationTests() {
     console.log("INCENTIVE SYSTEM TESTS");
     console.log("═══════════════════════════════════════════");
 
-    for (let i = 20; i < tests.length; i++) {
+    for (let i = 20; i < 25; i++) {
+      await tests[i]();
+    }
+
+    console.log("\n═══════════════════════════════════════════");
+    console.log("LATE COMPLETION TESTS");
+    console.log("═══════════════════════════════════════════");
+
+    for (let i = 25; i < tests.length; i++) {
       await tests[i]();
     }
 

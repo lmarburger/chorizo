@@ -19,6 +19,7 @@ interface ChoreWithSchedule {
   is_completed: boolean;
   flexible?: boolean;
   excused?: boolean;
+  is_late_completion?: boolean;
 }
 
 interface KidStatusItemsProps {
@@ -59,11 +60,13 @@ export function KidStatusItems({
       flexible: chore.flexible ?? true,
       excused: chore.excused ?? false,
       chore_date: chore.chore_date,
+      is_late_completion: chore.is_late_completion ?? false,
     }));
 
     const sortableItems = createSortableItems(choreSchedules, allIncompleteTasks);
     const sortedItems = sortItems(sortableItems);
-    return sortedItems.filter(item => !item.isCompleted);
+    // Show incomplete items OR late-completed items (which need attention)
+    return sortedItems.filter(item => !item.isCompleted || item.isLateCompletion);
   }, [outstandingChores, allIncompleteTasks]);
 
   return (
@@ -72,23 +75,31 @@ export function KidStatusItems({
         if (item.type === "chore") {
           const dayName = item.dayOfWeek ? item.dayOfWeek.charAt(0).toUpperCase() + item.dayOfWeek.slice(1, 3) : "";
           const choreData = item.data as unknown as ChoreWithSchedule & { chore_date?: string };
+          const showExcuseButton = item.status === "overdue" || item.isLateCompletion;
           return (
             <div
               key={item.id}
               className={`flex items-center justify-between rounded px-2 py-1 text-sm ${
-                item.status === "today"
-                  ? "bg-blue-100 text-blue-900 dark:bg-blue-900/30 dark:text-blue-100"
-                  : item.status === "overdue"
-                    ? "bg-red-100 text-red-900 dark:bg-red-900/30 dark:text-red-100"
-                    : "bg-gray-100 text-gray-700 dark:bg-gray-700/30 dark:text-gray-300"
+                item.isLateCompletion
+                  ? "bg-green-100 text-green-900 dark:bg-green-900/30 dark:text-green-100"
+                  : item.status === "today"
+                    ? "bg-blue-100 text-blue-900 dark:bg-blue-900/30 dark:text-blue-100"
+                    : item.status === "overdue"
+                      ? "bg-red-100 text-red-900 dark:bg-red-900/30 dark:text-red-100"
+                      : "bg-gray-100 text-gray-700 dark:bg-gray-700/30 dark:text-gray-300"
               }`}>
               <span className="font-medium">
                 {!item.isFixed ? "" : "🔒 "}
                 {item.name}
+                {item.isLateCompletion && (
+                  <span className="ml-2 rounded-full bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-800 dark:bg-orange-900/50 dark:text-orange-300">
+                    Late
+                  </span>
+                )}
               </span>
               <div className="flex items-center gap-2">
                 <span className="text-xs opacity-75">Chore ({dayName})</span>
-                {onExcuse && item.status === "overdue" && (
+                {onExcuse && showExcuseButton && (
                   <button
                     onClick={() => onExcuse("chore", choreData.id, choreData.chore_date)}
                     className="rounded bg-yellow-500 px-1.5 py-0.5 text-xs font-medium text-white hover:bg-yellow-600"

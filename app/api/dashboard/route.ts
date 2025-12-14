@@ -41,13 +41,13 @@ export async function GET() {
         // Filter tasks for this kid
         const kidTasks = allTasks.filter(task => task.kid_name === kidName);
 
-        // Filter for outstanding items (today or past, not completed)
+        // Filter for outstanding items (today or past, not completed, or late-completed fixed chores)
         const outstandingChores = kidChores.filter(chore => {
           // Only consider chores for today or past days
           if (chore.day_number > dayOfWeek) return false;
 
-          // Check if not completed
-          return !chore.is_completed;
+          // Include if: not completed, OR completed late and not excused (for fixed chores)
+          return !chore.is_completed || (chore.is_late_completion && !chore.excused);
         });
 
         const outstandingTasks = kidTasks.filter(task => {
