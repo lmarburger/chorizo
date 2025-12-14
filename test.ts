@@ -66,27 +66,27 @@ async function truncateAllTables() {
   await sql`TRUNCATE incentive_claims, feedback, chore_completions, chore_schedules, chores, tasks RESTART IDENTITY CASCADE`;
 }
 
-// Helper functions for dates
+// Helper functions for dates - use toLocaleDateString("en-CA") for consistency with db.ts
 function getTodayString(): string {
-  return new Date().toISOString().split("T")[0];
+  return new Date().toLocaleDateString("en-CA");
 }
 
 function getTomorrowString(): string {
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
-  return tomorrow.toISOString().split("T")[0];
+  return tomorrow.toLocaleDateString("en-CA");
 }
 
 function getYesterdayString(): string {
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
-  return yesterday.toISOString().split("T")[0];
+  return yesterday.toLocaleDateString("en-CA");
 }
 
 function getDayString(daysOffset: number): string {
   const date = new Date();
   date.setDate(date.getDate() + daysOffset);
-  return date.toISOString().split("T")[0];
+  return date.toLocaleDateString("en-CA");
 }
 
 // Test: Adding and retrieving a chore with schedules
