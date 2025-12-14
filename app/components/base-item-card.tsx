@@ -14,6 +14,7 @@ export interface BaseItemCardProps {
   isDisabled?: boolean; // True for future fixed chores that can't be completed early
   isLateCompletion?: boolean; // True for fixed chores completed after their scheduled day
   isExcused?: boolean; // True if the item was excused by parent
+  isFixed?: boolean; // True for fixed chores (must be done on scheduled day)
   onToggle: () => void;
   toggleEndpoint: string;
   toggleBody: Record<string, unknown>;
@@ -33,6 +34,7 @@ export function BaseItemCard({
   isDisabled,
   isLateCompletion,
   isExcused,
+  isFixed,
   onToggle,
   toggleEndpoint,
   toggleBody,
@@ -141,6 +143,11 @@ export function BaseItemCard({
           <div className="flex items-start justify-between">
             <div className={`font-medium ${getTitleClasses()}`}>
               {title}
+              {isFixed && (
+                <span className="ml-1" title="Fixed - must be done on scheduled day">
+                  🔒
+                </span>
+              )}
               {isCompleted &&
                 isLateCompletion &&
                 (isExcused ? (

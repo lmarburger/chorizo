@@ -88,17 +88,9 @@ export function KidStatusItems({
                       ? "bg-red-100 text-red-900 dark:bg-red-900/30 dark:text-red-100"
                       : "bg-gray-100 text-gray-700 dark:bg-gray-700/30 dark:text-gray-300"
               }`}>
-              <span className="font-medium">
-                {!item.isFixed ? "" : "🔒 "}
-                {item.name}
-                {item.isLateCompletion && (
-                  <span className="ml-2 rounded-full bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-800 dark:bg-orange-900/50 dark:text-orange-300">
-                    Late
-                  </span>
-                )}
-              </span>
               <div className="flex items-center gap-2">
-                <span className="text-xs opacity-75">Chore ({dayName})</span>
+                <span className="font-medium">{item.name}</span>
+                {item.isFixed && <span title="Fixed - must be done on scheduled day">🔒</span>}
                 {onExcuse && showExcuseButton && (
                   <button
                     onClick={() => onExcuse("chore", choreData.id, choreData.chore_date)}
@@ -107,7 +99,13 @@ export function KidStatusItems({
                     Excuse
                   </button>
                 )}
+                {item.isLateCompletion && (
+                  <span className="rounded-full bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-800 dark:bg-orange-900/50 dark:text-orange-300">
+                    Late
+                  </span>
+                )}
               </div>
+              <span className="text-xs opacity-75">Chore ({dayName})</span>
             </div>
           );
         } else {
