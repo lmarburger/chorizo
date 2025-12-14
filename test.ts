@@ -509,6 +509,56 @@ async function testDeleteTask() {
   console.log("  ✅ Delete task works");
 }
 
+// Test: Completed tasks filtered by week boundary
+async function testCompletedTasksWeekBoundary() {
+  await truncateAllTables();
+  console.log("\n🧪 Testing: Completed tasks week boundary filtering");
+
+  const sql = neon(process.env.DATABASE_URL!);
+  const kidName = "Week Test Kid";
+
+  // Create an incomplete task (should always be visible)
+  await addTask({
+    title: "Incomplete Task",
+    description: null,
+    kid_name: kidName,
+    due_date: getTodayString(),
+  });
+
+  // Create a task completed today (should be visible)
+  const recentTask = await addTask({
+    title: "Recent Completed Task",
+    description: null,
+    kid_name: kidName,
+    due_date: getTodayString(),
+  });
+  await toggleTaskComplete(recentTask.id);
+
+  // Insert a task completed 10 days ago (previous week - should NOT be visible)
+  const oldCompletedDate = new Date();
+  oldCompletedDate.setDate(oldCompletedDate.getDate() - 10);
+  await sql`
+    INSERT INTO tasks (title, description, kid_name, due_date, completed_at)
+    VALUES ('Old Completed Task', null, ${kidName}, ${getDayString(-10)}, ${oldCompletedDate.toISOString()})
+  `;
+
+  // Get tasks for kid - should only see incomplete + current week completed
+  const tasks = await getTasksForKid(kidName);
+
+  assert.equal(tasks.length, 2, "Should have 2 tasks (1 incomplete + 1 recently completed)");
+  assert(
+    tasks.find(t => t.title === "Incomplete Task"),
+    "Should include incomplete task"
+  );
+  assert(
+    tasks.find(t => t.title === "Recent Completed Task"),
+    "Should include recently completed task"
+  );
+  assert(!tasks.find(t => t.title === "Old Completed Task"), "Should NOT include task completed in previous week");
+
+  console.log("  ✅ Completed tasks week boundary filtering works");
+}
+
 // Test: Get chore by ID
 async function testGetChoreById() {
   await truncateAllTables();
@@ -950,6 +1000,7 @@ async function runIntegrationTests() {
     testGetTasksForKid,
     testTaskPrioritySorting,
     testDeleteTask,
+    testCompletedTasksWeekBoundary,
     testTasksForParentView,
     // Error handling
     testErrorHandling,
@@ -976,7 +1027,7 @@ async function runIntegrationTests() {
     console.log("TASK TESTS");
     console.log("═══════════════════════════════════════════");
 
-    for (let i = 8; i < 15; i++) {
+    for (let i = 8; i < 16; i++) {
       await tests[i]();
     }
 
@@ -984,7 +1035,7 @@ async function runIntegrationTests() {
     console.log("SORTING & ERROR HANDLING TESTS");
     console.log("═══════════════════════════════════════════");
 
-    for (let i = 15; i < 19; i++) {
+    for (let i = 16; i < 20; i++) {
       await tests[i]();
     }
 
@@ -992,7 +1043,7 @@ async function runIntegrationTests() {
     console.log("INCENTIVE SYSTEM TESTS");
     console.log("═══════════════════════════════════════════");
 
-    for (let i = 19; i < tests.length; i++) {
+    for (let i = 20; i < tests.length; i++) {
       await tests[i]();
     }
 

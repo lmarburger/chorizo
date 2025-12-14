@@ -318,6 +318,9 @@ export async function getAllTasks(): Promise<Task[]> {
 
 export async function getTasksForKid(kidName: string): Promise<Task[]> {
   const sql = getDb();
+  const weekStart = await getMondayOfWeek();
+  const weekStartTimestamp = `${weekStart}T00:00:00`;
+
   const result = await sql`
     SELECT
       id,
@@ -331,6 +334,11 @@ export async function getTasksForKid(kidName: string): Promise<Task[]> {
       updated_at
     FROM tasks
     WHERE kid_name = ${kidName}
+      AND (
+        (completed_at IS NULL AND excused_at IS NULL)
+        OR completed_at >= ${weekStartTimestamp}::timestamp
+        OR excused_at >= ${weekStartTimestamp}::timestamp
+      )
     ORDER BY
       CASE WHEN completed_at IS NULL AND excused_at IS NULL THEN 0 ELSE 1 END,
       due_date ASC,
