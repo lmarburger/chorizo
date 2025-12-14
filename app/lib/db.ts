@@ -1,5 +1,6 @@
 import { neon } from "@neondatabase/serverless";
 import { getCurrentDate } from "./time-server";
+import { formatDateString } from "./date-utils";
 
 export type DayOfWeek = "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday";
 
@@ -124,7 +125,7 @@ export async function getCurrentWeekChores(): Promise<ChoreScheduleWithCompletio
   const mondayDate = new Date(now);
   const daysSinceMonday = (mondayDate.getDay() + 6) % 7; // Convert Sunday=0 to Monday=0
   mondayDate.setDate(mondayDate.getDate() - daysSinceMonday);
-  const mondayStr = mondayDate.toLocaleDateString("en-CA");
+  const mondayStr = formatDateString(mondayDate);
 
   const result = await sql`
     WITH week_schedules AS (
@@ -480,7 +481,7 @@ export async function addKid(kidName: string): Promise<void> {
   const now = await getCurrentDate();
   const tomorrow = new Date(now);
   tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowStr = tomorrow.toISOString().split("T")[0];
+  const tomorrowStr = formatDateString(tomorrow);
 
   await sql`
     INSERT INTO tasks (title, description, kid_name, due_date)
@@ -649,20 +650,20 @@ async function getMondayOfWeek(date?: Date): Promise<string> {
   const d = new Date(date ?? (await getCurrentDate()));
   const daysSinceMonday = (d.getDay() + 6) % 7;
   d.setDate(d.getDate() - daysSinceMonday);
-  return d.toLocaleDateString("en-CA");
+  return formatDateString(d);
 }
 
 function getFridayOfWeek(mondayStr: string): string {
   const monday = new Date(mondayStr + "T00:00:00");
   monday.setDate(monday.getDate() + 4);
-  return monday.toLocaleDateString("en-CA");
+  return formatDateString(monday);
 }
 
 export async function getWeeklyQualification(kidName: string, weekStart?: string): Promise<QualificationStatus> {
   const sql = getDb();
   const mondayStr = weekStart || (await getMondayOfWeek());
   const fridayStr = getFridayOfWeek(mondayStr);
-  const today = (await getCurrentDate()).toLocaleDateString("en-CA");
+  const today = formatDateString(await getCurrentDate());
 
   // Get all chores for Mon-Fri of the week
   const chores = await sql`

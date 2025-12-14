@@ -1,4 +1,5 @@
 // Test utilities for better test organization and reusability
+import { formatDateString } from "./date-utils";
 
 export interface TestChore {
   name: string;
@@ -28,31 +29,31 @@ export function createTestTask(suffix: string = "", daysOffset: number = 1): Tes
     title: `Test Task ${suffix || Date.now()}`,
     description: `Description for test task ${suffix}`,
     kid_name: "Test Kid",
-    due_date: dueDate.toISOString().split("T")[0],
+    due_date: formatDateString(dueDate),
   };
 }
 
-// Date utilities for tests
+// Date utilities for tests - re-export from date-utils for consistency
 export function getTodayString(): string {
-  return new Date().toISOString().split("T")[0];
+  return formatDateString(new Date());
 }
 
 export function getTomorrowString(): string {
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
-  return tomorrow.toISOString().split("T")[0];
+  return formatDateString(tomorrow);
 }
 
 export function getYesterdayString(): string {
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
-  return yesterday.toISOString().split("T")[0];
+  return formatDateString(yesterday);
 }
 
 export function getDayString(daysOffset: number): string {
   const date = new Date();
   date.setDate(date.getDate() + daysOffset);
-  return date.toISOString().split("T")[0];
+  return formatDateString(date);
 }
 
 // Test assertion helpers

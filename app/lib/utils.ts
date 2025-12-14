@@ -3,6 +3,7 @@
  */
 
 import { getClientCurrentDate } from "./time";
+import { formatDateString } from "./date-utils";
 
 /**
  * Format relative time from a date
@@ -107,7 +108,7 @@ export function formatDateForInput(date: string | Date): string {
   if (typeof date === "string") {
     return date.includes("T") ? date.split("T")[0] : date;
   }
-  return date.toISOString().split("T")[0];
+  return formatDateString(date);
 }
 
 /**
@@ -161,14 +162,14 @@ export function parseLocalDate(dateString: string): Date {
 export function getTomorrowDateString(): string {
   const tomorrow = getClientCurrentDate();
   tomorrow.setDate(tomorrow.getDate() + 1);
-  return tomorrow.toISOString().split("T")[0];
+  return formatDateString(tomorrow);
 }
 
 /**
  * Check if a date string represents today
  */
 export function isToday(dateString: string): boolean {
-  const today = getClientCurrentDate().toISOString().split("T")[0];
+  const today = formatDateString(getClientCurrentDate());
   const inputDate = formatDateForInput(dateString);
   return today === inputDate;
 }

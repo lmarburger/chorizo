@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { DEV_DATE_COOKIE } from "../lib/time";
+import { formatDateString } from "../lib/date-utils";
 
 export function DevDatePicker() {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -20,7 +21,7 @@ export function DevDatePicker() {
       }
     }
     // No override, show today
-    const today = new Date().toISOString().split("T")[0];
+    const today = formatDateString(new Date());
     setDisplayDate(formatDisplayDate(today));
   }, []);
 

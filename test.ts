@@ -2,6 +2,7 @@ import { config } from "dotenv";
 import assert from "assert";
 import { neon } from "@neondatabase/serverless";
 import { execSync } from "child_process";
+import { formatDateString } from "./app/lib/date-utils";
 
 // Load test environment
 config({ path: ".env.test" });
@@ -66,27 +67,27 @@ async function truncateAllTables() {
   await sql`TRUNCATE incentive_claims, feedback, chore_completions, chore_schedules, chores, tasks RESTART IDENTITY CASCADE`;
 }
 
-// Helper functions for dates - use toLocaleDateString("en-CA") for consistency with db.ts
+// Helper functions for dates - use formatDateString for timezone consistency
 function getTodayString(): string {
-  return new Date().toLocaleDateString("en-CA");
+  return formatDateString(new Date());
 }
 
 function getTomorrowString(): string {
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
-  return tomorrow.toLocaleDateString("en-CA");
+  return formatDateString(tomorrow);
 }
 
 function getYesterdayString(): string {
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
-  return yesterday.toLocaleDateString("en-CA");
+  return formatDateString(yesterday);
 }
 
 function getDayString(daysOffset: number): string {
   const date = new Date();
   date.setDate(date.getDate() + daysOffset);
-  return date.toLocaleDateString("en-CA");
+  return formatDateString(date);
 }
 
 // Test: Adding and retrieving a chore with schedules
@@ -317,9 +318,7 @@ async function testAddTask() {
   assert.equal(newTask.title, "Test Task");
   // Handle both string and Date types for due_date
   const actualDueDate =
-    typeof newTask.due_date === "string"
-      ? newTask.due_date
-      : (newTask.due_date as unknown as Date).toISOString().split("T")[0];
+    typeof newTask.due_date === "string" ? newTask.due_date : formatDateString(newTask.due_date as unknown as Date);
   assert.equal(actualDueDate, tomorrowStr);
 
   const allTasks = await getAllTasks();
@@ -356,9 +355,7 @@ async function testUpdateTask() {
   assert.equal(updated.kid_name, "Kid B");
   // Handle both string and Date types for due_date
   const actualUpdatedDueDate =
-    typeof updated.due_date === "string"
-      ? updated.due_date
-      : (updated.due_date as unknown as Date).toISOString().split("T")[0];
+    typeof updated.due_date === "string" ? updated.due_date : formatDateString(updated.due_date as unknown as Date);
   assert.equal(actualUpdatedDueDate, newDueDate);
 
   console.log("  ✅ Update task works");
