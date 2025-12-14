@@ -12,6 +12,7 @@ interface ChoreCardProps {
 export function ChoreCard({ chore, onToggle }: ChoreCardProps) {
   const isOverdue = isChoreOverdue(chore.day_of_week as (typeof DAYS_OF_WEEK)[number], chore.is_completed);
   const isFuture = isChoreFuture(chore.day_of_week as (typeof DAYS_OF_WEEK)[number]);
+  const isDisabled = isFuture && !chore.flexible;
 
   return (
     <BaseItemCard
@@ -22,6 +23,7 @@ export function ChoreCard({ chore, onToggle }: ChoreCardProps) {
       isCompleted={chore.is_completed}
       isOverdue={isOverdue}
       isFuture={isFuture}
+      isDisabled={isDisabled}
       onToggle={onToggle}
       toggleEndpoint="/api/chores/toggle"
       toggleBody={{

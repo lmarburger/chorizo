@@ -11,6 +11,7 @@ export interface BaseItemCardProps {
   isCompleted: boolean;
   isOverdue: boolean;
   isFuture: boolean;
+  isDisabled?: boolean; // True for future fixed chores that can't be completed early
   onToggle: () => void;
   toggleEndpoint: string;
   toggleBody: Record<string, unknown>;
@@ -27,6 +28,7 @@ export function BaseItemCard({
   isCompleted,
   isOverdue,
   isFuture,
+  isDisabled,
   onToggle,
   toggleEndpoint,
   toggleBody,
@@ -34,7 +36,7 @@ export function BaseItemCard({
   const [isToggling, setIsToggling] = useState(false);
 
   const handleToggle = async () => {
-    if (isToggling) return;
+    if (isToggling || isDisabled) return;
 
     setIsToggling(true);
     try {
@@ -65,7 +67,10 @@ export function BaseItemCard({
       return "border-2 border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20";
     }
     if (isFuture) {
-      return "border-2 border-gray-200 bg-gray-50 dark:border-gray-600 dark:bg-gray-700";
+      if (isDisabled) {
+        return "border-2 border-gray-200 bg-gray-100 dark:border-gray-600 dark:bg-gray-700";
+      }
+      return "border-2 border-gray-300 bg-white dark:border-gray-500 dark:bg-gray-800";
     }
     // Today/current
     return "border-2 border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20";
@@ -79,6 +84,9 @@ export function BaseItemCard({
       return "text-green-600 dark:text-green-400";
     }
     if (isFuture) {
+      if (isDisabled) {
+        return "text-gray-400 dark:text-gray-500";
+      }
       return "text-gray-600 dark:text-gray-400";
     }
     return "text-blue-600 dark:text-blue-400";
@@ -87,18 +95,33 @@ export function BaseItemCard({
   // Format the day/date display
   const dayDisplay = dayOrDate.includes("-") ? getDayAbbreviation(dayOrDate) : dayOrDate;
 
+  const getCheckboxClasses = () => {
+    if (isCompleted) return "border-green-500 bg-green-500";
+    if (isDisabled) return "border-gray-300 dark:border-gray-600";
+    return "border-gray-400 dark:border-gray-500";
+  };
+
+  const getTitleClasses = () => {
+    if (isCompleted) return "text-gray-500 line-through dark:text-gray-400";
+    if (isDisabled) return "text-gray-400 dark:text-gray-500";
+    return "text-gray-900 dark:text-white";
+  };
+
+  const getDescriptionClasses = () => {
+    if (isCompleted || isDisabled) return "text-gray-400 dark:text-gray-500";
+    return "text-gray-600 dark:text-gray-400";
+  };
+
   return (
     <button
       onClick={handleToggle}
-      disabled={isToggling}
-      className={`w-full rounded-lg p-3 text-left transition-all ${getColorClasses()} hover:scale-[1.02] active:scale-[0.98] ${
-        isToggling ? "opacity-50" : ""
-      }`}>
+      disabled={isToggling || isDisabled}
+      className={`w-full rounded-lg p-3 text-left transition-all ${getColorClasses()} ${
+        isDisabled ? "cursor-not-allowed" : "hover:scale-[1.02] active:scale-[0.98]"
+      } ${isToggling ? "opacity-50" : ""}`}>
       <div className="flex gap-3">
         <div
-          className={`flex size-6 flex-shrink-0 items-center justify-center rounded-full border-2 ${
-            isCompleted ? "border-green-500 bg-green-500" : "border-gray-400 dark:border-gray-500"
-          }`}>
+          className={`flex size-6 flex-shrink-0 items-center justify-center rounded-full border-2 ${getCheckboxClasses()}`}>
           {isCompleted && (
             <svg className="h-4 w-4 text-white" fill="currentColor" viewBox="0 0 20 20">
               <path
@@ -112,22 +135,10 @@ export function BaseItemCard({
 
         <div className="flex-1">
           <div className="flex items-start justify-between">
-            <div
-              className={`font-medium ${
-                isCompleted ? "text-gray-500 line-through dark:text-gray-400" : "text-gray-900 dark:text-white"
-              }`}>
-              {title}
-            </div>
+            <div className={`font-medium ${getTitleClasses()}`}>{title}</div>
             <div className={`ml-2 text-sm font-medium ${getTextColor()}`}>{dayDisplay}</div>
           </div>
-          {description && (
-            <div
-              className={`mt-1 text-sm ${
-                isCompleted ? "text-gray-400 dark:text-gray-500" : "text-gray-600 dark:text-gray-400"
-              }`}>
-              {description}
-            </div>
-          )}
+          {description && <div className={`mt-1 text-sm ${getDescriptionClasses()}`}>{description}</div>}
         </div>
       </div>
     </button>
