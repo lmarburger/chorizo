@@ -13,7 +13,7 @@
     "typecheck": "tsc --noEmit",
     "check": "./scripts/check-wrapper.sh",
     "test": "npm run test:unit && npm run test:integration",
-    "test:unit": "npx tsx --test tests/qualification.test.ts tests/sorting.test.ts tests/date-utils.test.ts",
+    "test:unit": "npx tsx --test 'tests/unit/**/*.test.ts'",
     "test:integration": "npx tsx --test --test-concurrency=1 tests/integration.test.ts",
     "health-check": "./scripts/health-check.sh",
     "migrate": "node-pg-migrate up --envPath .env.local",

@@ -6,7 +6,7 @@ import {
   getTomorrowString,
   getYesterdayString,
   getDayString,
-} from "../app/lib/date-utils";
+} from "../../app/lib/date-utils";
 
 describe("Date utilities with injected now", () => {
   it("formatDateString returns YYYY-MM-DD format", () => {

@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { createSortableItems, sortItems, type SortableItem } from "../app/lib/sorting";
-import { type ChoreScheduleWithCompletion, type Task } from "../app/lib/db";
+import { createSortableItems, sortItems } from "../../app/lib/sorting";
+import { type ChoreScheduleWithCompletion, type Task } from "../../app/lib/db";
 
 // Helper to create mock chore data
 function createMockChore(overrides: Partial<ChoreScheduleWithCompletion> = {}): ChoreScheduleWithCompletion {

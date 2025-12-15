@@ -111,7 +111,7 @@ Chorizo is a family chore tracking web application designed primarily for mobile
    - All 27 integration tests pass (8 chore tests, 8 task tests, 2 error/sorting tests, 5 incentive tests, 4 late completion tests)
    - Test files in `tests/` directory:
      - `tests/integration.test.ts` - Database integration tests
-     - `tests/qualification.test.ts` - Unit tests for qualification logic (silent output)
+     - `tests/unit/*.test.ts` - Unit tests (db, qualification, sorting, date-utils)
      - `tests/helpers.ts` - Shared test utilities
    - Database automatically uses TEST_DATABASE_URL when available for test isolation
 
@@ -257,7 +257,7 @@ When making any behavioral changes or adding features:
 - Run `npm test` after making changes to ensure tests still pass
 - Add new test cases for new functionality
 - Update existing tests if behavior changes
-- Integration tests are in `tests/integration.test.ts`, unit tests in `tests/qualification.test.ts`
+- Integration tests are in `tests/integration.test.ts`, unit tests in `tests/unit/`
 
 ### Hooks Configuration (for Claude Code CLI)
 The project has hooks configured for code quality:
@@ -316,7 +316,11 @@ app/
 tests/
 ├── helpers.ts           # Shared test utilities
 ├── integration.test.ts  # Database integration tests
-└── qualification.test.ts # Unit tests for qualification logic
+└── unit/                # Unit tests (one file per source module)
+    ├── db.test.ts           # Timezone + week boundary tests
+    ├── qualification.test.ts # Qualification logic tests
+    ├── sorting.test.ts      # Sorting edge case tests
+    └── date-utils.test.ts   # Date utility tests
 migrations/
 ├── 1734100000000_initial-schema.sql  # Baseline schema
 └── 1734100001000_add-incentives.sql  # Incentive system additions
@@ -374,7 +378,11 @@ To seed sample data manually, you can run the INSERT statements from schema.sql.
 
 ### Test Structure
 - **Directory**: `tests/`
-- **Unit tests**: `tests/qualification.test.ts` - Pure qualification logic (no I/O, runs fast)
+- **Unit tests**: `tests/unit/*.test.ts` - Pure functions, no I/O, runs fast
+  - `db.test.ts` - Timezone awareness + week boundary calculations
+  - `qualification.test.ts` - Incentive qualification logic
+  - `sorting.test.ts` - Sorting edge cases (Sunday viewing, late evening)
+  - `date-utils.test.ts` - Date utility functions
 - **Integration tests**: `tests/integration.test.ts` - Database operations (requires test database)
 - **Helpers**: `tests/helpers.ts` - Shared utilities for test data creation
 
