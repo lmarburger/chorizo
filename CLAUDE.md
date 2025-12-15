@@ -361,9 +361,15 @@ To seed sample data manually, you can run the INSERT statements from schema.sql.
 
 ## Testing Approach
 
+### Test Framework
+- **Runner**: Node.js built-in test runner (`node:test`)
+- **Assertions**: `node:assert/strict` for detailed error output
+- **TypeScript**: Tests run via `tsx` with Node's `--test` flag
+- **Error output**: Shows line numbers, actual/expected values, and stack traces on failure
+
 ### Test Structure
 - **Directory**: `tests/`
-- **Unit tests**: `tests/qualification.test.ts` - Pure qualification logic (no I/O, runs fast, silent output)
+- **Unit tests**: `tests/qualification.test.ts` - Pure qualification logic (no I/O, runs fast)
 - **Integration tests**: `tests/integration.test.ts` - Database operations (requires test database)
 - **Helpers**: `tests/helpers.ts` - Shared utilities for test data creation
 
@@ -373,6 +379,7 @@ To seed sample data manually, you can run the INSERT statements from schema.sql.
 - **Isolation**: Each test run drops all tables and runs migrations fresh
 - **Coverage**: 27 integration tests covering chores, tasks, sorting, and incentive system
 - **Setup**: Add test database URL to `.env.test` as TEST_DATABASE_URL
+- **Concurrency**: Integration tests run sequentially (`--test-concurrency=1`) to avoid race conditions
 
 ### Manual Testing
 - iPhone Safari
