@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { getDayOfWeekInTimezone, calculateMondayOfWeek, calculateChoreDate } from "../../app/lib/db";
+import { getDayOfWeekInTimezone, calculateMondayOfWeek, calculateChoreDate } from "../../app/lib/timezone";
 
 describe("Timezone tests", () => {
   it("Sunday 8:45pm EST → Sunday (0)", () => {

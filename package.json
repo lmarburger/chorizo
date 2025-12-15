@@ -13,8 +13,8 @@
     "typecheck": "tsc --noEmit",
     "check": "./scripts/check-wrapper.sh",
     "test": "npm run test:unit && npm run test:integration",
-    "test:unit": "npx tsx --test 'tests/unit/**/*.test.ts'",
-    "test:integration": "npx tsx --test --test-concurrency=1 tests/integration.test.ts",
+    "test:unit": "node --import tsx --test tests/unit/*.test.ts",
+    "test:integration": "node --import tsx --test --test-concurrency=1 tests/integration.test.ts",
     "health-check": "./scripts/health-check.sh",
     "migrate": "node-pg-migrate up --envPath .env.local",
     "migrate:create": "node-pg-migrate create --migration-file-language sql"
@@ -51,6 +51,7 @@
     "prettier": "^3.7.4",
     "prettier-plugin-tailwindcss": "^0.7.2",
     "tailwindcss": "^4.1.18",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }
 }

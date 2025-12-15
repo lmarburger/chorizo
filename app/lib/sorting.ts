@@ -1,4 +1,5 @@
-import { ChoreScheduleWithCompletion, Task, getDayOfWeekInTimezone } from "./db";
+import { ChoreScheduleWithCompletion, Task } from "./db";
+import { getDayOfWeekInTimezone } from "./timezone";
 import { parseLocalDate } from "./utils";
 import { getClientCurrentDate } from "./time";
 

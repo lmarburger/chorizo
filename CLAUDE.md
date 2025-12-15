@@ -312,12 +312,13 @@ app/
 │   └── task-card.tsx
 └── lib/
     ├── db.ts          # Database queries and types (chores, tasks, incentives)
-    └── sorting.ts     # Unified sorting logic with fixed/flexible support
+    ├── sorting.ts     # Unified sorting logic with fixed/flexible support
+    └── timezone.ts    # Pure timezone functions (client/server safe)
 tests/
 ├── helpers.ts           # Shared test utilities
 ├── integration.test.ts  # Database integration tests
 └── unit/                # Unit tests (one file per source module)
-    ├── db.test.ts           # Timezone + week boundary tests
+    ├── timezone.test.ts     # Timezone + week boundary tests
     ├── qualification.test.ts # Qualification logic tests
     ├── sorting.test.ts      # Sorting edge case tests
     └── date-utils.test.ts   # Date utility tests
@@ -379,7 +380,7 @@ To seed sample data manually, you can run the INSERT statements from schema.sql.
 ### Test Structure
 - **Directory**: `tests/`
 - **Unit tests**: `tests/unit/*.test.ts` - Pure functions, no I/O, runs fast
-  - `db.test.ts` - Timezone awareness + week boundary calculations
+  - `timezone.test.ts` - Timezone awareness + week boundary calculations
   - `qualification.test.ts` - Incentive qualification logic
   - `sorting.test.ts` - Sorting edge cases (Sunday viewing, late evening)
   - `date-utils.test.ts` - Date utility functions
