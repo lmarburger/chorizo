@@ -65,7 +65,7 @@ export default [
       "*.config.ts",
       "next-env.d.ts",
       "next-dev.d.ts",
-      "test.ts",
+      "tests/**",
       "scripts/*.js",
       "migrations/**",
     ],

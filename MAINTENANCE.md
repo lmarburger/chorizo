@@ -108,10 +108,11 @@ npm run format:check # Check formatting without changing
 - **Database**: Neon Postgres (serverless)
 - **Styling**: Tailwind CSS v4
 - **Deployment**: Vercel (auto-deploys on push to main)
-- **Tests**: Integration tests in `test.ts` using actual db functions
+- **Tests**: Integration and unit tests in `tests/` directory
 
 Key files:
 - `app/lib/db.ts` - All database queries
 - `app/lib/sorting.ts` - Chore/task sorting logic
-- `test.ts` - Integration test suite
+- `tests/integration.test.ts` - Database integration tests
+- `tests/qualification.test.ts` - Unit tests for qualification logic
 - `CLAUDE.md` - Detailed project documentation

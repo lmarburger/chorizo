@@ -269,9 +269,9 @@ The project includes comprehensive integration tests that exercise the actual ap
 **Test Features:**
 - **True Integration Testing**: Tests use actual application functions from `app/lib/db.ts`, not raw SQL
 - **Test Isolation**: Each test runs in a fresh database state to prevent test interference
-- **Comprehensive Coverage**: 22 tests covering chores, tasks, sorting, and incentive system (excuse, qualification, claims)
+- **Comprehensive Coverage**: 27 integration tests + 17 unit tests covering chores, tasks, sorting, qualification, and incentive system
 - **Automatic Database Reset**: Tests automatically reset the database schema between runs (no sample data included)
-- **Simple Setup**: Single `test.ts` file handles everything
+- **Organized Structure**: Tests live in `tests/` with shared helpers
 - **Smart DB Selection**: `app/lib/db.ts` automatically uses TEST_DATABASE_URL when available
 
 ## Deployment

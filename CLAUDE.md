@@ -108,8 +108,11 @@ Chorizo is a family chore tracking web application designed primarily for mobile
    - Tests cover CRUD operations, completion tracking, priority sorting, kid-specific filtering
    - **Unified sorting test verifies stable, consistent ordering across views**
    - Tests against remote Neon test database configured via TEST_DATABASE_URL
-   - All 26 integration tests pass (8 chore tests, 8 task tests, 4 error/sorting tests, 5 incentive tests, 4 late completion tests)
-   - Single test file `test.ts` for simplicity
+   - All 27 integration tests pass (8 chore tests, 8 task tests, 2 error/sorting tests, 5 incentive tests, 4 late completion tests)
+   - Test files in `tests/` directory:
+     - `tests/integration.test.ts` - Database integration tests
+     - `tests/qualification.test.ts` - Unit tests for qualification logic (silent output)
+     - `tests/helpers.ts` - Shared test utilities
    - Database automatically uses TEST_DATABASE_URL when available for test isolation
 
 6. **Weekly Incentive System**
@@ -176,7 +179,9 @@ npm run format    # Format code with Prettier
 npm run format:check # Check if code is formatted
 
 # Testing
-npm test          # Run integration tests
+npm test               # Run all tests (unit + integration)
+npm run test:unit      # Run unit tests only (qualification logic)
+npm run test:integration # Run integration tests only (database)
 
 # Database Migrations
 npm run migrate              # Apply pending migrations (uses .env.local)
@@ -227,7 +232,7 @@ npm run migrate:create -- name  # Create a new migration file
 - TypeScript strict mode enabled
 - React hooks rules enforced
 - Prettier integration (ESLint won't conflict with formatting)
-- Files excluded: `next-env.d.ts`, `next-dev.d.ts`, `test.ts`
+- Files excluded: `next-env.d.ts`, `next-dev.d.ts`, `tests/**`
 
 ### Important for Claude
 The `npm run check` command is automatically executed via the Stop hook (`scripts/check-wrapper.sh`).
@@ -252,7 +257,7 @@ When making any behavioral changes or adding features:
 - Run `npm test` after making changes to ensure tests still pass
 - Add new test cases for new functionality
 - Update existing tests if behavior changes
-- Tests are in `test.ts` and test the core database functions in `app/lib/db.ts`
+- Integration tests are in `tests/integration.test.ts`, unit tests in `tests/qualification.test.ts`
 
 ### Hooks Configuration (for Claude Code CLI)
 The project has hooks configured for code quality:
@@ -308,6 +313,10 @@ app/
 └── lib/
     ├── db.ts          # Database queries and types (chores, tasks, incentives)
     └── sorting.ts     # Unified sorting logic with fixed/flexible support
+tests/
+├── helpers.ts           # Shared test utilities
+├── integration.test.ts  # Database integration tests
+└── qualification.test.ts # Unit tests for qualification logic
 migrations/
 ├── 1734100000000_initial-schema.sql  # Baseline schema
 └── 1734100001000_add-incentives.sql  # Incentive system additions
@@ -352,12 +361,17 @@ To seed sample data manually, you can run the INSERT statements from schema.sql.
 
 ## Testing Approach
 
+### Test Structure
+- **Directory**: `tests/`
+- **Unit tests**: `tests/qualification.test.ts` - Pure qualification logic (no I/O, runs fast, silent output)
+- **Integration tests**: `tests/integration.test.ts` - Database operations (requires test database)
+- **Helpers**: `tests/helpers.ts` - Shared utilities for test data creation
+
 ### Database Testing
-- **Framework**: TypeScript integration tests (`test.ts`)
 - **Test Database**: Separate Neon database configured via TEST_DATABASE_URL in `.env.test`
 - **Approach**: Tests actual application functions from `app/lib/db.ts`, not raw SQL
 - **Isolation**: Each test run drops all tables and runs migrations fresh
-- **Coverage**: 22 comprehensive tests covering chores, tasks, sorting, and incentive system
+- **Coverage**: 27 integration tests covering chores, tasks, sorting, and incentive system
 - **Setup**: Add test database URL to `.env.test` as TEST_DATABASE_URL
 
 ### Manual Testing
