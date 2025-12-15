@@ -4,6 +4,7 @@ import {
   getAllTasks,
   getUniqueKidNames,
   getWeeklyQualification,
+  getDayOfWeekInTimezone,
   ChoreScheduleWithCompletion,
 } from "@/app/lib/db";
 import { parseLocalDate } from "@/app/lib/utils";
@@ -29,7 +30,8 @@ export async function GET() {
 
     // Get today's date info
     const today = await getCurrentDate();
-    const dayOfWeek = today.getDay() === 0 ? 7 : today.getDay();
+    const rawDayOfWeek = getDayOfWeekInTimezone(today);
+    const dayOfWeek = rawDayOfWeek === 0 ? 7 : rawDayOfWeek;
     const todayStart = startOfDay(today);
 
     // Build dashboard data for each kid (including qualification status)

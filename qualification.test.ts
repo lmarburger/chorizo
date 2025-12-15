@@ -1,5 +1,6 @@
 import assert from "assert";
 import { calculateQualification, type ChoreRow, type TaskRow, type IncentiveClaim } from "./app/lib/qualification";
+import { getDayOfWeekInTimezone } from "./app/lib/db";
 
 // Helper to create a chore row
 function chore(overrides: Partial<ChoreRow> = {}): ChoreRow {
@@ -41,7 +42,60 @@ function claim(overrides: Partial<IncentiveClaim> = {}): IncentiveClaim {
 }
 
 async function runTests() {
-  console.log("Running qualification unit tests...\n");
+  console.log("Running unit tests...\n");
+
+  // Timezone Tests - ensure getDayOfWeekInTimezone correctly handles UTC vs America/New_York
+  // This prevents the bug where the parent dashboard showed Monday chores on Sunday evening
+  console.log("Timezone Tests (getDayOfWeekInTimezone):");
+  console.log("-----------------------------------------");
+
+  // The bug: Sunday 8:45pm EST = Monday 1:45am UTC
+  // Using Date.getDay() on Vercel (UTC) would return 1 (Monday)
+  // getDayOfWeekInTimezone should return 0 (Sunday) in America/New_York
+  {
+    const sundayEveningUTC = new Date("2024-12-16T01:45:00Z"); // Monday 1:45am UTC = Sunday 8:45pm EST
+    assert.strictEqual(getDayOfWeekInTimezone(sundayEveningUTC), 0, "Sunday 8:45pm EST should be Sunday (0)");
+    console.log("✓ Sunday 8:45pm EST (Monday 1:45am UTC) → Sunday (0)");
+  }
+
+  {
+    const sundayLateNightUTC = new Date("2024-12-16T04:59:00Z"); // Monday 4:59am UTC = Sunday 11:59pm EST
+    assert.strictEqual(getDayOfWeekInTimezone(sundayLateNightUTC), 0, "Sunday 11:59pm EST should be Sunday (0)");
+    console.log("✓ Sunday 11:59pm EST (Monday 4:59am UTC) → Sunday (0)");
+  }
+
+  {
+    const mondayEarlyUTC = new Date("2024-12-16T05:01:00Z"); // Monday 5:01am UTC = Monday 12:01am EST
+    assert.strictEqual(getDayOfWeekInTimezone(mondayEarlyUTC), 1, "Monday 12:01am EST should be Monday (1)");
+    console.log("✓ Monday 12:01am EST (Monday 5:01am UTC) → Monday (1)");
+  }
+
+  {
+    const mondayNoonEST = new Date("2024-12-16T17:00:00Z"); // Monday 5pm UTC = Monday noon EST
+    assert.strictEqual(getDayOfWeekInTimezone(mondayNoonEST), 1, "Monday noon EST should be Monday (1)");
+    console.log("✓ Monday noon EST → Monday (1)");
+  }
+
+  {
+    const saturdayLateUTC = new Date("2024-12-15T04:00:00Z"); // Sunday 4am UTC = Saturday 11pm EST
+    assert.strictEqual(getDayOfWeekInTimezone(saturdayLateUTC), 6, "Saturday 11pm EST should be Saturday (6)");
+    console.log("✓ Saturday 11pm EST (Sunday 4am UTC) → Saturday (6)");
+  }
+
+  {
+    const fridayNoonEST = new Date("2024-12-13T17:00:00Z"); // Friday 5pm UTC = Friday noon EST
+    assert.strictEqual(getDayOfWeekInTimezone(fridayNoonEST), 5, "Friday noon EST should be Friday (5)");
+    console.log("✓ Friday noon EST → Friday (5)");
+  }
+
+  {
+    const wednesdayAfternoon = new Date("2024-12-11T20:00:00Z"); // Wednesday 8pm UTC = Wednesday 3pm EST
+    assert.strictEqual(getDayOfWeekInTimezone(wednesdayAfternoon), 3, "Wednesday 3pm EST should be Wednesday (3)");
+    console.log("✓ Wednesday 3pm EST → Wednesday (3)");
+  }
+
+  console.log("\nQualification Tests:");
+  console.log("-----------------------------------------");
 
   // Test 1: Fixed chore completed on time → qualified
   {
@@ -202,7 +256,7 @@ async function runTests() {
     console.log("✓ Test 10: Empty week (no chores or tasks) → qualified");
   }
 
-  console.log("\n✅ All 10 qualification unit tests passed!");
+  console.log("\n✅ All 17 unit tests passed! (7 timezone + 10 qualification)");
 }
 
 runTests().catch(err => {

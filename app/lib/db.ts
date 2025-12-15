@@ -12,7 +12,7 @@ import {
 
 const TIMEZONE = process.env.APP_TIMEZONE || "America/New_York";
 
-function getDayOfWeekInTimezone(date: Date): number {
+export function getDayOfWeekInTimezone(date: Date): number {
   const dayName = date.toLocaleDateString("en-US", { weekday: "long", timeZone: TIMEZONE }).toLowerCase();
   const dayNames = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
   return dayNames.indexOf(dayName);
