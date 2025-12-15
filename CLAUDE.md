@@ -340,6 +340,11 @@ This codebase is designed for LLM maintainability first, human readability secon
 
 4. **Server Aggregates, Client Renders** - Push computation to server; client receives pre-computed data
 
+5. **Onion Architecture for Time** - Only the outer shell (API routes, page components) should instantiate "now". The inner core (lib functions, business logic) receives time as a parameter. This makes the core pure and fully testable.
+   - **Outer shell**: `getCurrentDate()` from `time-server.ts` or `getClientCurrentDate()` from `time.ts` - these handle TEST_DATE, dev overrides, etc.
+   - **Inner core**: All functions accept `now: Date` parameter (with default for convenience)
+   - **Testing**: Unit tests inject edge-case times directly; integration tests use TEST_DATE
+
 ## Sample Data
 Sample data is defined in `schema.sql` (for reference) but migrations only create the schema structure.
 To seed sample data manually, you can run the INSERT statements from schema.sql.

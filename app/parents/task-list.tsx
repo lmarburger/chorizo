@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Task } from "../lib/db";
 import { EditTaskForm } from "./edit-task-form";
+import { getRelativeTime, getDaysUntilDue } from "../lib/utils";
 
 export function TaskList() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -49,30 +50,6 @@ export function TaskList() {
     } catch (error) {
       console.error("Failed to toggle task:", error);
     }
-  };
-
-  const getRelativeTime = (date: Date): string => {
-    const now = new Date();
-    const diffMs = now.getTime() - new Date(date).getTime();
-    const diffSecs = Math.floor(diffMs / 1000);
-    const diffMins = Math.floor(diffSecs / 60);
-    const diffHours = Math.floor(diffMins / 60);
-    const diffDays = Math.floor(diffHours / 24);
-
-    if (diffSecs < 60) return "just now";
-    if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? "s" : ""} ago`;
-    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? "s" : ""} ago`;
-    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
-    return `${Math.floor(diffDays / 7)} week${Math.floor(diffDays / 7) > 1 ? "s" : ""} ago`;
-  };
-
-  const getDaysUntilDue = (dueDate: string): number => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const due = new Date(dueDate);
-    due.setHours(0, 0, 0, 0);
-    const diffMs = due.getTime() - today.getTime();
-    return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
   };
 
   const formatDueDate = (dueDate: string): string => {

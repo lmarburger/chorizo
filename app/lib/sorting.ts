@@ -1,4 +1,4 @@
-import { ChoreScheduleWithCompletion, Task } from "./db";
+import { ChoreScheduleWithCompletion, Task, getDayOfWeekInTimezone } from "./db";
 import { parseLocalDate } from "./utils";
 import { getClientCurrentDate } from "./time";
 
@@ -97,6 +97,10 @@ export function createSortableItems(
   tasks.forEach(task => {
     const status = getTaskStatus(task, today, timezone);
     const isCompleted = !!task.completed_at || !!task.excused_at;
+    const dueDate = parseLocalDate(task.due_date);
+    // Use timezone-aware day calculation for consistent sorting
+    const dayOfWeekIndex = getDayOfWeekInTimezone(dueDate);
+    const dayNumber = dayOfWeekIndex === 0 ? 6 : dayOfWeekIndex - 1; // Convert Sun=0 to Mon=0, Sun=6
     items.push({
       type: "task",
       id: `task-${task.id}`,
@@ -104,7 +108,8 @@ export function createSortableItems(
       status,
       isCompleted,
       completedAt: task.completed_at ? new Date(task.completed_at) : undefined,
-      dueDate: parseLocalDate(task.due_date),
+      dueDate,
+      dayNumber,
       isFixed: false, // Tasks are never "fixed"
       isExcused: !!task.excused_at,
       isCompletable: !isCompleted, // Tasks can be completed anytime
@@ -131,23 +136,10 @@ export function sortItems(items: SortableItem[]): SortableItem[] {
       return 0;
     }
 
-    // For incomplete items, primary sort by day
-    // Get the day number for sorting (0-6 for Mon-Sun)
-    const getDayNumber = (item: SortableItem): number => {
-      if (item.type === "chore") {
-        return item.dayNumber ?? 0;
-      } else {
-        // For tasks, get day of week from due date
-        if (item.dueDate) {
-          const day = item.dueDate.getDay();
-          return day === 0 ? 6 : day - 1; // Convert to Mon=0, Sun=6
-        }
-        return 0;
-      }
-    };
-
-    const aDayNum = getDayNumber(a);
-    const bDayNum = getDayNumber(b);
+    // For incomplete items, primary sort by day (0-6 for Mon-Sun)
+    // dayNumber is now always set with timezone-aware calculation
+    const aDayNum = a.dayNumber ?? 0;
+    const bDayNum = b.dayNumber ?? 0;
 
     // Primary sort: by day number
     if (aDayNum !== bDayNum) {

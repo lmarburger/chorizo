@@ -14,34 +14,39 @@ export function formatDateString(date: Date): string {
 
 /**
  * Get today's date as YYYY-MM-DD string in the configured timezone
+ * @param now - Optional date to use as "now" (for testing)
  */
-export function getTodayString(): string {
-  return formatDateString(new Date());
+export function getTodayString(now: Date = new Date()): string {
+  return formatDateString(now);
 }
 
 /**
  * Get tomorrow's date as YYYY-MM-DD string in the configured timezone
+ * @param now - Optional date to use as "now" (for testing)
  */
-export function getTomorrowString(): string {
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
+export function getTomorrowString(now: Date = new Date()): string {
+  const tomorrow = new Date(now);
+  tomorrow.setDate(now.getDate() + 1);
   return formatDateString(tomorrow);
 }
 
 /**
  * Get yesterday's date as YYYY-MM-DD string in the configured timezone
+ * @param now - Optional date to use as "now" (for testing)
  */
-export function getYesterdayString(): string {
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
+export function getYesterdayString(now: Date = new Date()): string {
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
   return formatDateString(yesterday);
 }
 
 /**
  * Get a date offset by N days as YYYY-MM-DD string in the configured timezone
+ * @param daysOffset - Number of days to offset (positive = future, negative = past)
+ * @param now - Optional date to use as "now" (for testing)
  */
-export function getDayString(daysOffset: number): string {
-  const date = new Date();
-  date.setDate(date.getDate() + daysOffset);
+export function getDayString(daysOffset: number, now: Date = new Date()): string {
+  const date = new Date(now);
+  date.setDate(now.getDate() + daysOffset);
   return formatDateString(date);
 }

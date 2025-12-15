@@ -8,10 +8,10 @@ import { formatDateString } from "./date-utils";
 /**
  * Format relative time from a date
  * @param date - The date to format
+ * @param now - Optional current date (for testing)
  * @returns A human-readable relative time string (e.g., "2 hours ago")
  */
-export function getRelativeTime(date: Date): string {
-  const now = getClientCurrentDate();
+export function getRelativeTime(date: Date, now: Date = getClientCurrentDate()): string {
   const diffMs = now.getTime() - new Date(date).getTime();
   const diffSecs = Math.floor(diffMs / 1000);
   const diffMins = Math.floor(diffSecs / 60);
@@ -28,10 +28,11 @@ export function getRelativeTime(date: Date): string {
 /**
  * Calculate days until a due date
  * @param dueDate - The due date string
+ * @param now - Optional current date (for testing)
  * @returns Number of days until due (negative if overdue)
  */
-export function getDaysUntilDue(dueDate: string): number {
-  const today = getClientCurrentDate();
+export function getDaysUntilDue(dueDate: string, now: Date = getClientCurrentDate()): number {
+  const today = new Date(now);
   today.setHours(0, 0, 0, 0);
   const due = parseLocalDate(dueDate);
   const diffMs = due.getTime() - today.getTime();

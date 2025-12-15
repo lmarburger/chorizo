@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { calculateQualification } from "../app/lib/qualification";
-import { getDayOfWeekInTimezone } from "../app/lib/db";
+import { getDayOfWeekInTimezone, calculateMondayOfWeek, calculateChoreDate } from "../app/lib/db";
 import { createChoreRow, createTaskRow, createIncentiveClaim } from "./helpers";
 
 describe("Timezone tests", () => {
@@ -179,5 +179,74 @@ describe("Qualification tests", () => {
     assert.strictEqual(result.qualified, true, "Should qualify when no chores or tasks exist");
     assert.strictEqual(result.disqualified, false);
     assert.strictEqual(result.inProgress, false);
+  });
+});
+
+describe("Week boundary calculations", () => {
+  it("calculateMondayOfWeek on Sunday returns previous Monday", () => {
+    // Sunday Dec 15, 2024 at 3pm EST = 8pm UTC
+    const sunday = new Date("2024-12-15T20:00:00Z");
+    assert.strictEqual(calculateMondayOfWeek(sunday), "2024-12-09");
+  });
+
+  it("calculateMondayOfWeek on Monday returns same day", () => {
+    // Monday Dec 9, 2024 at noon EST = 5pm UTC
+    const monday = new Date("2024-12-09T17:00:00Z");
+    assert.strictEqual(calculateMondayOfWeek(monday), "2024-12-09");
+  });
+
+  it("calculateMondayOfWeek on Saturday returns Monday of same week", () => {
+    // Saturday Dec 14, 2024 at noon EST = 5pm UTC
+    const saturday = new Date("2024-12-14T17:00:00Z");
+    assert.strictEqual(calculateMondayOfWeek(saturday), "2024-12-09");
+  });
+
+  it("calculateMondayOfWeek at 11:59pm EST is still same day", () => {
+    // Wednesday 11:59pm EST = Thursday 4:59am UTC
+    const lateWed = new Date("2024-12-12T04:59:00Z");
+    assert.strictEqual(getDayOfWeekInTimezone(lateWed), 3, "Should be Wednesday");
+    assert.strictEqual(calculateMondayOfWeek(lateWed), "2024-12-09");
+  });
+
+  it("calculateMondayOfWeek at 12:01am EST is next day", () => {
+    // Thursday 12:01am EST = Thursday 5:01am UTC
+    const earlyThurs = new Date("2024-12-12T05:01:00Z");
+    assert.strictEqual(getDayOfWeekInTimezone(earlyThurs), 4, "Should be Thursday");
+    assert.strictEqual(calculateMondayOfWeek(earlyThurs), "2024-12-09");
+  });
+
+  it("calculateChoreDate returns correct date for each day of week", () => {
+    const mondayStr = "2024-12-09";
+    assert.strictEqual(calculateChoreDate(mondayStr, "monday"), "2024-12-09");
+    assert.strictEqual(calculateChoreDate(mondayStr, "tuesday"), "2024-12-10");
+    assert.strictEqual(calculateChoreDate(mondayStr, "wednesday"), "2024-12-11");
+    assert.strictEqual(calculateChoreDate(mondayStr, "thursday"), "2024-12-12");
+    assert.strictEqual(calculateChoreDate(mondayStr, "friday"), "2024-12-13");
+    assert.strictEqual(calculateChoreDate(mondayStr, "saturday"), "2024-12-14");
+    assert.strictEqual(calculateChoreDate(mondayStr, "sunday"), "2024-12-15");
+  });
+
+  it("Week boundary: Saturday 11:59pm EST to Sunday 12:01am EST", () => {
+    // Saturday 11:59pm EST = Sunday 4:59am UTC
+    const saturdayLate = new Date("2024-12-15T04:59:00Z");
+    assert.strictEqual(getDayOfWeekInTimezone(saturdayLate), 6, "Should be Saturday");
+    assert.strictEqual(calculateMondayOfWeek(saturdayLate), "2024-12-09", "Should be week of Dec 9");
+
+    // Sunday 12:01am EST = Sunday 5:01am UTC
+    const sundayEarly = new Date("2024-12-15T05:01:00Z");
+    assert.strictEqual(getDayOfWeekInTimezone(sundayEarly), 0, "Should be Sunday");
+    assert.strictEqual(calculateMondayOfWeek(sundayEarly), "2024-12-09", "Should still be week of Dec 9");
+  });
+
+  it("Week transition: Sunday 11:59pm EST to Monday 12:01am EST", () => {
+    // Sunday 11:59pm EST = Monday 4:59am UTC
+    const sundayLate = new Date("2024-12-16T04:59:00Z");
+    assert.strictEqual(getDayOfWeekInTimezone(sundayLate), 0, "Should be Sunday");
+    assert.strictEqual(calculateMondayOfWeek(sundayLate), "2024-12-09", "Should be week of Dec 9");
+
+    // Monday 12:01am EST = Monday 5:01am UTC
+    const mondayEarly = new Date("2024-12-16T05:01:00Z");
+    assert.strictEqual(getDayOfWeekInTimezone(mondayEarly), 1, "Should be Monday");
+    assert.strictEqual(calculateMondayOfWeek(mondayEarly), "2024-12-16", "Should be NEW week of Dec 16");
   });
 });

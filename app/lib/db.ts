@@ -20,6 +20,36 @@ export function getDayOfWeekInTimezone(date: Date): number {
 
 export type DayOfWeek = "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday";
 
+const DAY_OFFSETS: Record<DayOfWeek, number> = {
+  monday: 0,
+  tuesday: 1,
+  wednesday: 2,
+  thursday: 3,
+  friday: 4,
+  saturday: 5,
+  sunday: 6,
+};
+
+/**
+ * Pure function: Calculate the Monday of the week containing the given date.
+ * Uses timezone-aware day calculation to handle edge cases like late evening.
+ */
+export function calculateMondayOfWeek(date: Date): string {
+  const daysSinceMonday = (getDayOfWeekInTimezone(date) + 6) % 7;
+  const monday = new Date(date);
+  monday.setDate(date.getDate() - daysSinceMonday);
+  return formatDateString(monday);
+}
+
+/**
+ * Pure function: Calculate a specific date within a week given the Monday and day of week.
+ */
+export function calculateChoreDate(mondayStr: string, dayOfWeek: DayOfWeek): string {
+  const monday = new Date(mondayStr + "T12:00:00");
+  monday.setDate(monday.getDate() + DAY_OFFSETS[dayOfWeek]);
+  return formatDateString(monday);
+}
+
 export interface Chore {
   id: number;
   name: string;
@@ -134,15 +164,11 @@ export async function getChoreById(id: number): Promise<ChoreWithSchedules | nul
   };
 }
 
-export async function getCurrentWeekChores(): Promise<ChoreScheduleWithCompletion[]> {
+export async function getCurrentWeekChores(now?: Date): Promise<ChoreScheduleWithCompletion[]> {
   const sql = getDb();
 
-  // Get the Monday of current week
-  const now = await getCurrentDate();
-  const mondayDate = new Date(now);
-  const daysSinceMonday = (getDayOfWeekInTimezone(mondayDate) + 6) % 7; // Convert Sunday=0 to Monday=0
-  mondayDate.setDate(mondayDate.getDate() - daysSinceMonday);
-  const mondayStr = formatDateString(mondayDate);
+  const currentDate = now ?? (await getCurrentDate());
+  const mondayStr = calculateMondayOfWeek(currentDate);
 
   const result = await sql`
     WITH week_schedules AS (
@@ -347,9 +373,10 @@ export async function getAllTasks(): Promise<Task[]> {
   return result as Task[];
 }
 
-export async function getTasksForKid(kidName: string): Promise<Task[]> {
+export async function getTasksForKid(kidName: string, now?: Date): Promise<Task[]> {
   const sql = getDb();
-  const weekStart = await getMondayOfWeek();
+  const currentDate = now ?? (await getCurrentDate());
+  const weekStart = calculateMondayOfWeek(currentDate);
   const weekStartTimestamp = `${weekStart}T00:00:00`;
 
   const result = await sql`
@@ -378,11 +405,11 @@ export async function getTasksForKid(kidName: string): Promise<Task[]> {
   return result as Task[];
 }
 
-export async function getTasksForParentView(): Promise<Task[]> {
+export async function getTasksForParentView(now?: Date): Promise<Task[]> {
   const sql = getDb();
-  const now = await getCurrentDate();
-  const oneWeekAgo = new Date(now);
-  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+  const currentDate = now ?? (await getCurrentDate());
+  const oneWeekAgo = new Date(currentDate);
+  oneWeekAgo.setDate(currentDate.getDate() - 7);
 
   const result = await sql`
     SELECT
@@ -489,12 +516,12 @@ export async function deleteKid(kidName: string): Promise<void> {
 }
 
 // Add a new kid by creating a welcome task
-export async function addKid(kidName: string): Promise<void> {
+export async function addKid(kidName: string, now?: Date): Promise<void> {
   const sql = getDb();
 
   // Check if kid already exists
   const existing = await sql`
-    SELECT DISTINCT kid_name 
+    SELECT DISTINCT kid_name
     FROM (
       SELECT kid_name FROM tasks WHERE kid_name = ${kidName}
       UNION
@@ -508,9 +535,9 @@ export async function addKid(kidName: string): Promise<void> {
   }
 
   // Create a welcome task for the new kid that's due tomorrow
-  const now = await getCurrentDate();
-  const tomorrow = new Date(now);
-  tomorrow.setDate(tomorrow.getDate() + 1);
+  const currentDate = now ?? (await getCurrentDate());
+  const tomorrow = new Date(currentDate);
+  tomorrow.setDate(currentDate.getDate() + 1);
   const tomorrowStr = formatDateString(tomorrow);
 
   await sql`
@@ -652,10 +679,8 @@ export async function unexcuseTask(taskId: number): Promise<Task> {
 export type { RewardType, IncentiveClaim, QualificationStatus, MissedItem } from "./qualification";
 
 async function getMondayOfWeek(date?: Date): Promise<string> {
-  const d = new Date(date ?? (await getCurrentDate()));
-  const daysSinceMonday = (getDayOfWeekInTimezone(d) + 6) % 7;
-  d.setDate(d.getDate() - daysSinceMonday);
-  return formatDateString(d);
+  const d = date ?? (await getCurrentDate());
+  return calculateMondayOfWeek(d);
 }
 
 function getFridayOfWeek(mondayStr: string): string {
@@ -664,11 +689,16 @@ function getFridayOfWeek(mondayStr: string): string {
   return formatDateString(monday);
 }
 
-export async function getWeeklyQualification(kidName: string, weekStart?: string): Promise<QualificationStatus> {
+export async function getWeeklyQualification(
+  kidName: string,
+  weekStart?: string,
+  now?: Date
+): Promise<QualificationStatus> {
   const sql = getDb();
-  const mondayStr = weekStart || (await getMondayOfWeek());
+  const currentDate = now ?? (await getCurrentDate());
+  const mondayStr = weekStart || calculateMondayOfWeek(currentDate);
   const fridayStr = getFridayOfWeek(mondayStr);
-  const today = formatDateString(await getCurrentDate());
+  const today = formatDateString(currentDate);
 
   // Get all chores for Mon-Fri of the week
   const chores = await sql`
