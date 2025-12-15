@@ -1,8 +1,38 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { getDayOfWeekInTimezone, calculateMondayOfWeek, calculateChoreDate } from "../../app/lib/timezone";
+import {
+  getDayOfWeekInTimezone,
+  getDayOfWeekFromDateString,
+  calculateMondayOfWeek,
+  calculateChoreDate,
+} from "../../app/lib/timezone";
 
-describe("Timezone tests", () => {
+describe("getDayOfWeekFromDateString (calendar date)", () => {
+  it("returns correct day for each day of week", () => {
+    // Dec 9-15, 2024 is Mon-Sun
+    assert.strictEqual(getDayOfWeekFromDateString("2024-12-09"), 1, "Dec 9 is Monday");
+    assert.strictEqual(getDayOfWeekFromDateString("2024-12-10"), 2, "Dec 10 is Tuesday");
+    assert.strictEqual(getDayOfWeekFromDateString("2024-12-11"), 3, "Dec 11 is Wednesday");
+    assert.strictEqual(getDayOfWeekFromDateString("2024-12-12"), 4, "Dec 12 is Thursday");
+    assert.strictEqual(getDayOfWeekFromDateString("2024-12-13"), 5, "Dec 13 is Friday");
+    assert.strictEqual(getDayOfWeekFromDateString("2024-12-14"), 6, "Dec 14 is Saturday");
+    assert.strictEqual(getDayOfWeekFromDateString("2024-12-15"), 0, "Dec 15 is Sunday");
+  });
+
+  it("is timezone-independent (same result regardless of system timezone)", () => {
+    // This is the key test - the function should return the same value
+    // whether run on a machine in UTC, EST, or any other timezone
+    // Dec 11, 2024 is a Wednesday (day 3)
+    assert.strictEqual(getDayOfWeekFromDateString("2024-12-11"), 3);
+  });
+
+  it("handles year boundaries", () => {
+    assert.strictEqual(getDayOfWeekFromDateString("2024-12-31"), 2, "Dec 31, 2024 is Tuesday");
+    assert.strictEqual(getDayOfWeekFromDateString("2025-01-01"), 3, "Jan 1, 2025 is Wednesday");
+  });
+});
+
+describe("getDayOfWeekInTimezone (instant in time)", () => {
   it("Sunday 8:45pm EST → Sunday (0)", () => {
     const sundayEveningUTC = new Date("2024-12-16T01:45:00Z"); // Monday 1:45am UTC = Sunday 8:45pm EST
     assert.strictEqual(getDayOfWeekInTimezone(sundayEveningUTC), 0, "Sunday 8:45pm EST should be Sunday (0)");

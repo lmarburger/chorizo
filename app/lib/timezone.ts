@@ -8,12 +8,23 @@ import { formatDateString } from "./date-utils";
 const TIMEZONE = process.env.APP_TIMEZONE || "America/New_York";
 
 /**
- * Get the day of week (0=Sunday, 6=Saturday) for a date in the configured timezone.
+ * Get the day of week (0=Sunday, 6=Saturday) for a Date object in the configured timezone.
+ * Use this for "what day is it NOW?" questions where you have an instant in time.
  */
 export function getDayOfWeekInTimezone(date: Date): number {
   const dayName = date.toLocaleDateString("en-US", { weekday: "long", timeZone: TIMEZONE }).toLowerCase();
   const dayNames = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
   return dayNames.indexOf(dayName);
+}
+
+/**
+ * Get the day of week (0=Sunday, 6=Saturday) for a calendar date string (YYYY-MM-DD).
+ * Use this for "what day of week is Dec 11, 2024?" questions where you have a calendar date.
+ * Uses UTC to avoid system timezone dependencies.
+ */
+export function getDayOfWeekFromDateString(dateStr: string): number {
+  const date = new Date(dateStr + "T12:00:00Z");
+  return date.getUTCDay();
 }
 
 export type DayOfWeek = "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday";

@@ -1,5 +1,5 @@
 import { ChoreScheduleWithCompletion, Task } from "./db";
-import { getDayOfWeekInTimezone } from "./timezone";
+import { getDayOfWeekFromDateString } from "./timezone";
 import { parseLocalDate } from "./utils";
 import { getClientCurrentDate } from "./time";
 
@@ -99,8 +99,8 @@ export function createSortableItems(
     const status = getTaskStatus(task, today, timezone);
     const isCompleted = !!task.completed_at || !!task.excused_at;
     const dueDate = parseLocalDate(task.due_date);
-    // Use timezone-aware day calculation for consistent sorting
-    const dayOfWeekIndex = getDayOfWeekInTimezone(dueDate);
+    // Use date string directly to avoid system timezone issues
+    const dayOfWeekIndex = getDayOfWeekFromDateString(task.due_date);
     const dayNumber = dayOfWeekIndex === 0 ? 6 : dayOfWeekIndex - 1; // Convert Sun=0 to Mon=0, Sun=6
     items.push({
       type: "task",
