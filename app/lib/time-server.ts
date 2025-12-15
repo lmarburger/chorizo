@@ -7,6 +7,11 @@ export const DEV_DATE_COOKIE = "dev-date-override";
  * In production, always returns real current date
  */
 export async function getCurrentDate(): Promise<Date> {
+  // Support TEST_DATE env var for integration tests
+  if (process.env.TEST_DATE) {
+    return new Date(process.env.TEST_DATE + "T12:00:00");
+  }
+
   if (process.env.NODE_ENV === "production" || process.env.TEST_DATABASE_URL) {
     return new Date();
   }
