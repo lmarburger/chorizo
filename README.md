@@ -5,11 +5,16 @@ A simple, mobile-first web app for tracking family chores, screen time, and inst
 ## Features
 
 ### Current
-- **Device-Based User Selection** (No Login Required):
+- **Family Password Authentication**:
+  - Simple single-password login (one password for the whole family)
+  - 30-day session duration (kids rarely need to re-authenticate)
+  - Rate limiting prevents brute force attacks
+  - Secure JWT tokens stored in httpOnly cookies
+
+- **Device-Based User Selection**:
   - "Who's this?" prompt with kid names and grey Parents button
   - Selection persists on device via localStorage
   - Back arrow icon for quick user switching
-  - No passwords or usernames to remember
   
 - **Parent Dashboard**:
   - Centered "Parents" title with back arrow
@@ -97,7 +102,7 @@ A simple, mobile-first web app for tracking family chores, screen time, and inst
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/chorizo.git
+git clone https://github.com/lmarburger/chorizo.git
 cd chorizo
 ```
 
@@ -127,16 +132,17 @@ DATABASE_URL=postgresql://user:password@host/database?sslmode=require
 
 4. Initialize the database:
 ```bash
-node init-db.mjs
+npm run migrate
 ```
-This creates the necessary tables and adds sample data (Alex and Sam with example chores).
+This applies all database migrations to create the necessary tables.
 
-**For existing databases:** If upgrading from a previous version, run the migration script:
+5. Set up authentication (see [SECURITY_SETUP.md](SECURITY_SETUP.md) for details):
 ```bash
-node migrate-incentives.mjs
+node scripts/setup-password.js
 ```
+This generates your family password hash. Add the output (`FAMILY_PASSWORD_HASH_B64` and `JWT_SECRET`) to your Vercel environment variables and `.env.local`.
 
-5. Start the development server:
+6. Start the development server:
 ```bash
 npm run dev
 ```
@@ -145,8 +151,11 @@ Open [http://localhost:3000](http://localhost:3000) to see the app.
 
 ## Usage
 
+### Authentication
+When you first open the app, you'll be prompted to enter the family password. Once authenticated, your session lasts 30 days.
+
 ### User Selection
-When you first open the app, you'll see "Who's this?":
+After logging in, you'll see "Who's this?":
 - Tap your name if you're a kid
 - Tap the grey "Parents" button if you're a parent
 - The app remembers your selection on this device
@@ -198,15 +207,19 @@ app/
 │   ├── chore-card.tsx    # Unified card for chores
 │   └── task-card.tsx     # Unified card for tasks
 ├── api/                  # API endpoints
+│   ├── auth/             # Login/logout endpoints
 │   ├── kids/             # Get kid data + qualification
 │   ├── tasks/            # Task CRUD operations
 │   ├── chores/           # Chore operations
 │   ├── excuse/           # Excuse chores/tasks
 │   ├── incentive-claims/ # Claim rewards
 │   └── dashboard/        # Parent dashboard data
+├── login/                # Login page
 └── lib/
     ├── db.ts             # Database queries and types
+    ├── auth.ts           # Authentication utilities
     └── sorting.ts        # Unified sorting logic
+proxy.ts                  # Next.js middleware for auth (Next.js 16)
 ```
 
 ## Database Schema
@@ -220,7 +233,7 @@ app/
 
 ## Technology Stack
 
-- **Framework**: [Next.js 15](https://nextjs.org/) with App Router
+- **Framework**: [Next.js 16](https://nextjs.org/) with App Router
 - **Database**: [Neon Postgres](https://neon.tech/) (serverless)
 - **Styling**: [Tailwind CSS](https://tailwindcss.com/)
 - **Hosting**: [Vercel](https://vercel.com/)
@@ -246,7 +259,7 @@ npm run format:check # Check formatting
 npm test             # Run integration tests for chores and tasks
 
 # Database
-node init-db.mjs     # Initialize/reset database with sample data
+npm run migrate      # Apply database migrations
 ```
 
 ### Code Quality
