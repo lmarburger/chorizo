@@ -443,7 +443,7 @@ describe("Integration tests", { concurrency: false }, () => {
     });
     await toggleTaskComplete(recentTask.id);
 
-    const oldCompletedDate = new Date();
+    const oldCompletedDate = getTestDate();
     oldCompletedDate.setDate(oldCompletedDate.getDate() - 10);
     await sql`
       INSERT INTO tasks (title, description, kid_name, due_date, completed_at)

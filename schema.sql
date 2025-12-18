@@ -45,7 +45,7 @@ CREATE TABLE chore_completions (
     id serial PRIMARY KEY,
     chore_schedule_id integer NOT NULL REFERENCES chore_schedules(id) ON DELETE CASCADE,
     completed_date date NOT NULL,
-    completed_at timestamp DEFAULT NOW(),
+    completed_at timestamptz DEFAULT NOW(),
     notes text,
     excused boolean DEFAULT false,  -- true if parent excused this chore (counts as done for qualification)
     UNIQUE(chore_schedule_id, completed_date)

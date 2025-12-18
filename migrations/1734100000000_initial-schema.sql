@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS chore_completions (
     id SERIAL PRIMARY KEY,
     chore_schedule_id INTEGER NOT NULL REFERENCES chore_schedules(id) ON DELETE CASCADE,
     completed_date DATE NOT NULL,
-    completed_at TIMESTAMP DEFAULT NOW(),
+    completed_at TIMESTAMPTZ DEFAULT NOW(),
     notes TEXT,
     UNIQUE(chore_schedule_id, completed_date)
 );
