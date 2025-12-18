@@ -32,11 +32,13 @@ export function getRelativeTime(date: Date, now: Date = getClientCurrentDate()):
  * @returns Number of days until due (negative if overdue)
  */
 export function getDaysUntilDue(dueDate: string, now: Date = getClientCurrentDate()): number {
-  const today = new Date(now);
-  today.setHours(0, 0, 0, 0);
-  const due = parseLocalDate(dueDate);
-  const diffMs = due.getTime() - today.getTime();
-  return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  // Convert both dates to noon UTC for timezone-safe comparison
+  const todayStr = formatDateString(now);
+  const todayNoon = parseLocalDate(todayStr);
+  const dueNoon = parseLocalDate(dueDate);
+  const diffMs = dueNoon.getTime() - todayNoon.getTime();
+  // Both dates are at noon UTC, so diff is exact multiple of 24 hours
+  return Math.round(diffMs / (1000 * 60 * 60 * 24));
 }
 
 /**
@@ -145,13 +147,20 @@ export function getDayAbbreviation(date: string | Date): string {
 }
 
 /**
- * Parse a date string ensuring it's treated as local date
- * Prevents timezone issues with YYYY-MM-DD format dates
+ * Parse a date string to a Date object that represents that calendar date.
+ * Uses noon UTC to ensure the date is stable across all timezones.
+ *
+ * Why noon UTC? JavaScript Date represents an instant in time, but date strings
+ * like "2024-12-18" represent a calendar date (no time). Noon UTC is safe because:
+ * - In EST (UTC-5): 12:00 UTC = 07:00 EST → still Dec 18
+ * - In PST (UTC-8): 12:00 UTC = 04:00 PST → still Dec 18
+ * - In UTC+12: 12:00 UTC = 00:00+12 → still Dec 18
+ *
+ * Midnight system time would fail in production (UTC) because 00:00 UTC = 19:00 EST (previous day).
  */
 export function parseLocalDate(dateString: string): Date {
   if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
-    const [year, month, day] = dateString.split("-").map(Number);
-    return new Date(year, month - 1, day);
+    return new Date(dateString + "T12:00:00Z");
   }
   return new Date(dateString);
 }

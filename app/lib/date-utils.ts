@@ -3,7 +3,7 @@
  * Uses APP_TIMEZONE environment variable (defaults to America/New_York)
  */
 
-const TIMEZONE = process.env.APP_TIMEZONE || "America/New_York";
+import { TIMEZONE } from "./timezone-config";
 
 /**
  * Format a Date object as YYYY-MM-DD string in the configured timezone

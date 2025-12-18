@@ -4,8 +4,7 @@
  */
 
 import { formatDateString } from "./date-utils";
-
-const TIMEZONE = process.env.APP_TIMEZONE || "America/New_York";
+import { TIMEZONE } from "./timezone-config";
 
 /**
  * Get the day of week (0=Sunday, 6=Saturday) for a Date object in the configured timezone.
@@ -54,7 +53,7 @@ export function calculateMondayOfWeek(date: Date): string {
  * Pure function: Calculate a specific date within a week given the Monday and day of week.
  */
 export function calculateChoreDate(mondayStr: string, dayOfWeek: DayOfWeek): string {
-  const monday = new Date(mondayStr + "T12:00:00");
+  const monday = new Date(mondayStr + "T12:00:00Z"); // Noon UTC for timezone stability
   monday.setDate(monday.getDate() + DAY_OFFSETS[dayOfWeek]);
   return formatDateString(monday);
 }

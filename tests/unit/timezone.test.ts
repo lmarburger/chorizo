@@ -136,4 +136,24 @@ describe("Week boundary calculations", () => {
     assert.strictEqual(getDayOfWeekInTimezone(mondayEarly), 1, "Should be Monday");
     assert.strictEqual(calculateMondayOfWeek(mondayEarly), "2024-12-16", "Should be NEW week of Dec 16");
   });
+
+  it("calculateChoreDate for Friday is correctly after Thursday (regression test)", () => {
+    // This test prevents the bug where Friday was calculated as Thursday in UTC
+    // due to missing 'Z' suffix causing midnight UTC → 7pm EST (previous day)
+    const mondayStr = "2024-12-16"; // Monday Dec 16, 2024
+    const fridayStr = calculateChoreDate(mondayStr, "friday");
+    const thursdayStr = calculateChoreDate(mondayStr, "thursday");
+
+    assert.strictEqual(fridayStr, "2024-12-20", "Friday should be Dec 20");
+    assert.strictEqual(thursdayStr, "2024-12-19", "Thursday should be Dec 19");
+
+    // The critical check: Friday must be AFTER Thursday in string comparison
+    // This was broken when running in UTC without the 'Z' suffix
+    assert.ok(fridayStr > thursdayStr, "Friday date string must be greater than Thursday");
+
+    // Simulate the qualification check: on Thursday, Friday should NOT be past
+    const todayThursday = "2024-12-19";
+    const isFridayOrLater = todayThursday >= fridayStr;
+    assert.strictEqual(isFridayOrLater, false, "Thursday should NOT be >= Friday");
+  });
 });

@@ -1,7 +1,8 @@
 import { neon } from "@neondatabase/serverless";
 import { getCurrentDate } from "./time-server";
 import { formatDateString } from "./date-utils";
-import { calculateMondayOfWeek, type DayOfWeek } from "./timezone";
+import { calculateMondayOfWeek, calculateChoreDate, type DayOfWeek } from "./timezone";
+import { TIMEZONE } from "./timezone-config";
 import {
   calculateQualification,
   type ChoreRow,
@@ -13,8 +14,6 @@ import {
 
 // Re-export timezone functions for backward compatibility
 export { getDayOfWeekInTimezone, calculateMondayOfWeek, calculateChoreDate, type DayOfWeek } from "./timezone";
-
-const TIMEZONE = process.env.APP_TIMEZONE || "America/New_York";
 
 export interface Chore {
   id: number;
@@ -649,12 +648,6 @@ async function getMondayOfWeek(date?: Date): Promise<string> {
   return calculateMondayOfWeek(d);
 }
 
-function getFridayOfWeek(mondayStr: string): string {
-  const monday = new Date(mondayStr + "T00:00:00");
-  monday.setDate(monday.getDate() + 4);
-  return formatDateString(monday);
-}
-
 export async function getWeeklyQualification(
   kidName: string,
   weekStart?: string,
@@ -663,7 +656,7 @@ export async function getWeeklyQualification(
   const sql = getDb();
   const currentDate = now ?? (await getCurrentDate());
   const mondayStr = weekStart || calculateMondayOfWeek(currentDate);
-  const fridayStr = getFridayOfWeek(mondayStr);
+  const fridayStr = calculateChoreDate(mondayStr, "friday");
   const today = formatDateString(currentDate);
 
   // Get all chores for Mon-Fri of the week
