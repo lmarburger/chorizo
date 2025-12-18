@@ -82,8 +82,8 @@ export function createTaskRow(overrides: Partial<TaskRow> = {}): TaskRow {
     id: 1,
     title: "Test Task",
     due_date: "2025-01-06",
-    completed_at: null,
-    excused_at: null,
+    completed_on: null,
+    excused: false,
     ...overrides,
   };
 }

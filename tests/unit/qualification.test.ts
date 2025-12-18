@@ -92,7 +92,7 @@ describe("Qualification tests", () => {
     const result = calculateQualification({
       kidName: "Alex",
       chores: [],
-      tasks: [createTaskRow({ due_date: "2025-01-06", completed_at: null })],
+      tasks: [createTaskRow({ due_date: "2025-01-06", completed_on: null })],
       today: "2025-01-10",
       fridayStr: "2025-01-10",
       existingClaim: null,
@@ -107,7 +107,7 @@ describe("Qualification tests", () => {
     const result = calculateQualification({
       kidName: "Alex",
       chores: [],
-      tasks: [createTaskRow({ due_date: "2025-01-06", completed_at: null, excused_at: "2025-01-07T12:00:00Z" })],
+      tasks: [createTaskRow({ due_date: "2025-01-06", completed_on: null, excused: true })],
       today: "2025-01-10",
       fridayStr: "2025-01-10",
       existingClaim: null,

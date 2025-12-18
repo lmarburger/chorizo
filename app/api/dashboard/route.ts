@@ -56,16 +56,16 @@ export async function GET() {
           // Not completed and due today or in the past
           // due_date is now always a string in YYYY-MM-DD format
           const dueDate = parseLocalDate(task.due_date);
-          return !task.completed_at && !task.excused_at && !isAfter(dueDate, todayStart);
+          return !task.completed_on && !task.excused && !isAfter(dueDate, todayStart);
         });
 
         // All incomplete tasks (including future ones) for display in dashboard
-        const allIncompleteTasks = kidTasks.filter(task => !task.completed_at && !task.excused_at);
+        const allIncompleteTasks = kidTasks.filter(task => !task.completed_on && !task.excused);
 
         // Upcoming tasks (future tasks not due yet)
         const upcomingTasks = kidTasks.filter(task => {
           const dueDate = parseLocalDate(task.due_date);
-          return !task.completed_at && !task.excused_at && isAfter(dueDate, todayStart);
+          return !task.completed_on && !task.excused && isAfter(dueDate, todayStart);
         });
 
         // Get qualification status

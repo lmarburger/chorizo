@@ -2,7 +2,6 @@ import { neon } from "@neondatabase/serverless";
 import { getCurrentDate } from "./time-server";
 import { formatDateString } from "./date-utils";
 import { calculateMondayOfWeek, calculateChoreDate, type DayOfWeek } from "./timezone";
-import { TIMEZONE } from "./timezone-config";
 import {
   calculateQualification,
   type ChoreRow,
@@ -20,8 +19,6 @@ export interface Chore {
   name: string;
   description: string | null;
   flexible: boolean;
-  created_at: Date;
-  updated_at: Date;
 }
 
 export interface ChoreSchedule {
@@ -29,7 +26,6 @@ export interface ChoreSchedule {
   chore_id: number;
   kid_name: string;
   day_of_week: DayOfWeek;
-  created_at: Date;
 }
 
 export interface ChoreWithSchedules extends Chore {
@@ -44,8 +40,8 @@ export interface ChoreScheduleWithChore extends ChoreSchedule {
 export interface ChoreCompletion {
   id: number;
   chore_schedule_id: number;
-  completed_date: string;
-  completed_at: Date;
+  scheduled_on: string;
+  completed_on: string;
   notes: string | null;
   excused: boolean;
 }
@@ -53,7 +49,7 @@ export interface ChoreCompletion {
 export interface ChoreScheduleWithCompletion extends ChoreScheduleWithChore {
   is_completed: boolean;
   completion_id?: number;
-  completed_at?: Date;
+  completed_on?: string;
   flexible: boolean;
   excused: boolean;
   is_late_completion: boolean;
@@ -151,7 +147,7 @@ export async function getCurrentWeekChores(now?: Date): Promise<ChoreScheduleWit
           WHEN 'saturday' THEN 6
           WHEN 'sunday' THEN 7
         END as day_number,
-        DATE(${mondayStr}::date + (
+        (${mondayStr}::date + (
           CASE cs.day_of_week
             WHEN 'monday' THEN 0
             WHEN 'tuesday' THEN 1
@@ -161,43 +157,41 @@ export async function getCurrentWeekChores(now?: Date): Promise<ChoreScheduleWit
             WHEN 'saturday' THEN 5
             WHEN 'sunday' THEN 6
           END
-        ) * INTERVAL '1 day') as chore_date
+        ) * INTERVAL '1 day')::date as chore_date
       FROM chore_schedules cs
       JOIN chores c ON cs.chore_id = c.id
     )
     SELECT
       ws.*,
       cc.id as completion_id,
-      cc.completed_at,
+      cc.completed_on::text as completed_on,
       COALESCE(cc.excused, false) as excused,
       CASE WHEN cc.id IS NOT NULL THEN true ELSE false END as is_completed,
       CASE
         WHEN cc.id IS NOT NULL
           AND NOT ws.flexible
-          AND (cc.completed_at AT TIME ZONE ${TIMEZONE})::date > ws.chore_date
+          AND cc.completed_on > ws.chore_date
         THEN true
         ELSE false
       END as is_late_completion
     FROM week_schedules ws
     LEFT JOIN chore_completions cc
       ON ws.id = cc.chore_schedule_id
-      AND cc.completed_date = ws.chore_date
+      AND cc.scheduled_on = ws.chore_date
     ORDER BY
       ws.kid_name,
       -- First show uncompleted chores sorted by day
       CASE WHEN cc.id IS NULL THEN 0 ELSE 1 END,
-      -- For uncompleted: sort by day number, for completed: use completion time
+      -- For uncompleted: sort by day number, for completed: use completion date
       CASE WHEN cc.id IS NULL THEN ws.day_number ELSE NULL END,
-      -- Then show completed chores sorted by completion time (most recent first)
-      cc.completed_at DESC
+      -- Then show completed chores sorted by completion date (most recent first)
+      cc.completed_on DESC
   `;
 
   return result as ChoreScheduleWithCompletion[];
 }
 
-export async function addChore(
-  chore: Omit<Chore, "id" | "created_at" | "updated_at" | "flexible"> & { flexible?: boolean }
-): Promise<Chore> {
+export async function addChore(chore: Omit<Chore, "id" | "flexible"> & { flexible?: boolean }): Promise<Chore> {
   const sql = getDb();
   const result = await sql`
     INSERT INTO chores (name, description, flexible)
@@ -209,15 +203,14 @@ export async function addChore(
 
 export async function updateChore(
   id: number,
-  chore: Omit<Chore, "id" | "created_at" | "updated_at" | "flexible"> & { flexible?: boolean }
+  chore: Omit<Chore, "id" | "flexible"> & { flexible?: boolean }
 ): Promise<Chore> {
   const sql = getDb();
   const result = await sql`
     UPDATE chores
     SET name = ${chore.name},
         description = ${chore.description},
-        flexible = ${chore.flexible ?? true},
-        updated_at = NOW()
+        flexible = ${chore.flexible ?? true}
     WHERE id = ${id}
     RETURNING *
   `;
@@ -265,27 +258,26 @@ export async function updateChoreSchedules(
 
 export async function completeChore(
   scheduleId: number,
-  date: string,
-  notes?: string,
-  completedAt?: Date
+  scheduledOn: string,
+  completedOn: string,
+  notes?: string
 ): Promise<ChoreCompletion> {
   const sql = getDb();
-  const completedAtStr = completedAt ? completedAt.toISOString() : null;
   const result = await sql`
-    INSERT INTO chore_completions (chore_schedule_id, completed_date, completed_at, notes)
-    VALUES (${scheduleId}, ${date}, COALESCE(${completedAtStr}::timestamptz, NOW()), ${notes})
-    ON CONFLICT (chore_schedule_id, completed_date)
-    DO UPDATE SET completed_at = COALESCE(${completedAtStr}::timestamptz, NOW()), notes = ${notes}
-    RETURNING *
+    INSERT INTO chore_completions (chore_schedule_id, scheduled_on, completed_on, notes)
+    VALUES (${scheduleId}, ${scheduledOn}, ${completedOn}, ${notes})
+    ON CONFLICT (chore_schedule_id, scheduled_on)
+    DO UPDATE SET completed_on = ${completedOn}, notes = ${notes}
+    RETURNING *, scheduled_on::text, completed_on::text
   `;
   return result[0] as ChoreCompletion;
 }
 
-export async function uncompleteChore(scheduleId: number, date: string): Promise<void> {
+export async function uncompleteChore(scheduleId: number, scheduledOn: string): Promise<void> {
   const sql = getDb();
   await sql`
-    DELETE FROM chore_completions 
-    WHERE chore_schedule_id = ${scheduleId} AND completed_date = ${date}
+    DELETE FROM chore_completions
+    WHERE chore_schedule_id = ${scheduleId} AND scheduled_on = ${scheduledOn}
   `;
 }
 
@@ -310,10 +302,8 @@ export interface Task {
   description: string | null;
   kid_name: string;
   due_date: string;
-  completed_at: Date | null;
-  excused_at: Date | null;
-  created_at: Date;
-  updated_at: Date;
+  completed_on: string | null;
+  excused: boolean;
 }
 
 export async function getAllTasks(): Promise<Task[]> {
@@ -325,15 +315,13 @@ export async function getAllTasks(): Promise<Task[]> {
       description,
       kid_name,
       due_date::text as due_date,
-      completed_at,
-      excused_at,
-      created_at,
-      updated_at
+      completed_on::text as completed_on,
+      excused
     FROM tasks
     ORDER BY
-      CASE WHEN completed_at IS NULL AND excused_at IS NULL THEN 0 ELSE 1 END,
+      CASE WHEN completed_on IS NULL AND NOT excused THEN 0 ELSE 1 END,
       due_date ASC,
-      completed_at DESC
+      completed_on DESC
   `;
   return result as Task[];
 }
@@ -342,7 +330,6 @@ export async function getTasksForKid(kidName: string, now?: Date): Promise<Task[
   const sql = getDb();
   const currentDate = now ?? (await getCurrentDate());
   const weekStart = calculateMondayOfWeek(currentDate);
-  const weekStartTimestamp = `${weekStart}T00:00:00`;
 
   const result = await sql`
     SELECT
@@ -351,21 +338,18 @@ export async function getTasksForKid(kidName: string, now?: Date): Promise<Task[
       description,
       kid_name,
       due_date::text as due_date,
-      completed_at,
-      excused_at,
-      created_at,
-      updated_at
+      completed_on::text as completed_on,
+      excused
     FROM tasks
     WHERE kid_name = ${kidName}
       AND (
-        (completed_at IS NULL AND excused_at IS NULL)
-        OR completed_at >= ${weekStartTimestamp}::timestamp
-        OR excused_at >= ${weekStartTimestamp}::timestamp
+        (completed_on IS NULL AND NOT excused)
+        OR completed_on >= ${weekStart}
       )
     ORDER BY
-      CASE WHEN completed_at IS NULL AND excused_at IS NULL THEN 0 ELSE 1 END,
+      CASE WHEN completed_on IS NULL AND NOT excused THEN 0 ELSE 1 END,
       due_date ASC,
-      completed_at DESC
+      completed_on DESC
   `;
   return result as Task[];
 }
@@ -375,6 +359,7 @@ export async function getTasksForParentView(now?: Date): Promise<Task[]> {
   const currentDate = now ?? (await getCurrentDate());
   const oneWeekAgo = new Date(currentDate);
   oneWeekAgo.setDate(currentDate.getDate() - 7);
+  const oneWeekAgoStr = formatDateString(oneWeekAgo);
 
   const result = await sql`
     SELECT
@@ -383,25 +368,20 @@ export async function getTasksForParentView(now?: Date): Promise<Task[]> {
       description,
       kid_name,
       due_date::text as due_date,
-      completed_at,
-      excused_at,
-      created_at,
-      updated_at
+      completed_on::text as completed_on,
+      excused
     FROM tasks
-    WHERE (completed_at IS NULL AND excused_at IS NULL)
-       OR completed_at >= ${oneWeekAgo.toISOString()}
-       OR excused_at >= ${oneWeekAgo.toISOString()}
+    WHERE (completed_on IS NULL AND NOT excused)
+       OR completed_on >= ${oneWeekAgoStr}
     ORDER BY
-      CASE WHEN completed_at IS NULL AND excused_at IS NULL THEN 0 ELSE 1 END,
+      CASE WHEN completed_on IS NULL AND NOT excused THEN 0 ELSE 1 END,
       due_date ASC,
-      completed_at DESC
+      completed_on DESC
   `;
   return result as Task[];
 }
 
-export async function addTask(
-  task: Omit<Task, "id" | "completed_at" | "excused_at" | "created_at" | "updated_at">
-): Promise<Task> {
+export async function addTask(task: Omit<Task, "id" | "completed_on" | "excused">): Promise<Task> {
   const sql = getDb();
   const result = await sql`
     INSERT INTO tasks (title, description, kid_name, due_date)
@@ -412,18 +392,13 @@ export async function addTask(
       description,
       kid_name,
       due_date::text as due_date,
-      completed_at,
-      excused_at,
-      created_at,
-      updated_at
+      completed_on::text as completed_on,
+      excused
   `;
   return result[0] as Task;
 }
 
-export async function updateTask(
-  id: number,
-  task: Partial<Omit<Task, "id" | "created_at" | "updated_at">>
-): Promise<Task> {
+export async function updateTask(id: number, task: Partial<Omit<Task, "id">>): Promise<Task> {
   const sql = getDb();
   const result = await sql`
     UPDATE tasks
@@ -431,9 +406,8 @@ export async function updateTask(
         description = ${task.description !== undefined ? task.description : sql`description`},
         kid_name = ${task.kid_name || sql`kid_name`},
         due_date = ${task.due_date || sql`due_date`},
-        completed_at = ${task.completed_at !== undefined ? task.completed_at : sql`completed_at`},
-        excused_at = ${task.excused_at !== undefined ? task.excused_at : sql`excused_at`},
-        updated_at = NOW()
+        completed_on = ${task.completed_on !== undefined ? task.completed_on : sql`completed_on`},
+        excused = ${task.excused !== undefined ? task.excused : sql`excused`}
     WHERE id = ${id}
     RETURNING
       id,
@@ -441,10 +415,8 @@ export async function updateTask(
       description,
       kid_name,
       due_date::text as due_date,
-      completed_at,
-      excused_at,
-      created_at,
-      updated_at
+      completed_on::text as completed_on,
+      excused
   `;
   return result[0] as Task;
 }
@@ -454,17 +426,21 @@ export async function deleteTask(id: number): Promise<void> {
   await sql`DELETE FROM tasks WHERE id = ${id}`;
 }
 
-export async function toggleTaskComplete(id: number): Promise<Task> {
+export async function toggleTaskComplete(id: number, completedOn: string | null): Promise<Task> {
   const sql = getDb();
+  // completedOn is a YYYY-MM-DD string to mark complete, or null to mark incomplete
   const result = await sql`
-    UPDATE tasks 
-    SET completed_at = CASE 
-      WHEN completed_at IS NULL THEN NOW() 
-      ELSE NULL 
-    END,
-    updated_at = NOW()
+    UPDATE tasks
+    SET completed_on = ${completedOn}::date
     WHERE id = ${id}
-    RETURNING *
+    RETURNING
+      id,
+      title,
+      description,
+      kid_name,
+      due_date::text as due_date,
+      completed_on::text as completed_on,
+      excused
   `;
   return result[0] as Task;
 }
@@ -589,24 +565,28 @@ export async function deleteFeedback(id: number): Promise<void> {
 }
 
 // Excuse functions for chores
-export async function excuseChore(scheduleId: number, date: string): Promise<ChoreCompletion> {
+export async function excuseChore(
+  scheduleId: number,
+  scheduledOn: string,
+  completedOn: string
+): Promise<ChoreCompletion> {
   const sql = getDb();
   const result = await sql`
-    INSERT INTO chore_completions (chore_schedule_id, completed_date, excused)
-    VALUES (${scheduleId}, ${date}, true)
-    ON CONFLICT (chore_schedule_id, completed_date)
-    DO UPDATE SET excused = true, completed_at = NOW()
-    RETURNING *
+    INSERT INTO chore_completions (chore_schedule_id, scheduled_on, completed_on, excused)
+    VALUES (${scheduleId}, ${scheduledOn}, ${completedOn}, true)
+    ON CONFLICT (chore_schedule_id, scheduled_on)
+    DO UPDATE SET excused = true, completed_on = ${completedOn}
+    RETURNING *, scheduled_on::text, completed_on::text
   `;
   return result[0] as ChoreCompletion;
 }
 
-export async function unexcuseChore(scheduleId: number, date: string): Promise<void> {
+export async function unexcuseChore(scheduleId: number, scheduledOn: string): Promise<void> {
   const sql = getDb();
   await sql`
     DELETE FROM chore_completions
     WHERE chore_schedule_id = ${scheduleId}
-      AND completed_date = ${date}
+      AND scheduled_on = ${scheduledOn}
       AND excused = true
   `;
 }
@@ -616,12 +596,12 @@ export async function excuseTask(taskId: number): Promise<Task> {
   const sql = getDb();
   const result = await sql`
     UPDATE tasks
-    SET excused_at = NOW(), updated_at = NOW()
+    SET excused = true
     WHERE id = ${taskId}
     RETURNING
       id, title, description, kid_name,
       due_date::text as due_date,
-      completed_at, excused_at, created_at, updated_at
+      completed_on::text as completed_on, excused
   `;
   return result[0] as Task;
 }
@@ -630,12 +610,12 @@ export async function unexcuseTask(taskId: number): Promise<Task> {
   const sql = getDb();
   const result = await sql`
     UPDATE tasks
-    SET excused_at = NULL, updated_at = NOW()
+    SET excused = false
     WHERE id = ${taskId}
     RETURNING
       id, title, description, kid_name,
       due_date::text as due_date,
-      completed_at, excused_at, created_at, updated_at
+      completed_on::text as completed_on, excused
   `;
   return result[0] as Task;
 }
@@ -668,7 +648,7 @@ export async function getWeeklyQualification(
         c.name as chore_name,
         c.flexible,
         cs.day_of_week,
-        DATE(${mondayStr}::date + (
+        (${mondayStr}::date + (
           CASE cs.day_of_week
             WHEN 'monday' THEN 0
             WHEN 'tuesday' THEN 1
@@ -677,7 +657,7 @@ export async function getWeeklyQualification(
             WHEN 'friday' THEN 4
             ELSE NULL
           END
-        ) * INTERVAL '1 day') as scheduled_date
+        ) * INTERVAL '1 day')::date as scheduled_date
       FROM chore_schedules cs
       JOIN chores c ON cs.chore_id = c.id
       WHERE cs.kid_name = ${kidName}
@@ -687,18 +667,18 @@ export async function getWeeklyQualification(
       ws.*,
       cc.id as completion_id,
       cc.excused,
-      cc.completed_at,
+      cc.completed_on,
       CASE
         WHEN cc.id IS NOT NULL
           AND NOT ws.flexible
-          AND (cc.completed_at AT TIME ZONE ${TIMEZONE})::date > ws.scheduled_date
+          AND cc.completed_on > ws.scheduled_date
         THEN true
         ELSE false
       END as is_late_completion
     FROM week_schedules ws
     LEFT JOIN chore_completions cc
       ON ws.schedule_id = cc.chore_schedule_id
-      AND cc.completed_date = ws.scheduled_date
+      AND cc.scheduled_on = ws.scheduled_date
     WHERE ws.scheduled_date IS NOT NULL
   `;
 
@@ -709,8 +689,8 @@ export async function getWeeklyQualification(
       title,
       kid_name,
       due_date::text as due_date,
-      completed_at,
-      excused_at
+      completed_on::text as completed_on,
+      excused
     FROM tasks
     WHERE kid_name = ${kidName}
       AND due_date >= ${mondayStr}

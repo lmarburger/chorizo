@@ -7,6 +7,7 @@ import {
   type DayOfWeek,
 } from "@/app/lib/db";
 import { getCurrentDate } from "@/app/lib/time-server";
+import { formatDateString } from "@/app/lib/date-utils";
 
 export async function POST(request: Request) {
   try {
@@ -15,11 +16,12 @@ export async function POST(request: Request) {
     const today = await getCurrentDate();
     const mondayStr = calculateMondayOfWeek(today);
     const choreDateStr = calculateChoreDate(mondayStr, dayOfWeek as DayOfWeek);
+    const todayStr = formatDateString(today);
 
     if (isCompleted) {
       await uncompleteChore(scheduleId, choreDateStr);
     } else {
-      await completeChore(scheduleId, choreDateStr, undefined, today);
+      await completeChore(scheduleId, choreDateStr, todayStr);
     }
 
     return NextResponse.json({ success: true });

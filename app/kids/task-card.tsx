@@ -11,8 +11,8 @@ interface TaskCardProps {
 
 export function TaskCard({ task, onToggle }: TaskCardProps) {
   const daysUntil = getDaysUntilDue(task.due_date);
-  const isOverdue = daysUntil < 0 && !task.completed_at;
-  const isFuture = daysUntil > 0 && !task.completed_at;
+  const isOverdue = daysUntil < 0 && !task.completed_on;
+  const isFuture = daysUntil > 0 && !task.completed_on;
 
   return (
     <BaseItemCard
@@ -20,7 +20,7 @@ export function TaskCard({ task, onToggle }: TaskCardProps) {
       title={task.title}
       description={task.description}
       dayOrDate={task.due_date}
-      isCompleted={!!task.completed_at}
+      isCompleted={!!task.completed_on}
       isOverdue={isOverdue}
       isFuture={isFuture}
       onToggle={onToggle}

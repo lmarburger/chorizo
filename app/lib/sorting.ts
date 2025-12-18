@@ -32,7 +32,7 @@ function getChoreStatus(chore: ChoreScheduleWithCompletion, todayIndex: number, 
 }
 
 function getTaskStatus(task: Task, today: Date, timezone?: string): ItemStatus {
-  if (task.completed_at || task.excused_at) return "completed";
+  if (task.completed_on || task.excused) return "completed";
 
   // Compare dates as strings in the specified timezone to avoid timezone conversion issues
   const todayStr = timezone
@@ -83,7 +83,7 @@ export function createSortableItems(
       name: chore.chore_name,
       status,
       isCompleted: chore.is_completed || chore.excused,
-      completedAt: chore.completed_at ? new Date(chore.completed_at) : undefined,
+      completedAt: chore.completed_on ? new Date(chore.completed_on) : undefined,
       dayOfWeek: chore.day_of_week,
       dayNumber: choreIndex,
       isFixed: !chore.flexible,
@@ -97,7 +97,7 @@ export function createSortableItems(
   // Add tasks
   tasks.forEach(task => {
     const status = getTaskStatus(task, today, timezone);
-    const isCompleted = !!task.completed_at || !!task.excused_at;
+    const isCompleted = !!task.completed_on || task.excused;
     const dueDate = parseLocalDate(task.due_date);
     // Use date string directly to avoid system timezone issues
     const dayOfWeekIndex = getDayOfWeekFromDateString(task.due_date);
@@ -108,11 +108,11 @@ export function createSortableItems(
       name: task.title,
       status,
       isCompleted,
-      completedAt: task.completed_at ? new Date(task.completed_at) : undefined,
+      completedAt: task.completed_on ? new Date(task.completed_on) : undefined,
       dueDate,
       dayNumber,
       isFixed: false, // Tasks are never "fixed"
-      isExcused: !!task.excused_at,
+      isExcused: task.excused,
       isCompletable: !isCompleted, // Tasks can be completed anytime
       isLateCompletion: false, // Tasks don't have late completion concept
       data: task,

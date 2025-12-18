@@ -25,8 +25,6 @@ CREATE TABLE chores (
     name varchar(255) NOT NULL, -- noqa: RF04
     description text,
     flexible boolean DEFAULT true,  -- true = can do any day this week, false = must do on scheduled day
-    created_at timestamp DEFAULT NOW(),
-    updated_at timestamp DEFAULT NOW(),
     UNIQUE(name) -- Chore names should be unique
 );
 
@@ -36,7 +34,6 @@ CREATE TABLE chore_schedules (
     chore_id integer NOT NULL REFERENCES chores(id) ON DELETE CASCADE,
     kid_name varchar(100) NOT NULL,
     day_of_week day_of_week NOT NULL,
-    created_at timestamp DEFAULT NOW(),
     UNIQUE(chore_id, kid_name, day_of_week) -- Prevent duplicate schedules
 );
 
@@ -44,11 +41,11 @@ CREATE TABLE chore_schedules (
 CREATE TABLE chore_completions (
     id serial PRIMARY KEY,
     chore_schedule_id integer NOT NULL REFERENCES chore_schedules(id) ON DELETE CASCADE,
-    completed_date date NOT NULL,
-    completed_at timestamptz DEFAULT NOW(),
+    scheduled_on date NOT NULL,   -- the scheduled date for this chore occurrence
+    completed_on date NOT NULL,   -- the actual date it was completed
     notes text,
     excused boolean DEFAULT false,  -- true if parent excused this chore (counts as done for qualification)
-    UNIQUE(chore_schedule_id, completed_date)
+    UNIQUE(chore_schedule_id, scheduled_on)
 );
 
 -- Tasks table to store one-off tasks with due dates
@@ -58,10 +55,8 @@ CREATE TABLE tasks (
     description text,
     kid_name varchar(100) NOT NULL,
     due_date date NOT NULL,
-    completed_at timestamptz,
-    excused_at timestamptz,  -- if set, parent excused this task (counts as done for qualification)
-    created_at timestamptz DEFAULT NOW(),
-    updated_at timestamptz DEFAULT NOW()
+    completed_on date,         -- the date it was completed (NULL if not completed)
+    excused boolean DEFAULT false  -- true if parent excused this task (counts as done for qualification)
 );
 
 -- Incentive claims table to track weekly rewards
@@ -79,11 +74,11 @@ CREATE TABLE incentive_claims (
 CREATE INDEX idx_schedules_kid_name ON chore_schedules(kid_name);
 CREATE INDEX idx_schedules_day_of_week ON chore_schedules(day_of_week);
 CREATE INDEX idx_schedules_chore_id ON chore_schedules(chore_id);
-CREATE INDEX idx_completions_date ON chore_completions(completed_date);
+CREATE INDEX idx_completions_scheduled_on ON chore_completions(scheduled_on);
 CREATE INDEX idx_completions_schedule_id ON chore_completions(chore_schedule_id);
 CREATE INDEX idx_tasks_kid_name ON tasks(kid_name);
 CREATE INDEX idx_tasks_due_date ON tasks(due_date);
-CREATE INDEX idx_tasks_completed ON tasks(completed_at);
+CREATE INDEX idx_tasks_completed_on ON tasks(completed_on);
 CREATE INDEX idx_claims_kid_name ON incentive_claims(kid_name);
 CREATE INDEX idx_claims_week ON incentive_claims(week_start_date);
 CREATE INDEX idx_feedback_kid_name ON feedback(kid_name);

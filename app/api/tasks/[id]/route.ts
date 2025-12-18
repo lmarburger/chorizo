@@ -1,5 +1,6 @@
 import { updateTask, deleteTask, toggleTaskComplete } from "@/app/lib/db";
 import { apiSuccess, handleDbError, parseJsonBody } from "@/app/lib/api-utils";
+import { formatDateString } from "@/app/lib/date-utils";
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -29,7 +30,8 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const task = await toggleTaskComplete(parseInt(id));
+    const todayStr = formatDateString(new Date());
+    const task = await toggleTaskComplete(parseInt(id), todayStr);
     return apiSuccess({ task });
   } catch (error) {
     return handleDbError(error);

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { excuseChore, unexcuseChore, excuseTask, unexcuseTask } from "@/app/lib/db";
+import { formatDateString } from "@/app/lib/date-utils";
 
 // POST /api/excuse - Excuse a chore or task
 export async function POST(request: Request) {
@@ -15,7 +16,8 @@ export async function POST(request: Request) {
       if (!date) {
         return NextResponse.json({ error: "Missing date for chore excuse" }, { status: 400 });
       }
-      const result = await excuseChore(id, date);
+      const todayStr = formatDateString(new Date());
+      const result = await excuseChore(id, date, todayStr);
       return NextResponse.json({ success: true, result });
     } else if (type === "task") {
       const result = await excuseTask(id);

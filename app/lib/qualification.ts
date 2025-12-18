@@ -41,8 +41,8 @@ export interface TaskRow {
   id: number;
   title: string;
   due_date: string;
-  completed_at: string | null;
-  excused_at: string | null;
+  completed_on: string | null;
+  excused: boolean;
 }
 
 export interface QualificationInput {
@@ -107,8 +107,8 @@ export function calculateQualification(input: QualificationInput): Qualification
   for (const task of tasks) {
     const dueDate = task.due_date;
     const isPast = dueDate < today;
-    const isCompleted = task.completed_at !== null;
-    const isExcused = task.excused_at !== null;
+    const isCompleted = task.completed_on !== null;
+    const isExcused = task.excused;
 
     if (isPast && !isCompleted && !isExcused) {
       isDisqualified = true;
@@ -124,7 +124,7 @@ export function calculateQualification(input: QualificationInput): Qualification
 
   // Calculate if all items are complete (qualified)
   const allChoresComplete = chores.every(c => c.completion_id !== null || c.excused === true);
-  const allTasksComplete = tasks.every(t => t.completed_at !== null || t.excused_at !== null);
+  const allTasksComplete = tasks.every(t => t.completed_on !== null || t.excused);
   const isQualified = !isDisqualified && allChoresComplete && allTasksComplete;
   const inProgress = !isDisqualified && !isQualified;
 

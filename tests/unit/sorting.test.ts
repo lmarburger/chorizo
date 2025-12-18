@@ -16,7 +16,6 @@ function createMockChore(overrides: Partial<ChoreScheduleWithCompletion> = {}): 
     is_completed: false,
     excused: false,
     is_late_completion: false,
-    created_at: new Date(),
     ...overrides,
   };
 }
@@ -29,10 +28,8 @@ function createMockTask(overrides: Partial<Task> = {}): Task {
     description: null,
     kid_name: "Test Kid",
     due_date: "2024-12-11", // Wednesday
-    completed_at: null,
-    excused_at: null,
-    created_at: new Date(),
-    updated_at: new Date(),
+    completed_on: null,
+    excused: false,
     ...overrides,
   };
 }
@@ -78,7 +75,7 @@ describe("Sorting with timezone-aware dates", () => {
         day_of_week: "monday",
         chore_name: "Completed Monday",
         is_completed: true,
-        completed_at: new Date("2024-12-09T18:00:00Z"),
+        completed_on: "2024-12-09",
       }),
       createMockChore({
         id: 2,
@@ -91,7 +88,7 @@ describe("Sorting with timezone-aware dates", () => {
         day_of_week: "tuesday",
         chore_name: "Completed Tuesday",
         is_completed: true,
-        completed_at: new Date("2024-12-10T20:00:00Z"),
+        completed_on: "2024-12-10",
       }),
     ];
 

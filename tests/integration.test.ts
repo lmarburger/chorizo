@@ -161,16 +161,16 @@ describe("Integration tests", { concurrency: false }, () => {
     const testChore = choresWithSchedules.find(c => c.id === chore.id);
     const scheduleId = testChore!.schedules[0].id;
 
-    await completeChore(scheduleId, todayStr);
+    await completeChore(scheduleId, todayStr, todayStr);
     let allChores = await getCurrentWeekChores();
     const completed = allChores.find(c => c.id === scheduleId);
-    assert(completed?.completed_at, "Chore should be marked complete");
+    assert(completed?.completed_on, "Chore should be marked complete");
     assert(completed?.is_completed, "Chore should be marked as completed");
 
     await uncompleteChore(scheduleId, todayStr);
     allChores = await getCurrentWeekChores();
     const uncompleted = allChores.find(c => c.id === scheduleId);
-    assert(!uncompleted?.completed_at, "Chore should be unmarked");
+    assert(!uncompleted?.completed_on, "Chore should be unmarked");
     assert(!uncompleted?.is_completed, "Chore should not be marked as completed");
   });
 
@@ -314,11 +314,12 @@ describe("Integration tests", { concurrency: false }, () => {
       due_date: getTodayString(),
     });
 
-    let toggled = await toggleTaskComplete(task.id);
-    assert(toggled.completed_at, "Task should be marked complete");
+    const todayStr = getTodayString();
+    let toggled = await toggleTaskComplete(task.id, todayStr);
+    assert(toggled.completed_on, "Task should be marked complete");
 
-    toggled = await toggleTaskComplete(task.id);
-    assert(!toggled.completed_at, "Task should be unmarked");
+    toggled = await toggleTaskComplete(task.id, null);
+    assert(!toggled.completed_on, "Task should be unmarked");
   });
 
   it("Get tasks for kid", async () => {
@@ -388,17 +389,17 @@ describe("Integration tests", { concurrency: false }, () => {
       kid_name: kidName,
       due_date: getTodayString(),
     });
-    await toggleTaskComplete(completedTask.id);
+    await toggleTaskComplete(completedTask.id, getTodayString());
 
     const tasks = await getTasksForKid(kidName);
     assert.equal(tasks.length, 4, "Should have 4 tasks");
 
     const lastTask = tasks[tasks.length - 1];
-    assert(lastTask.completed_at, "Last task should be completed");
+    assert(lastTask.completed_on, "Last task should be completed");
 
     const uncompletedTasks = tasks.slice(0, 3);
     assert(
-      uncompletedTasks.every(t => !t.completed_at),
+      uncompletedTasks.every(t => !t.completed_on),
       "First 3 tasks should be uncompleted"
     );
   });
@@ -441,13 +442,12 @@ describe("Integration tests", { concurrency: false }, () => {
       kid_name: kidName,
       due_date: getTodayString(),
     });
-    await toggleTaskComplete(recentTask.id);
+    await toggleTaskComplete(recentTask.id, getTodayString());
 
-    const oldCompletedDate = getTestDate();
-    oldCompletedDate.setDate(oldCompletedDate.getDate() - 10);
+    const oldCompletedDateStr = getDayString(-10);
     await sql`
-      INSERT INTO tasks (title, description, kid_name, due_date, completed_at)
-      VALUES ('Old Completed Task', null, ${kidName}, ${getDayString(-10)}, ${oldCompletedDate.toISOString()})
+      INSERT INTO tasks (title, description, kid_name, due_date, completed_on)
+      VALUES ('Old Completed Task', null, ${kidName}, ${getDayString(-10)}, ${oldCompletedDateStr})
     `;
 
     const tasks = await getTasksForKid(kidName);
@@ -490,14 +490,14 @@ describe("Integration tests", { concurrency: false }, () => {
       due_date: getTomorrowString(),
     });
 
-    await toggleTaskComplete(futureTask.id);
+    await toggleTaskComplete(futureTask.id, getTodayString());
 
     const { getTasksForParentView } = await import("../app/lib/db");
     const parentTasks = await getTasksForParentView();
 
     assert(parentTasks.length >= 2, "Should have at least 2 tasks in parent view");
 
-    const completedRecent = parentTasks.filter(t => t.completed_at !== null);
+    const completedRecent = parentTasks.filter(t => t.completed_on !== null);
     assert(completedRecent.length > 0, "Should include recently completed tasks");
   });
 
@@ -617,7 +617,8 @@ describe("Integration tests", { concurrency: false }, () => {
     if (!dishesSchedule) {
       throw new Error("Could not find dishes schedule");
     }
-    await completeChore(dishesSchedule.id, getTodayString());
+    const todayStr = getTodayString();
+    await completeChore(dishesSchedule.id, todayStr, todayStr);
 
     const allChoresAfter = await getCurrentWeekChores();
     const choresAfter = allChoresAfter.filter(c => c.kid_name === kidName);
@@ -647,7 +648,7 @@ describe("Integration tests", { concurrency: false }, () => {
     const testChore = choresWithSchedules.find(c => c.id === chore.id);
     const scheduleId = testChore!.schedules[0].id;
 
-    await excuseChore(scheduleId, todayStr);
+    await excuseChore(scheduleId, todayStr, todayStr);
     let allChores = await getCurrentWeekChores();
     const excused = allChores.find(c => c.id === scheduleId);
     assert(excused?.excused, "Chore should be marked excused");
@@ -669,10 +670,10 @@ describe("Integration tests", { concurrency: false }, () => {
     });
 
     const excused = await excuseTask(task.id);
-    assert(excused.excused_at, "Task should be marked excused");
+    assert(excused.excused, "Task should be marked excused");
 
     const unexcused = await unexcuseTask(task.id);
-    assert(!unexcused.excused_at, "Task should not be marked excused");
+    assert(!unexcused.excused, "Task should not be marked excused");
   });
 
   it("Fixed vs flexible chores", async () => {
@@ -718,7 +719,8 @@ describe("Integration tests", { concurrency: false }, () => {
 
     const allChores = await getCurrentWeekChores();
     const schedule = allChores.find(c => c.kid_name === kidName);
-    await completeChore(schedule!.id, getTodayString());
+    const todayStr = getTodayString();
+    await completeChore(schedule!.id, todayStr, todayStr);
 
     const qualification = await getWeeklyQualification(kidName);
     assert(qualification.qualified, "Kid should be qualified after completing all chores");
@@ -760,10 +762,10 @@ describe("Integration tests", { concurrency: false }, () => {
     assert(schedule, "Should find the schedule");
 
     const yesterdayStr = getYesterdayString();
-    const todayTimestamp = new Date().toISOString();
+    const todayStr = getTodayString();
     await sql`
-      INSERT INTO chore_completions (chore_schedule_id, completed_date, completed_at, excused)
-      VALUES (${schedule!.id}, ${yesterdayStr}, ${todayTimestamp}, false)
+      INSERT INTO chore_completions (chore_schedule_id, scheduled_on, completed_on, excused)
+      VALUES (${schedule!.id}, ${yesterdayStr}, ${todayStr}, false)
     `;
 
     const updatedChores = await getCurrentWeekChores();
@@ -791,10 +793,10 @@ describe("Integration tests", { concurrency: false }, () => {
     const schedule = allChores.find(c => c.kid_name === kidName && c.chore_id === fixedChore.id);
     assert(schedule, "Should find the schedule");
 
-    const todayTimestamp = new Date().toISOString();
+    const todayStr = getTodayString();
     await sql`
-      INSERT INTO chore_completions (chore_schedule_id, completed_date, completed_at, excused)
-      VALUES (${schedule!.id}, ${yesterdayStr}, ${todayTimestamp}, false)
+      INSERT INTO chore_completions (chore_schedule_id, scheduled_on, completed_on, excused)
+      VALUES (${schedule!.id}, ${yesterdayStr}, ${todayStr}, false)
     `;
 
     const qualification = await getWeeklyQualification(kidName);
@@ -821,16 +823,16 @@ describe("Integration tests", { concurrency: false }, () => {
     const schedule = allChores.find(c => c.kid_name === kidName && c.chore_id === fixedChore.id);
     assert(schedule, "Should find the schedule");
 
-    const todayTimestamp = new Date().toISOString();
+    const todayStr = getTodayString();
     await sql`
-      INSERT INTO chore_completions (chore_schedule_id, completed_date, completed_at, excused)
-      VALUES (${schedule!.id}, ${targetDayStr}, ${todayTimestamp}, false)
+      INSERT INTO chore_completions (chore_schedule_id, scheduled_on, completed_on, excused)
+      VALUES (${schedule!.id}, ${targetDayStr}, ${todayStr}, false)
     `;
 
     let qualification = await getWeeklyQualification(kidName);
     assert(qualification.disqualified, "Should be disqualified before excuse");
 
-    await excuseChore(schedule!.id, targetDayStr);
+    await excuseChore(schedule!.id, targetDayStr, todayStr);
 
     qualification = await getWeeklyQualification(kidName);
     assert(!qualification.disqualified, "Should not be disqualified after excuse");
@@ -857,10 +859,10 @@ describe("Integration tests", { concurrency: false }, () => {
     const schedule = allChores.find(c => c.kid_name === kidName && c.chore_id === flexibleChore.id);
     assert(schedule, "Should find the schedule");
 
-    const todayTimestamp = new Date().toISOString();
+    const todayStr = getTodayString();
     await sql`
-      INSERT INTO chore_completions (chore_schedule_id, completed_date, completed_at, excused)
-      VALUES (${schedule!.id}, ${yesterdayStr}, ${todayTimestamp}, false)
+      INSERT INTO chore_completions (chore_schedule_id, scheduled_on, completed_on, excused)
+      VALUES (${schedule!.id}, ${yesterdayStr}, ${todayStr}, false)
     `;
 
     const updatedChores = await getCurrentWeekChores();
