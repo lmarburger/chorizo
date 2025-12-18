@@ -15,6 +15,7 @@ export interface BaseItemCardProps {
   isLateCompletion?: boolean; // True for fixed chores completed after their scheduled day
   isExcused?: boolean; // True if the item was excused by parent
   isFixed?: boolean; // True for fixed chores (must be done on scheduled day)
+  isDisqualifying?: boolean; // True if this item disqualifies the kid from incentive (incomplete missed fixed/task, or late completion not excused)
   onToggle: () => void;
   toggleEndpoint: string;
   toggleBody: Record<string, unknown>;
@@ -35,6 +36,7 @@ export function BaseItemCard({
   isLateCompletion,
   isExcused,
   isFixed,
+  isDisqualifying,
   onToggle,
   toggleEndpoint,
   toggleBody,
@@ -65,12 +67,19 @@ export function BaseItemCard({
   };
 
   // Determine the color scheme based on status
+  // Priority: disqualifying (red) > completed (green) > overdue (yellow/red) > future (gray) > today (blue)
   const getColorClasses = () => {
-    if (isCompleted) {
+    // Disqualifying items are always red (missed fixed chores, overdue tasks, late completions not excused)
+    if (isDisqualifying && !isExcused) {
+      return "border-2 border-red-300 bg-red-100 dark:border-red-700 dark:bg-red-900/30";
+    }
+    // Excused items and normal completed items are green
+    if (isCompleted || isExcused) {
       return "border-2 border-green-300 bg-green-100 dark:border-green-700 dark:bg-green-900/30";
     }
+    // Overdue flexible chores (non-disqualifying) are yellow - can still complete
     if (isOverdue) {
-      return "border-2 border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20";
+      return "border-2 border-yellow-300 bg-yellow-100 dark:border-yellow-700 dark:bg-yellow-900/30";
     }
     if (isFuture) {
       if (isDisabled) {
@@ -83,11 +92,14 @@ export function BaseItemCard({
   };
 
   const getTextColor = () => {
-    if (isOverdue && !isCompleted) {
+    if (isDisqualifying && !isExcused) {
       return "text-red-600 dark:text-red-400";
     }
-    if (isCompleted) {
+    if (isCompleted || isExcused) {
       return "text-green-600 dark:text-green-400";
+    }
+    if (isOverdue) {
+      return "text-yellow-700 dark:text-yellow-400";
     }
     if (isFuture) {
       if (isDisabled) {
@@ -102,13 +114,15 @@ export function BaseItemCard({
   const dayDisplay = dayOrDate.includes("-") ? getDayAbbreviation(dayOrDate) : dayOrDate;
 
   const getCheckboxClasses = () => {
-    if (isCompleted) return "border-green-500 bg-green-500";
+    // Disqualifying completed items (late) get red checkbox
+    if (isCompleted && isDisqualifying && !isExcused) return "border-red-500 bg-red-500";
+    if (isCompleted || isExcused) return "border-green-500 bg-green-500";
     if (isDisabled) return "border-gray-300 dark:border-gray-600";
     return "border-gray-400 dark:border-gray-500";
   };
 
   const getTitleClasses = () => {
-    if (isCompleted) return "text-gray-500 line-through dark:text-gray-400";
+    if (isCompleted) return "text-gray-500 dark:text-gray-400";
     if (isDisabled) return "text-gray-400 dark:text-gray-500";
     return "text-gray-900 dark:text-white";
   };

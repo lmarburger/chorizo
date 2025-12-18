@@ -14,6 +14,9 @@ export function TaskCard({ task, onToggle }: TaskCardProps) {
   const isOverdue = daysUntil < 0 && !task.completed_on;
   const isFuture = daysUntil > 0 && !task.completed_on;
 
+  // Tasks are disqualifying if overdue and incomplete (not excused)
+  const isDisqualifying = isOverdue && !task.excused;
+
   return (
     <BaseItemCard
       id={task.id}
@@ -23,6 +26,8 @@ export function TaskCard({ task, onToggle }: TaskCardProps) {
       isCompleted={!!task.completed_on}
       isOverdue={isOverdue}
       isFuture={isFuture}
+      isExcused={task.excused}
+      isDisqualifying={isDisqualifying}
       onToggle={onToggle}
       toggleEndpoint={`/api/tasks/${task.id}`}
       toggleBody={{}}

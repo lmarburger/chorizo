@@ -32,11 +32,11 @@ Chorizo is a family chore tracking web application designed primarily for mobile
      - Mark as read/delete options for each feedback item
      - Shows kid name, timestamp, and message
    - **Dashboard:**
-     - Combined view of all kids' outstanding chores and tasks
-     - Kids sorted alphabetically, with completed kids shown last
-     - Green border for kids with no outstanding items (no "All Done" text)
-     - Shows upcoming task count badge when kids are caught up and have future tasks
-     - Click entire green box to expand and show upcoming tasks (when they exist)
+     - Full week view identical to kid view (same items, sorting, and colors)
+     - Kids sorted alphabetically
+     - Green border for qualified kids, gray border for in-progress
+     - Disqualifying items (red) always visible, completed items (green) collapsed by default
+     - Per-kid collapsible section to show/hide green completed items
      - Click on any task to edit inline (rename, change description/date, delete)
      - Auto-refresh pauses during task editing
      - **Uses same stable sorting as kid view for consistency**
@@ -76,13 +76,15 @@ Chorizo is a family chore tracking web application designed primarily for mobile
        2. Within same day: "must do today" items first (fixed chores + tasks due today)
        3. Within same day: tasks before chores
        4. Within same type: alphabetically
-       5. Completed items at bottom (by completion time, most recent first)
-   - **Color Scheme (simplified):**
-     - Red background: Overdue (past due)
+       5. Completed items at bottom:
+          - Late disqualifying items first (late completion + not excused)
+          - Then by completion time (most recent first)
+   - **Color Scheme:**
+     - Red background: Disqualifying items (missed fixed chore, overdue task, late completion not excused)
+     - Yellow background: Overdue flexible chore (warning, can still complete)
      - Blue background: Due today
      - Gray background: Future items
-     - Green background: Completed items
-     - Green background + orange "Late" badge: Completed late (fixed chores only)
+     - Green background: Completed items (on time or excused)
    - **UI Elements:**
      - Back arrow icon for navigation
      - Speech bubble icon for feedback (top-right)
@@ -108,7 +110,7 @@ Chorizo is a family chore tracking web application designed primarily for mobile
    - Tests cover CRUD operations, completion tracking, priority sorting, kid-specific filtering
    - **Unified sorting test verifies stable, consistent ordering across views**
    - Tests against remote Neon test database configured via TEST_DATABASE_URL
-   - All 27 integration tests pass (8 chore tests, 8 task tests, 2 error/sorting tests, 5 incentive tests, 4 late completion tests)
+   - All 97 tests pass (70 unit tests + 27 integration tests)
    - Test files in `tests/` directory:
      - `tests/integration.test.ts` - Database integration tests
      - `tests/unit/*.test.ts` - Unit tests (db, qualification, sorting, date-utils)
@@ -128,18 +130,21 @@ Chorizo is a family chore tracking web application designed primarily for mobile
      - All tasks due Mon-Fri must be completed by due date OR excused
    - **Late Completions:**
      - Fixed chores completed after their scheduled day are marked as "late"
-     - Late completions still disqualify the kid (even though the chore is done)
+     - Late completions disqualify the kid (shown as red with "Late" badge)
      - Parents can excuse late-completed chores to restore qualification
-     - Late-completed chores appear in parent dashboard with excuse button
-     - Kid view shows completed items with orange "Late" badge to explain disqualification
+     - Late-completed chores appear prominently with excuse button
    - **Kid View:**
      - Qualified kids see a reward claim banner with two options: "1 Hour Screen Time" or "$5"
      - After claiming, shows confirmation of chosen reward
      - Items sorted by day with visual distinction for "must do today" items
+     - Disqualifying items (red) sort first in completed section for visibility
    - **Parent View:**
-     - Kid cards show qualification status via border color (green=qualified, red=disqualified, normal=in progress)
+     - Full week view identical to kid view (same sorting, same colors)
+     - Kid cards show qualification status via border color (green=qualified, gray=in progress)
      - Claimed reward shown as badge next to kid name
-     - Excuse button appears on overdue items in dashboard
+     - Per-kid collapsible section for completed items (collapsed by default)
+     - Disqualifying items (red) remain visible outside collapsed section
+     - Excuse button appears on disqualifying items
      - Fixed chores show 🔒 indicator in chore list and forms
    - **API Endpoints:**
      - `GET /api/kids/[name]` - Returns qualification status for kid

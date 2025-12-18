@@ -158,4 +158,64 @@ describe("Sorting with timezone-aware dates", () => {
     assert.strictEqual(dueTomorrow?.status, "upcoming", "Task due Thursday should be 'upcoming'");
     assert.strictEqual(overdue?.status, "overdue", "Task due Tuesday should be 'overdue'");
   });
+
+  it("late disqualifying items sort first in completed section", () => {
+    const now = new Date("2024-12-13T17:00:00Z"); // Friday noon EST
+
+    const chores: ChoreScheduleWithCompletion[] = [
+      createMockChore({
+        id: 1,
+        day_of_week: "monday",
+        chore_name: "Late Monday Chore",
+        flexible: false, // Fixed chore
+        is_completed: true,
+        is_late_completion: true,
+        excused: false,
+        completed_on: "2024-12-10", // Tuesday - completed late
+      }),
+      createMockChore({
+        id: 2,
+        day_of_week: "tuesday",
+        chore_name: "On-Time Tuesday Chore",
+        flexible: false,
+        is_completed: true,
+        is_late_completion: false,
+        excused: false,
+        completed_on: "2024-12-11", // Wednesday - completed recently
+      }),
+      createMockChore({
+        id: 3,
+        day_of_week: "wednesday",
+        chore_name: "Excused Late Wednesday",
+        flexible: false,
+        is_completed: true,
+        is_late_completion: true,
+        excused: true, // Excused, so not disqualifying
+        completed_on: "2024-12-12",
+      }),
+      createMockChore({
+        id: 4,
+        day_of_week: "thursday",
+        chore_name: "On-Time Thursday Chore",
+        flexible: false,
+        is_completed: true,
+        is_late_completion: false,
+        excused: false,
+        completed_on: "2024-12-12", // Completed most recently
+      }),
+    ];
+
+    const items = createSortableItems(chores, [], now, "America/New_York");
+    const sorted = sortItems(items);
+
+    // All items are completed, so order should be:
+    // 1. Late disqualifying items first (Late Monday Chore)
+    // 2. Then other completed by time (most recent first): Thursday, then Excused Wednesday, then Tuesday
+    assert.strictEqual(sorted[0].name, "Late Monday Chore", "Late disqualifying should be first");
+    assert.strictEqual(sorted[0].isLateCompletion, true, "Should be marked as late");
+    assert.strictEqual(sorted[0].isExcused, false, "Should not be excused");
+
+    // Excused late should NOT be at the top (it's not disqualifying)
+    assert.notStrictEqual(sorted[0].name, "Excused Late Wednesday", "Excused late should not be first");
+  });
 });

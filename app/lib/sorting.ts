@@ -129,8 +129,17 @@ export function sortItems(items: SortableItem[]): SortableItem[] {
       return a.isCompleted ? 1 : -1;
     }
 
-    // For completed items, sort by completion time (most recent first)
+    // For completed items:
+    // 1. Late disqualifying items first (late completion + not excused)
+    // 2. Then by completion time (most recent first)
     if (a.isCompleted && b.isCompleted) {
+      const aIsLateDisqualifying = a.isLateCompletion && !a.isExcused;
+      const bIsLateDisqualifying = b.isLateCompletion && !b.isExcused;
+
+      if (aIsLateDisqualifying !== bIsLateDisqualifying) {
+        return aIsLateDisqualifying ? -1 : 1;
+      }
+
       if (a.completedAt && b.completedAt) {
         return b.completedAt.getTime() - a.completedAt.getTime();
       }
