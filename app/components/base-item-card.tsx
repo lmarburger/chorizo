@@ -162,17 +162,11 @@ export function BaseItemCard({
                   🔒
                 </span>
               )}
-              {isCompleted &&
-                isLateCompletion &&
-                (isExcused ? (
-                  <span className="ml-2 inline-flex -translate-y-px items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/50 dark:text-green-300">
-                    Excused
-                  </span>
-                ) : (
-                  <span className="ml-2 inline-flex -translate-y-px items-center rounded-full bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-800 dark:bg-orange-900/50 dark:text-orange-300">
-                    Late
-                  </span>
-                ))}
+              {isCompleted && isLateCompletion && !isExcused && (
+                <span className="ml-2 inline-flex -translate-y-px items-center rounded-full bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-800 dark:bg-orange-900/50 dark:text-orange-300">
+                  Late
+                </span>
+              )}
             </div>
             <div className={`ml-2 text-sm font-medium ${getTextColor()}`}>{dayDisplay}</div>
           </div>
