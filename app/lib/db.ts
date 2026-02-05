@@ -356,9 +356,7 @@ export async function getTasksForKid(kidName: string, now?: Date): Promise<Task[
 export async function getTasksForParentView(now?: Date): Promise<Task[]> {
   const sql = getDb();
   const currentDate = now ?? (await getCurrentDate());
-  const oneWeekAgo = new Date(currentDate);
-  oneWeekAgo.setDate(currentDate.getDate() - 7);
-  const oneWeekAgoStr = formatDateString(oneWeekAgo);
+  const weekStart = calculateMondayOfWeek(currentDate);
 
   const result = await sql`
     SELECT
@@ -371,7 +369,7 @@ export async function getTasksForParentView(now?: Date): Promise<Task[]> {
       excused
     FROM tasks
     WHERE (completed_on IS NULL AND NOT excused)
-       OR completed_on >= ${oneWeekAgoStr}
+       OR completed_on >= ${weekStart}
     ORDER BY
       CASE WHEN completed_on IS NULL AND NOT excused THEN 0 ELSE 1 END,
       due_date ASC,

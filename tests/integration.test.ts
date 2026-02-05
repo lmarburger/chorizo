@@ -477,41 +477,49 @@ describe("Integration tests", { concurrency: false }, () => {
     assert(!tasks.find(t => t.title === "Old Completed Task"), "Should NOT include task completed in previous week");
   });
 
-  it("Tasks for parent view", async () => {
+  it("Tasks for parent view uses Monday-based week boundary", async () => {
     await truncateAllTables();
 
+    const sql = neon(process.env.DATABASE_URL!);
     const kidName = "Test Kid";
 
+    // Incomplete task (always visible regardless of date)
     await addTask({
-      title: "Old Task",
-      description: null,
-      kid_name: kidName,
-      due_date: getDayString(-10),
-    });
-
-    await addTask({
-      title: "Recent Task",
+      title: "Incomplete Task",
       description: null,
       kid_name: kidName,
       due_date: getDayString(-3),
     });
 
-    const futureTask = await addTask({
-      title: "Future Task",
+    // Task completed this week (should be visible)
+    const thisWeekTask = await addTask({
+      title: "This Week Task",
       description: null,
       kid_name: kidName,
       due_date: getTomorrowString(),
     });
+    await toggleTaskComplete(thisWeekTask.id, getTodayString());
 
-    await toggleTaskComplete(futureTask.id, getTodayString());
+    // Task completed last week (should NOT be visible)
+    // TEST_DATE is Wednesday 2025-12-10, Monday is 2025-12-08, so use 2025-12-05 (Friday before)
+    await sql`
+      INSERT INTO tasks (title, description, kid_name, due_date, completed_on)
+      VALUES ('Last Week Task', null, ${kidName}, ${getDayString(-10)}, ${getDayString(-5)})
+    `;
 
     const { getTasksForParentView } = await import("../app/lib/db");
-    const parentTasks = await getTasksForParentView();
+    const parentTasks = await getTasksForParentView(getTestDate());
 
-    assert(parentTasks.length >= 2, "Should have at least 2 tasks in parent view");
-
-    const completedRecent = parentTasks.filter(t => t.completed_on !== null);
-    assert(completedRecent.length > 0, "Should include recently completed tasks");
+    assert.equal(parentTasks.length, 2, "Should have 2 tasks (1 incomplete + 1 completed this week)");
+    assert(
+      parentTasks.find(t => t.title === "Incomplete Task"),
+      "Should include incomplete task"
+    );
+    assert(
+      parentTasks.find(t => t.title === "This Week Task"),
+      "Should include task completed this week"
+    );
+    assert(!parentTasks.find(t => t.title === "Last Week Task"), "Should NOT include task completed last week");
   });
 
   it("Error handling", async () => {
