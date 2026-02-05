@@ -9,21 +9,14 @@ interface FeedbackSectionProps {
 }
 
 export function FeedbackSection({ type }: FeedbackSectionProps) {
-  const [incompleteFeedback, setIncompleteFeedback] = useState<Feedback[]>([]);
-  const [completedFeedback, setCompletedFeedback] = useState<Feedback[]>([]);
+  const [feedback, setFeedback] = useState<Feedback[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchFeedback = async () => {
     try {
-      // Fetch incomplete feedback
-      const incompleteRes = await fetch("/api/feedback?filter=incomplete");
-      const incompleteData = await incompleteRes.json();
-      setIncompleteFeedback(incompleteData.feedback || []);
-
-      // Fetch completed feedback
-      const completedRes = await fetch("/api/feedback?filter=completed");
-      const completedData = await completedRes.json();
-      setCompletedFeedback(completedData.feedback || []);
+      const res = await fetch(`/api/feedback?filter=${type}`);
+      const data = await res.json();
+      setFeedback(data.feedback || []);
     } catch (error) {
       console.error("Failed to fetch feedback:", error);
     } finally {
@@ -33,10 +26,10 @@ export function FeedbackSection({ type }: FeedbackSectionProps) {
 
   useEffect(() => {
     fetchFeedback();
-    // Refresh feedback every 10 seconds
     const interval = setInterval(fetchFeedback, 10000);
     return () => clearInterval(interval);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [type]);
 
   const handleToggleFeedback = async (id: number, currentlyCompleted: boolean) => {
     try {
@@ -76,11 +69,11 @@ export function FeedbackSection({ type }: FeedbackSectionProps) {
 
   // Render only the requested type
   if (type === "incomplete") {
-    return incompleteFeedback.length > 0 ? (
+    return feedback.length > 0 ? (
       <div className="mb-8">
         <h2 className="mb-4 text-xl font-semibold text-gray-900 dark:text-white">Feedback from Kids</h2>
         <div className="space-y-3">
-          {incompleteFeedback.map(feedback => (
+          {feedback.map(feedback => (
             <div
               key={feedback.id}
               className="rounded-lg border border-yellow-300 bg-yellow-50 p-4 dark:border-yellow-700 dark:bg-yellow-900/30">
@@ -127,11 +120,11 @@ export function FeedbackSection({ type }: FeedbackSectionProps) {
 
   // Render completed feedback
   if (type === "completed") {
-    return completedFeedback.length > 0 ? (
+    return feedback.length > 0 ? (
       <div className="mt-8">
         <h2 className="mb-4 text-xl font-semibold text-gray-900 dark:text-white">Feedback</h2>
         <div className="space-y-2">
-          {completedFeedback.map(feedback => (
+          {feedback.map(feedback => (
             <div
               key={feedback.id}
               className="rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-800">

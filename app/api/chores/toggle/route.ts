@@ -9,9 +9,21 @@ import {
 import { getCurrentDate } from "@/app/lib/time-server";
 import { formatDateString } from "@/app/lib/date-utils";
 
+const VALID_DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+
 export async function POST(request: Request) {
   try {
     const { scheduleId, dayOfWeek, isCompleted } = await request.json();
+
+    if (typeof scheduleId !== "number" || !Number.isInteger(scheduleId)) {
+      return NextResponse.json({ error: "Invalid scheduleId" }, { status: 400 });
+    }
+    if (!VALID_DAYS.includes(dayOfWeek)) {
+      return NextResponse.json({ error: "Invalid dayOfWeek" }, { status: 400 });
+    }
+    if (typeof isCompleted !== "boolean") {
+      return NextResponse.json({ error: "Invalid isCompleted" }, { status: 400 });
+    }
 
     const today = await getCurrentDate();
     const mondayStr = calculateMondayOfWeek(today);

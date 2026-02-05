@@ -3,15 +3,21 @@ import { apiError, apiSuccess, handleDbError, parseJsonBody } from "@/app/lib/ap
 import { formatDateString } from "@/app/lib/date-utils";
 import { getCurrentDate } from "@/app/lib/time-server";
 
+function parseId(id: string): number | null {
+  const parsed = parseInt(id, 10);
+  return isNaN(parsed) ? null : parsed;
+}
+
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const body = await parseJsonBody(request);
-    if (!body) {
-      return handleDbError(new Error("Invalid JSON body"));
-    }
+    const taskId = parseId(id);
+    if (!taskId) return apiError("Invalid task ID", 400);
 
-    const task = await updateTask(parseInt(id), body);
+    const body = await parseJsonBody(request);
+    if (!body) return apiError("Invalid JSON body", 400);
+
+    const task = await updateTask(taskId, body);
     if (!task) return apiError("Task not found", 404);
     return apiSuccess({ task });
   } catch (error) {
@@ -22,7 +28,10 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    await deleteTask(parseInt(id));
+    const taskId = parseId(id);
+    if (!taskId) return apiError("Invalid task ID", 400);
+
+    await deleteTask(taskId);
     return apiSuccess({ success: true });
   } catch (error) {
     return handleDbError(error);
@@ -32,8 +41,11 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
+    const taskId = parseId(id);
+    if (!taskId) return apiError("Invalid task ID", 400);
+
     const todayStr = formatDateString(await getCurrentDate());
-    const task = await toggleTaskComplete(parseInt(id), todayStr);
+    const task = await toggleTaskComplete(taskId, todayStr);
     if (!task) return apiError("Task not found", 404);
     return apiSuccess({ task });
   } catch (error) {

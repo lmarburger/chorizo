@@ -46,8 +46,10 @@ export function getDaysUntilDue(dueDate: string, now: Date = getClientCurrentDat
 /**
  * Day of week utilities
  */
+import type { DayOfWeek } from "./timezone";
+export type { DayOfWeek };
+
 export const DAYS_OF_WEEK = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"] as const;
-export type DayOfWeek = (typeof DAYS_OF_WEEK)[number];
 
 export const DAY_LABELS: Record<DayOfWeek, string> = {
   monday: "Mon",
