@@ -1,5 +1,5 @@
 import { getTasksForParentView, addTask, getAllTasks } from "@/app/lib/db";
-import { apiSuccess, apiError, handleDbError, parseJsonBody } from "@/app/lib/api-utils";
+import { apiSuccess, apiError, handleDbError, parseJsonBody, validateStringLength } from "@/app/lib/api-utils";
 
 export async function GET(request: Request) {
   try {
@@ -26,9 +26,19 @@ export async function POST(request: Request) {
       return handleDbError(new Error("Invalid JSON body"));
     }
 
-    // Validate required fields
     if (!body.title || !body.kid_name || !body.due_date) {
       return apiError("Missing required fields: title, kid_name, or due_date", 400);
+    }
+
+    const titleErr = validateStringLength(body.title, "Title", 200);
+    if (titleErr) return apiError(titleErr, 400);
+
+    const kidErr = validateStringLength(body.kid_name, "Kid name", 100);
+    if (kidErr) return apiError(kidErr, 400);
+
+    if (body.description) {
+      const descErr = validateStringLength(body.description, "Description", 2000);
+      if (descErr) return apiError(descErr, 400);
     }
 
     const task = await addTask({

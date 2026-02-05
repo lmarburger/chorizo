@@ -12,6 +12,7 @@ interface AddTaskFormProps {
 export function AddTaskForm({ onSuccess }: AddTaskFormProps = {}) {
   const { kidNames } = useKidNames();
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -21,6 +22,7 @@ export function AddTaskForm({ onSuccess }: AddTaskFormProps = {}) {
     const formData = new FormData(e.currentTarget);
     const kidName = formData.get("kid_name");
 
+    setError(null);
     try {
       const response = await fetch("/api/tasks", {
         method: "POST",
@@ -37,12 +39,13 @@ export function AddTaskForm({ onSuccess }: AddTaskFormProps = {}) {
 
       if (response.ok) {
         formRef.current?.reset();
-
-        // Trigger a refresh of the task list and dashboard
         onSuccess?.();
+      } else {
+        const data = await response.json().catch(() => ({}));
+        setError(data.error || "Failed to add task. Try again.");
       }
-    } catch (error) {
-      console.error("Failed to add task:", error);
+    } catch {
+      setError("Failed to add task. Try again.");
     } finally {
       setSubmitting(false);
     }
@@ -74,6 +77,12 @@ export function AddTaskForm({ onSuccess }: AddTaskFormProps = {}) {
         />
 
         <FormInput type="date" name="due_date" id="due_date" label="Due Date" required defaultValue={defaultDueDate} />
+
+        {error && (
+          <div className="rounded-lg border border-red-300 bg-red-50 p-2 text-sm text-red-700 dark:border-red-700 dark:bg-red-900/30 dark:text-red-300">
+            {error}
+          </div>
+        )}
 
         <FormButton type="submit" loading={submitting} className="w-full">
           Add Task

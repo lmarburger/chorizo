@@ -37,6 +37,16 @@ export function handleDbError(error: unknown): NextResponse {
 }
 
 /**
+ * Validate string length, returning error message if too long
+ */
+export function validateStringLength(value: string, fieldName: string, maxLength: number): string | null {
+  if (value.length > maxLength) {
+    return `${fieldName} must be ${maxLength} characters or less`;
+  }
+  return null;
+}
+
+/**
  * Validate required fields in request body
  */
 export function validateRequiredFields<T extends Record<string, unknown>>(

@@ -1,6 +1,13 @@
 import { NextRequest } from "next/server";
 import { getAllFeedback, addFeedback, getIncompleteFeedback, getCompletedFeedback } from "@/app/lib/db";
-import { apiError, apiSuccess, validateRequiredFields, handleDbError, parseJsonBody } from "@/app/lib/api-utils";
+import {
+  apiError,
+  apiSuccess,
+  validateRequiredFields,
+  handleDbError,
+  parseJsonBody,
+  validateStringLength,
+} from "@/app/lib/api-utils";
 
 export async function GET(request: NextRequest) {
   try {
@@ -33,6 +40,12 @@ export async function POST(request: NextRequest) {
     if (validationError) {
       return apiError(validationError, 400);
     }
+
+    const kidErr = validateStringLength(body.kid_name, "Kid name", 100);
+    if (kidErr) return apiError(kidErr, 400);
+
+    const msgErr = validateStringLength(body.message, "Message", 5000);
+    if (msgErr) return apiError(msgErr, 400);
 
     const feedback = await addFeedback(body.kid_name, body.message);
     return apiSuccess({ feedback });

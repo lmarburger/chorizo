@@ -1,4 +1,4 @@
-import { updateTask, deleteTask, getTaskById, toggleTaskComplete } from "@/app/lib/db";
+import { updateTask, deleteTask, atomicToggleTaskComplete } from "@/app/lib/db";
 import { apiError, apiSuccess, handleDbError, parseJsonBody } from "@/app/lib/api-utils";
 import { formatDateString } from "@/app/lib/date-utils";
 import { getCurrentDate } from "@/app/lib/time-server";
@@ -44,11 +44,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const taskId = parseId(id);
     if (!taskId) return apiError("Invalid task ID", 400);
 
-    const currentTask = await getTaskById(taskId);
-    if (!currentTask) return apiError("Task not found", 404);
-
-    const completedOn = currentTask.completed_on ? null : formatDateString(await getCurrentDate());
-    const task = await toggleTaskComplete(taskId, completedOn);
+    const todayStr = formatDateString(await getCurrentDate());
+    const task = await atomicToggleTaskComplete(taskId, todayStr);
     if (!task) return apiError("Task not found", 404);
     return apiSuccess({ task });
   } catch (error) {

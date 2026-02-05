@@ -35,5 +35,5 @@ jobs:
         run: npm test
         env:
           TEST_DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
-          TEST_DATE: "2025-12-10"
+          TEST_DATE: "2026-02-04"
           APP_TIMEZONE: "America/New_York"

@@ -33,7 +33,11 @@ export function FeedbackSection({ type }: FeedbackSectionProps) {
 
   useEffect(() => {
     fetchFeedback();
-    const interval = setInterval(fetchFeedback, 10000);
+    const interval = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        fetchFeedback();
+      }
+    }, 10000);
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [type]);

@@ -102,10 +102,14 @@ export function Dashboard() {
 
   useEffect(() => {
     fetchDashboardData();
-    if (!editingTaskId) {
-      const interval = setInterval(fetchDashboardData, 5000);
-      return () => clearInterval(interval);
-    }
+    if (editingTaskId) return;
+
+    const interval = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        fetchDashboardData();
+      }
+    }, 5000);
+    return () => clearInterval(interval);
   }, [editingTaskId]);
 
   if (loading) {

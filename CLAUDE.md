@@ -308,6 +308,7 @@ app/
 │   ├── feedback-section.tsx # Feedback display component
 │   ├── actions.ts     # Server actions
 │   ├── chore-list.tsx # Chore schedule display with fixed indicator
+│   ├── chore-schedule-editor.tsx # Shared schedule editing UI (kid/day selection)
 │   ├── add-chore-form.tsx  # Includes fixed toggle
 │   ├── edit-chore-form.tsx # Includes fixed toggle
 │   └── add-task-form.tsx
