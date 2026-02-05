@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { getCurrentWeekChores, getAllTasks, getUniqueKidNames, getWeeklyQualification } from "@/app/lib/db";
+import { getCurrentWeekChores, getTasksForParentView, getUniqueKidNames, getWeeklyQualification } from "@/app/lib/db";
 
 export async function GET() {
   try {
     // Get all data in parallel
     const [allChores, allTasks, kidNames] = await Promise.all([
       getCurrentWeekChores(),
-      getAllTasks(),
+      getTasksForParentView(),
       getUniqueKidNames(),
     ]);
 
