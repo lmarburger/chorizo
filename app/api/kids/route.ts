@@ -20,6 +20,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid kid name" }, { status: 400 });
     }
 
+    if (name.trim().length > 100) {
+      return NextResponse.json({ error: "Kid name must be 100 characters or less" }, { status: 400 });
+    }
+
     await addKid(name.trim());
     return NextResponse.json({ success: true });
   } catch (error) {

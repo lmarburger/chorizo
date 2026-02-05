@@ -42,10 +42,12 @@ export function BaseItemCard({
   toggleBody,
 }: BaseItemCardProps) {
   const [isToggling, setIsToggling] = useState(false);
+  const [toggleError, setToggleError] = useState(false);
 
   const handleToggle = async () => {
     if (isToggling || isDisabled) return;
 
+    setToggleError(false);
     setIsToggling(true);
     try {
       const response = await fetch(toggleEndpoint, {
@@ -58,9 +60,14 @@ export function BaseItemCard({
 
       if (response.ok) {
         onToggle();
+      } else {
+        setToggleError(true);
+        setTimeout(() => setToggleError(false), 3000);
       }
     } catch (error) {
       console.error("Failed to toggle item:", error);
+      setToggleError(true);
+      setTimeout(() => setToggleError(false), 3000);
     } finally {
       setIsToggling(false);
     }
@@ -138,7 +145,7 @@ export function BaseItemCard({
       disabled={isToggling || isDisabled}
       className={`w-full rounded-lg p-3 text-left transition-all ${getColorClasses()} ${
         isDisabled ? "cursor-not-allowed" : "hover:scale-[1.02] active:scale-[0.98]"
-      } ${isToggling ? "opacity-50" : ""}`}>
+      } ${isToggling ? "opacity-50" : ""} ${toggleError ? "animate-pulse ring-2 ring-red-400" : ""}`}>
       <div className="flex gap-3">
         <div
           className={`flex size-6 flex-shrink-0 items-center justify-center rounded-full border-2 ${getCheckboxClasses()}`}>
@@ -171,6 +178,7 @@ export function BaseItemCard({
             <div className={`ml-2 text-sm font-medium ${getTextColor()}`}>{dayDisplay}</div>
           </div>
           {description && <div className={`mt-1 text-sm ${getDescriptionClasses()}`}>{description}</div>}
+          {toggleError && <div className="mt-1 text-xs text-red-600 dark:text-red-400">Couldn't save, try again</div>}
         </div>
       </div>
     </button>

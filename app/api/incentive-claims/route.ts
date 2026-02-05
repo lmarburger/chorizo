@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { claimIncentive, getAllIncentiveClaims, type RewardType } from "@/app/lib/db";
+import { claimIncentive, getAllIncentiveClaims, getWeeklyQualification, type RewardType } from "@/app/lib/db";
 
 // GET /api/incentive-claims - Get all claims for the current week
 export async function GET() {
@@ -24,6 +24,11 @@ export async function POST(request: Request) {
 
     if (rewardType !== "screen_time" && rewardType !== "money") {
       return NextResponse.json({ error: "Invalid rewardType" }, { status: 400 });
+    }
+
+    const qualification = await getWeeklyQualification(kidName);
+    if (!qualification.qualified) {
+      return NextResponse.json({ error: "Not qualified for incentive" }, { status: 403 });
     }
 
     const claim = await claimIncentive(kidName, rewardType as RewardType);

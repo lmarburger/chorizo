@@ -1024,4 +1024,69 @@ describe("Integration tests", { concurrency: false }, () => {
     assert(completed?.is_completed, "Chore should be completed");
     assert(!completed?.is_late_completion, "Flexible chore should NOT be marked as late completion");
   });
+
+  it("Un-excuse preserves original completion date", async () => {
+    await truncateAllTables();
+
+    const yesterdayDayOfWeek = getDayNameForOffset(-1);
+    const yesterdayStr = getYesterdayString();
+    const todayStr = getTodayString();
+
+    const chore = await addChore({ name: "Late Chore", description: null, flexible: false });
+    await addChoreSchedule(chore.id, "Test Kid", yesterdayDayOfWeek);
+
+    const allChores = await getCurrentWeekChores();
+    const schedule = allChores.find(c => c.kid_name === "Test Kid" && c.chore_id === chore.id);
+    assert(schedule, "Should find the schedule");
+
+    // Kid completes the chore late (today, but it was scheduled yesterday)
+    await completeChore(schedule.id, yesterdayStr, todayStr);
+    let choresAfter = await getCurrentWeekChores();
+    let item = choresAfter.find(c => c.id === schedule.id);
+    assert.equal(item?.completed_on, todayStr, "Should be completed today");
+    assert(item?.is_late_completion, "Should be marked late");
+
+    // Parent excuses it
+    await excuseChore(schedule.id, yesterdayStr, todayStr);
+    choresAfter = await getCurrentWeekChores();
+    item = choresAfter.find(c => c.id === schedule.id);
+    assert(item?.excused, "Should be excused");
+    assert.equal(item?.completed_on, todayStr, "Completed date should be preserved after excuse");
+
+    // Parent un-excuses it
+    await unexcuseChore(schedule.id, yesterdayStr);
+    choresAfter = await getCurrentWeekChores();
+    item = choresAfter.find(c => c.id === schedule.id);
+    assert(!item?.excused, "Should not be excused");
+    assert(item?.is_completed, "Completion should be preserved after un-excuse");
+    assert.equal(item?.completed_on, todayStr, "Original completion date should be preserved");
+  });
+
+  it("Un-excuse of excuse-only chore keeps row with excused=false", async () => {
+    await truncateAllTables();
+
+    const todayDayOfWeek = getDayNameForOffset(0);
+    const todayStr = getTodayString();
+
+    const chore = await addChore({ name: "Excuse Only Chore", description: null });
+    await addChoreSchedule(chore.id, "Test Kid", todayDayOfWeek);
+
+    const allChores = await getCurrentWeekChores();
+    const schedule = allChores.find(c => c.kid_name === "Test Kid" && c.chore_id === chore.id);
+    assert(schedule, "Should find the schedule");
+
+    // Parent excuses incomplete chore (creates a completion row)
+    await excuseChore(schedule.id, todayStr, todayStr);
+    let choresAfter = await getCurrentWeekChores();
+    let item = choresAfter.find(c => c.id === schedule.id);
+    assert(item?.excused, "Should be excused");
+    assert(item?.is_completed, "Should show as completed");
+
+    // Parent un-excuses it
+    await unexcuseChore(schedule.id, todayStr);
+    choresAfter = await getCurrentWeekChores();
+    item = choresAfter.find(c => c.id === schedule.id);
+    assert(!item?.excused, "Should not be excused after un-excuse");
+    assert(item?.is_completed, "Row should still exist (completed)");
+  });
 });

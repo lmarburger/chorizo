@@ -19,6 +19,7 @@ export default function Home() {
       } else if (storedUserType === "kid") {
         router.push(`/kids?name=${encodeURIComponent(storedUser)}`);
       }
+      return;
     }
 
     fetch("/api/kids")

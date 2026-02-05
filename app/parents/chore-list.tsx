@@ -4,6 +4,7 @@ import { ChoreWithSchedules } from "../lib/db";
 import { deleteChoreAction } from "./actions";
 import { EditChoreForm } from "./edit-chore-form";
 import { useState, useEffect } from "react";
+import { DAYS_OF_WEEK, DAY_LABELS, type DayOfWeek } from "../lib/utils";
 
 export function ChoreList() {
   const [editingChoreId, setEditingChoreId] = useState<number | null>(null);
@@ -37,17 +38,6 @@ export function ChoreList() {
   useEffect(() => {
     fetchData();
   }, []);
-
-  const dayOrder = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
-  const dayLabels = {
-    monday: "Mon",
-    tuesday: "Tue",
-    wednesday: "Wed",
-    thursday: "Thu",
-    friday: "Fri",
-    saturday: "Sat",
-    sunday: "Sun",
-  };
 
   // Sort chores by name
   const sortedChores = [...chores].sort((a, b) => a.name.localeCompare(b.name));
@@ -139,15 +129,13 @@ export function ChoreList() {
 
             <div className="mt-3">
               <div className="grid grid-cols-7 gap-0 text-xs">
-                {dayOrder.map((day, index) => {
+                {DAYS_OF_WEEK.map((day, index) => {
                   const kids = scheduleByDay[day] || [];
                   return (
                     <div
                       key={day}
                       className={`min-w-0 text-center ${index > 0 ? "border-l border-gray-300 dark:border-gray-600" : ""}`}>
-                      <div className="font-medium text-gray-700 dark:text-gray-300">
-                        {dayLabels[day as keyof typeof dayLabels]}
-                      </div>
+                      <div className="font-medium text-gray-700 dark:text-gray-300">{DAY_LABELS[day as DayOfWeek]}</div>
                       {kids.length > 0 ? (
                         <div className="mt-1 flex flex-col items-center space-y-1">
                           {kids.map((kid, idx) => (

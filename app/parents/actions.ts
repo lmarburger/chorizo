@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { addChore, deleteChore, updateChore, updateChoreSchedules, type DayOfWeek } from "../lib/db";
+import { addChoreWithSchedules, deleteChore, updateChore, updateChoreSchedules, type DayOfWeek } from "../lib/db";
 
 export async function addChoreWithSchedulesAction(formData: FormData) {
   const name = formData.get("name") as string;
@@ -10,19 +10,20 @@ export async function addChoreWithSchedulesAction(formData: FormData) {
   const flexible = flexibleStr !== "false"; // Default to true
   const schedulesJson = formData.getAll("schedules") as string[];
 
-  // Create the chore
-  const chore = await addChore({
-    name,
-    description: description || null,
-    flexible,
-  });
-
-  // Parse and add schedules
   const schedules: { kid_name: string; day_of_week: DayOfWeek }[] = schedulesJson.map(json => JSON.parse(json));
 
-  if (schedules.length > 0) {
-    await updateChoreSchedules(chore.id, schedules);
+  if (schedules.length === 0) {
+    throw new Error("At least one schedule is required");
   }
+
+  await addChoreWithSchedules(
+    {
+      name,
+      description: description || null,
+      flexible,
+    },
+    schedules
+  );
 
   revalidatePath("/parents");
 }

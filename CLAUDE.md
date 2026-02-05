@@ -110,7 +110,7 @@ Chorizo is a family chore tracking web application designed primarily for mobile
    - Tests cover CRUD operations, completion tracking, priority sorting, kid-specific filtering
    - **Unified sorting test verifies stable, consistent ordering across views**
    - Tests against remote Neon test database configured via TEST_DATABASE_URL
-   - All 97 tests pass (70 unit tests + 27 integration tests)
+   - All 114 tests pass (80 unit tests + 34 integration tests)
    - Test files in `tests/` directory:
      - `tests/integration.test.ts` - Database integration tests
      - `tests/unit/*.test.ts` - Unit tests (db, qualification, sorting, date-utils)
@@ -123,6 +123,8 @@ Chorizo is a family chore tracking web application designed primarily for mobile
      - Fixed chores (🔒): Must be done on the scheduled day exactly
      - Flexible chores: Can be done any day during the week (default)
    - **Excuse Mechanism:** Parents can excuse missed chores/tasks (counts as completed for qualification)
+     - Un-excusing preserves the original completion date (does not delete the completion record)
+     - Excusing a previously-completed chore preserves the original `completed_on` timestamp
    - **Qualification Rules:**
      - Period is Monday through Friday only (weekend chores/tasks don't count)
      - All fixed chores must be completed on their scheduled day OR excused
@@ -149,7 +151,7 @@ Chorizo is a family chore tracking web application designed primarily for mobile
    - **API Endpoints:**
      - `GET /api/kids/[name]` - Returns qualification status for kid
      - `POST/DELETE /api/excuse` - Excuse or un-excuse chores/tasks
-     - `POST /api/incentive-claims` - Claim a reward
+     - `POST /api/incentive-claims` - Claim a reward (validates qualification server-side)
      - `POST /api/incentive-claims/[id]/dismiss` - Parent dismisses claim notification
 
 ### 🚧 Planned Features
@@ -306,6 +308,7 @@ app/
 │   ├── feedback-section.tsx # Feedback display component
 │   ├── actions.ts     # Server actions
 │   ├── chore-list.tsx # Chore schedule display with fixed indicator
+│   ├── chore-schedule-editor.tsx # Shared schedule editing UI (kid/day selection)
 │   ├── add-chore-form.tsx  # Includes fixed toggle
 │   ├── edit-chore-form.tsx # Includes fixed toggle
 │   └── add-task-form.tsx

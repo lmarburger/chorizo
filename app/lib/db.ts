@@ -201,6 +201,29 @@ export async function addChore(chore: Omit<Chore, "id" | "flexible"> & { flexibl
   return result[0] as Chore;
 }
 
+export async function addChoreWithSchedules(
+  chore: Omit<Chore, "id" | "flexible"> & { flexible?: boolean },
+  schedules: { kid_name: string; day_of_week: DayOfWeek }[]
+): Promise<Chore> {
+  const sql = getDb();
+  const kidNames = schedules.map(s => s.kid_name);
+  const days = schedules.map(s => s.day_of_week);
+  const result = await sql`
+    WITH new_chore AS (
+      INSERT INTO chores (name, description, flexible)
+      VALUES (${chore.name}, ${chore.description}, ${chore.flexible ?? true})
+      RETURNING *
+    ), schedule_insert AS (
+      INSERT INTO chore_schedules (chore_id, kid_name, day_of_week)
+      SELECT new_chore.id, t.kid_name, t.day_of_week
+      FROM new_chore,
+           unnest(${kidNames}::text[], ${days}::text[]) AS t(kid_name, day_of_week)
+    )
+    SELECT * FROM new_chore
+  `;
+  return result[0] as Chore;
+}
+
 export async function updateChore(
   id: number,
   chore: Omit<Chore, "id" | "flexible"> & { flexible?: boolean }
@@ -418,6 +441,16 @@ export async function updateTask(id: number, task: Partial<Omit<Task, "id">>): P
   return result.length > 0 ? (result[0] as Task) : null;
 }
 
+export async function getTaskById(id: number): Promise<Task | null> {
+  const sql = getDb();
+  const result = await sql`
+    SELECT id, title, description, kid_name,
+      due_date::text as due_date, completed_on::text as completed_on, excused
+    FROM tasks WHERE id = ${id}
+  `;
+  return result.length > 0 ? (result[0] as Task) : null;
+}
+
 export async function deleteTask(id: number): Promise<void> {
   const sql = getDb();
   await sql`DELETE FROM tasks WHERE id = ${id}`;
@@ -428,6 +461,27 @@ export async function toggleTaskComplete(id: number, completedOn: string | null)
   const result = await sql`
     UPDATE tasks
     SET completed_on = ${completedOn}::date
+    WHERE id = ${id}
+    RETURNING
+      id,
+      title,
+      description,
+      kid_name,
+      due_date::text as due_date,
+      completed_on::text as completed_on,
+      excused
+  `;
+  return result.length > 0 ? (result[0] as Task) : null;
+}
+
+export async function atomicToggleTaskComplete(id: number, completedOn: string): Promise<Task | null> {
+  const sql = getDb();
+  const result = await sql`
+    UPDATE tasks
+    SET completed_on = CASE
+      WHEN completed_on IS NULL THEN ${completedOn}::date
+      ELSE NULL
+    END
     WHERE id = ${id}
     RETURNING
       id,
@@ -572,7 +626,7 @@ export async function excuseChore(
     INSERT INTO chore_completions (chore_schedule_id, scheduled_on, completed_on, excused)
     VALUES (${scheduleId}, ${scheduledOn}, ${completedOn}, true)
     ON CONFLICT (chore_schedule_id, scheduled_on)
-    DO UPDATE SET excused = true, completed_on = ${completedOn}
+    DO UPDATE SET excused = true
     RETURNING *, scheduled_on::text, completed_on::text
   `;
   return result.length > 0 ? (result[0] as ChoreCompletion) : null;
@@ -581,7 +635,8 @@ export async function excuseChore(
 export async function unexcuseChore(scheduleId: number, scheduledOn: string): Promise<void> {
   const sql = getDb();
   await sql`
-    DELETE FROM chore_completions
+    UPDATE chore_completions
+    SET excused = false
     WHERE chore_schedule_id = ${scheduleId}
       AND scheduled_on = ${scheduledOn}
       AND excused = true

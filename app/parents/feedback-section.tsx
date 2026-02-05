@@ -11,10 +11,17 @@ interface FeedbackSectionProps {
 export function FeedbackSection({ type }: FeedbackSectionProps) {
   const [feedback, setFeedback] = useState<Feedback[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mutationError, setMutationError] = useState<string | null>(null);
+
+  const showMutationError = (msg: string) => {
+    setMutationError(msg);
+    setTimeout(() => setMutationError(null), 4000);
+  };
 
   const fetchFeedback = async () => {
     try {
       const res = await fetch(`/api/feedback?filter=${type}`);
+      if (!res.ok) throw new Error("Failed to fetch");
       const data = await res.json();
       setFeedback(data.feedback || []);
     } catch (error) {
@@ -26,7 +33,11 @@ export function FeedbackSection({ type }: FeedbackSectionProps) {
 
   useEffect(() => {
     fetchFeedback();
-    const interval = setInterval(fetchFeedback, 10000);
+    const interval = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        fetchFeedback();
+      }
+    }, 10000);
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [type]);
@@ -41,9 +52,12 @@ export function FeedbackSection({ type }: FeedbackSectionProps) {
 
       if (response.ok) {
         fetchFeedback();
+      } else {
+        showMutationError("Couldn't update feedback. Try again.");
       }
     } catch (error) {
       console.error("Failed to toggle feedback:", error);
+      showMutationError("Couldn't update feedback. Try again.");
     }
   };
 
@@ -57,9 +71,12 @@ export function FeedbackSection({ type }: FeedbackSectionProps) {
 
       if (response.ok) {
         fetchFeedback();
+      } else {
+        showMutationError("Couldn't delete feedback. Try again.");
       }
     } catch (error) {
       console.error("Failed to delete feedback:", error);
+      showMutationError("Couldn't delete feedback. Try again.");
     }
   };
 
@@ -67,11 +84,18 @@ export function FeedbackSection({ type }: FeedbackSectionProps) {
     return null;
   }
 
+  const errorBanner = mutationError ? (
+    <div className="mb-3 rounded-lg border border-red-300 bg-red-50 p-2 text-sm text-red-700 dark:border-red-700 dark:bg-red-900/30 dark:text-red-300">
+      {mutationError}
+    </div>
+  ) : null;
+
   // Render only the requested type
   if (type === "incomplete") {
     return feedback.length > 0 ? (
       <div className="mb-8">
         <h2 className="mb-4 text-xl font-semibold text-gray-900 dark:text-white">Feedback from Kids</h2>
+        {errorBanner}
         <div className="space-y-3">
           {feedback.map(feedback => (
             <div
@@ -123,6 +147,7 @@ export function FeedbackSection({ type }: FeedbackSectionProps) {
     return feedback.length > 0 ? (
       <div className="mt-8">
         <h2 className="mb-4 text-xl font-semibold text-gray-900 dark:text-white">Feedback</h2>
+        {errorBanner}
         <div className="space-y-2">
           {feedback.map(feedback => (
             <div

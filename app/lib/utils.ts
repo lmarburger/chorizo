@@ -140,8 +140,7 @@ export function getDayAbbreviation(date: string | Date): string {
     // Extract just the date portion if it's an ISO string
     const dateOnlyMatch = date.match(/^(\d{4}-\d{2}-\d{2})/);
     if (dateOnlyMatch) {
-      const [year, month, day] = dateOnlyMatch[1].split("-").map(Number);
-      dateObj = new Date(year, month - 1, day);
+      dateObj = new Date(`${dateOnlyMatch[1]}T12:00:00Z`);
     } else {
       dateObj = new Date(date);
     }
