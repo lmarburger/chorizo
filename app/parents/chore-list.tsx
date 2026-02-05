@@ -10,17 +10,26 @@ export function ChoreList() {
   const [chores, setChores] = useState<ChoreWithSchedules[]>([]);
   const [kidNames, setKidNames] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   const fetchData = async () => {
     try {
       const [choresRes, kidsRes] = await Promise.all([
-        fetch("/api/chores").then(res => res.json()),
-        fetch("/api/kids").then(res => res.json()),
+        fetch("/api/chores").then(res => {
+          if (!res.ok) throw new Error("Failed to fetch");
+          return res.json();
+        }),
+        fetch("/api/kids").then(res => {
+          if (!res.ok) throw new Error("Failed to fetch");
+          return res.json();
+        }),
       ]);
       setChores(choresRes.chores || []);
       setKidNames(kidsRes.kids || []);
+      setError(false);
       setLoading(false);
     } catch {
+      setError(true);
       setLoading(false);
     }
   };
@@ -163,6 +172,10 @@ export function ChoreList() {
 
       {loading ? (
         <p className="py-8 text-center text-gray-600 dark:text-gray-400">Loading chores...</p>
+      ) : error ? (
+        <div className="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-700 dark:border-red-700 dark:bg-red-900/30 dark:text-red-300">
+          Failed to load chores. Try refreshing the page.
+        </div>
       ) : chores.length === 0 ? (
         <p className="py-8 text-center text-gray-600 dark:text-gray-400">
           No chores created yet. Add a chore to get started!

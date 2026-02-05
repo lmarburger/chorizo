@@ -7,6 +7,7 @@ export default function Home() {
   const router = useRouter();
   const [kids, setKids] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("selectedUser");
@@ -21,12 +22,18 @@ export default function Home() {
     }
 
     fetch("/api/kids")
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error("Failed to fetch");
+        return res.json();
+      })
       .then(data => {
         setKids(data.kids);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => {
+        setError(true);
+        setLoading(false);
+      });
   }, [router]);
 
   const handleSelection = (userType: "parent" | "kid", userName?: string) => {
@@ -56,6 +63,12 @@ export default function Home() {
 
         <div className="space-y-4">
           <h2 className="mb-6 text-center text-xl font-semibold text-gray-700 dark:text-gray-300">Who's this?</h2>
+
+          {error && (
+            <div className="rounded-lg border border-red-300 bg-red-50 p-3 text-center text-sm text-red-700 dark:border-red-700 dark:bg-red-900/30 dark:text-red-300">
+              Something went wrong. Try refreshing the page.
+            </div>
+          )}
 
           {kids.map(kidName => (
             <button
