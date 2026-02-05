@@ -22,6 +22,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: "Invalid completion status" }, { status: 400 });
     }
 
+    if (!feedback) {
+      return NextResponse.json({ error: "Feedback not found" }, { status: 404 });
+    }
     return NextResponse.json({ feedback });
   } catch (error) {
     console.error("Failed to update feedback:", error);

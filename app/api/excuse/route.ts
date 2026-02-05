@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { excuseChore, unexcuseChore, excuseTask, unexcuseTask } from "@/app/lib/db";
 import { formatDateString } from "@/app/lib/date-utils";
+import { getCurrentDate } from "@/app/lib/time-server";
 
 // POST /api/excuse - Excuse a chore or task
 export async function POST(request: Request) {
@@ -16,11 +17,13 @@ export async function POST(request: Request) {
       if (!date) {
         return NextResponse.json({ error: "Missing date for chore excuse" }, { status: 400 });
       }
-      const todayStr = formatDateString(new Date());
+      const todayStr = formatDateString(await getCurrentDate());
       const result = await excuseChore(id, date, todayStr);
+      if (!result) return NextResponse.json({ error: "Chore not found" }, { status: 404 });
       return NextResponse.json({ success: true, result });
     } else if (type === "task") {
       const result = await excuseTask(id);
+      if (!result) return NextResponse.json({ error: "Task not found" }, { status: 404 });
       return NextResponse.json({ success: true, result });
     } else {
       return NextResponse.json({ error: "Invalid type" }, { status: 400 });
@@ -49,6 +52,7 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ success: true });
     } else if (type === "task") {
       const result = await unexcuseTask(id);
+      if (!result) return NextResponse.json({ error: "Task not found" }, { status: 404 });
       return NextResponse.json({ success: true, result });
     } else {
       return NextResponse.json({ error: "Invalid type" }, { status: 400 });

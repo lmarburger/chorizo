@@ -27,6 +27,9 @@ export async function POST(request: Request) {
     }
 
     const claim = await claimIncentive(kidName, rewardType as RewardType);
+    if (!claim) {
+      return NextResponse.json({ error: "Failed to create claim" }, { status: 500 });
+    }
     return NextResponse.json({ success: true, claim });
   } catch (error) {
     console.error("Failed to claim incentive:", error);

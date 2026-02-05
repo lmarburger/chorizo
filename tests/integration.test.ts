@@ -114,6 +114,7 @@ describe("Integration tests", { concurrency: false }, () => {
       description: "Updated description",
     });
 
+    assert(updated, "updateChore should return updated chore");
     assert.equal(updated.name, "Updated Chore");
     assert.equal(updated.description, "Updated description");
   });
@@ -296,6 +297,7 @@ describe("Integration tests", { concurrency: false }, () => {
       due_date: newDueDate,
     });
 
+    assert(updated, "updateTask should return updated task");
     assert.equal(updated.title, "Updated Task");
     assert.equal(updated.description, "Updated");
     assert.equal(updated.kid_name, "Kid B");
@@ -316,9 +318,11 @@ describe("Integration tests", { concurrency: false }, () => {
 
     const todayStr = getTodayString();
     let toggled = await toggleTaskComplete(task.id, todayStr);
+    assert(toggled, "toggleTaskComplete should return task");
     assert(toggled.completed_on, "Task should be marked complete");
 
     toggled = await toggleTaskComplete(task.id, null);
+    assert(toggled, "toggleTaskComplete should return task");
     assert(!toggled.completed_on, "Task should be unmarked");
   });
 
@@ -670,9 +674,11 @@ describe("Integration tests", { concurrency: false }, () => {
     });
 
     const excused = await excuseTask(task.id);
+    assert(excused, "excuseTask should return task");
     assert(excused.excused, "Task should be marked excused");
 
     const unexcused = await unexcuseTask(task.id);
+    assert(unexcused, "unexcuseTask should return task");
     assert(!unexcused.excused, "Task should not be marked excused");
   });
 
@@ -733,6 +739,7 @@ describe("Integration tests", { concurrency: false }, () => {
     const kidName = "Claiming Kid";
 
     const claim = await claimIncentive(kidName, "screen_time");
+    assert(claim, "claimIncentive should return claim");
     assert(claim.id, "Claim should have ID");
     assert.equal(claim.kid_name, kidName, "Claim should be for correct kid");
     assert.equal(claim.reward_type, "screen_time", "Claim should be for screen time");

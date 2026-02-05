@@ -204,7 +204,7 @@ export async function addChore(chore: Omit<Chore, "id" | "flexible"> & { flexibl
 export async function updateChore(
   id: number,
   chore: Omit<Chore, "id" | "flexible"> & { flexible?: boolean }
-): Promise<Chore> {
+): Promise<Chore | null> {
   const sql = getDb();
   const result = await sql`
     UPDATE chores
@@ -214,7 +214,7 @@ export async function updateChore(
     WHERE id = ${id}
     RETURNING *
   `;
-  return result[0] as Chore;
+  return result.length > 0 ? (result[0] as Chore) : null;
 }
 
 export async function deleteChore(id: number): Promise<void> {
@@ -244,16 +244,15 @@ export async function updateChoreSchedules(
 ): Promise<void> {
   const sql = getDb();
 
-  // Delete existing schedules
-  await sql`DELETE FROM chore_schedules WHERE chore_id = ${choreId}`;
-
-  // Add new schedules one by one using parameterized queries
-  for (const schedule of schedules) {
-    await sql`
-      INSERT INTO chore_schedules (chore_id, kid_name, day_of_week)
-      VALUES (${choreId}, ${schedule.kid_name}, ${schedule.day_of_week})
-    `;
-  }
+  await sql.transaction([
+    sql`DELETE FROM chore_schedules WHERE chore_id = ${choreId}`,
+    ...schedules.map(
+      schedule => sql`
+        INSERT INTO chore_schedules (chore_id, kid_name, day_of_week)
+        VALUES (${choreId}, ${schedule.kid_name}, ${schedule.day_of_week})
+      `
+    ),
+  ]);
 }
 
 export async function completeChore(
@@ -398,14 +397,14 @@ export async function addTask(task: Omit<Task, "id" | "completed_on" | "excused"
   return result[0] as Task;
 }
 
-export async function updateTask(id: number, task: Partial<Omit<Task, "id">>): Promise<Task> {
+export async function updateTask(id: number, task: Partial<Omit<Task, "id">>): Promise<Task | null> {
   const sql = getDb();
   const result = await sql`
     UPDATE tasks
-    SET title = ${task.title || sql`title`},
+    SET title = ${task.title !== undefined ? task.title : sql`title`},
         description = ${task.description !== undefined ? task.description : sql`description`},
-        kid_name = ${task.kid_name || sql`kid_name`},
-        due_date = ${task.due_date || sql`due_date`},
+        kid_name = ${task.kid_name !== undefined ? task.kid_name : sql`kid_name`},
+        due_date = ${task.due_date !== undefined ? task.due_date : sql`due_date`},
         completed_on = ${task.completed_on !== undefined ? task.completed_on : sql`completed_on`},
         excused = ${task.excused !== undefined ? task.excused : sql`excused`}
     WHERE id = ${id}
@@ -418,7 +417,7 @@ export async function updateTask(id: number, task: Partial<Omit<Task, "id">>): P
       completed_on::text as completed_on,
       excused
   `;
-  return result[0] as Task;
+  return result.length > 0 ? (result[0] as Task) : null;
 }
 
 export async function deleteTask(id: number): Promise<void> {
@@ -426,9 +425,8 @@ export async function deleteTask(id: number): Promise<void> {
   await sql`DELETE FROM tasks WHERE id = ${id}`;
 }
 
-export async function toggleTaskComplete(id: number, completedOn: string | null): Promise<Task> {
+export async function toggleTaskComplete(id: number, completedOn: string | null): Promise<Task | null> {
   const sql = getDb();
-  // completedOn is a YYYY-MM-DD string to mark complete, or null to mark incomplete
   const result = await sql`
     UPDATE tasks
     SET completed_on = ${completedOn}::date
@@ -442,18 +440,19 @@ export async function toggleTaskComplete(id: number, completedOn: string | null)
       completed_on::text as completed_on,
       excused
   `;
-  return result[0] as Task;
+  return result.length > 0 ? (result[0] as Task) : null;
 }
 
 // Delete a kid and all their associated data
 export async function deleteKid(kidName: string): Promise<void> {
   const sql = getDb();
 
-  // Delete all tasks for this kid
-  await sql`DELETE FROM tasks WHERE kid_name = ${kidName}`;
-
-  // Delete all chore schedules for this kid (will cascade delete completions)
-  await sql`DELETE FROM chore_schedules WHERE kid_name = ${kidName}`;
+  await sql.transaction([
+    sql`DELETE FROM incentive_claims WHERE kid_name = ${kidName}`,
+    sql`DELETE FROM feedback WHERE kid_name = ${kidName}`,
+    sql`DELETE FROM tasks WHERE kid_name = ${kidName}`,
+    sql`DELETE FROM chore_schedules WHERE kid_name = ${kidName}`,
+  ]);
 }
 
 // Add a new kid by creating a welcome task
@@ -537,7 +536,7 @@ export async function addFeedback(kidName: string, message: string): Promise<Fee
   return result[0] as Feedback;
 }
 
-export async function markFeedbackComplete(id: number): Promise<Feedback> {
+export async function markFeedbackComplete(id: number): Promise<Feedback | null> {
   const sql = getDb();
   const result = await sql`
     UPDATE feedback
@@ -545,10 +544,10 @@ export async function markFeedbackComplete(id: number): Promise<Feedback> {
     WHERE id = ${id}
     RETURNING *
   `;
-  return result[0] as Feedback;
+  return result.length > 0 ? (result[0] as Feedback) : null;
 }
 
-export async function markFeedbackIncomplete(id: number): Promise<Feedback> {
+export async function markFeedbackIncomplete(id: number): Promise<Feedback | null> {
   const sql = getDb();
   const result = await sql`
     UPDATE feedback
@@ -556,7 +555,7 @@ export async function markFeedbackIncomplete(id: number): Promise<Feedback> {
     WHERE id = ${id}
     RETURNING *
   `;
-  return result[0] as Feedback;
+  return result.length > 0 ? (result[0] as Feedback) : null;
 }
 
 export async function deleteFeedback(id: number): Promise<void> {
@@ -569,7 +568,7 @@ export async function excuseChore(
   scheduleId: number,
   scheduledOn: string,
   completedOn: string
-): Promise<ChoreCompletion> {
+): Promise<ChoreCompletion | null> {
   const sql = getDb();
   const result = await sql`
     INSERT INTO chore_completions (chore_schedule_id, scheduled_on, completed_on, excused)
@@ -578,7 +577,7 @@ export async function excuseChore(
     DO UPDATE SET excused = true, completed_on = ${completedOn}
     RETURNING *, scheduled_on::text, completed_on::text
   `;
-  return result[0] as ChoreCompletion;
+  return result.length > 0 ? (result[0] as ChoreCompletion) : null;
 }
 
 export async function unexcuseChore(scheduleId: number, scheduledOn: string): Promise<void> {
@@ -592,7 +591,7 @@ export async function unexcuseChore(scheduleId: number, scheduledOn: string): Pr
 }
 
 // Excuse functions for tasks
-export async function excuseTask(taskId: number): Promise<Task> {
+export async function excuseTask(taskId: number): Promise<Task | null> {
   const sql = getDb();
   const result = await sql`
     UPDATE tasks
@@ -603,10 +602,10 @@ export async function excuseTask(taskId: number): Promise<Task> {
       due_date::text as due_date,
       completed_on::text as completed_on, excused
   `;
-  return result[0] as Task;
+  return result.length > 0 ? (result[0] as Task) : null;
 }
 
-export async function unexcuseTask(taskId: number): Promise<Task> {
+export async function unexcuseTask(taskId: number): Promise<Task | null> {
   const sql = getDb();
   const result = await sql`
     UPDATE tasks
@@ -617,7 +616,7 @@ export async function unexcuseTask(taskId: number): Promise<Task> {
       due_date::text as due_date,
       completed_on::text as completed_on, excused
   `;
-  return result[0] as Task;
+  return result.length > 0 ? (result[0] as Task) : null;
 }
 
 // Re-export types from qualification.ts for backwards compatibility
@@ -714,7 +713,7 @@ export async function getWeeklyQualification(
   });
 }
 
-export async function claimIncentive(kidName: string, rewardType: RewardType): Promise<IncentiveClaim> {
+export async function claimIncentive(kidName: string, rewardType: RewardType): Promise<IncentiveClaim | null> {
   const sql = getDb();
   const mondayStr = await getMondayOfWeek();
 
@@ -725,7 +724,7 @@ export async function claimIncentive(kidName: string, rewardType: RewardType): P
     DO UPDATE SET reward_type = ${rewardType}, claimed_at = NOW()
     RETURNING *
   `;
-  return result[0] as IncentiveClaim;
+  return result.length > 0 ? (result[0] as IncentiveClaim) : null;
 }
 
 export async function getIncentiveClaim(kidName: string, weekStart?: string): Promise<IncentiveClaim | null> {
@@ -739,7 +738,7 @@ export async function getIncentiveClaim(kidName: string, weekStart?: string): Pr
   return result.length > 0 ? (result[0] as IncentiveClaim) : null;
 }
 
-export async function dismissClaim(claimId: number): Promise<IncentiveClaim> {
+export async function dismissClaim(claimId: number): Promise<IncentiveClaim | null> {
   const sql = getDb();
   const result = await sql`
     UPDATE incentive_claims
@@ -747,7 +746,7 @@ export async function dismissClaim(claimId: number): Promise<IncentiveClaim> {
     WHERE id = ${claimId}
     RETURNING *
   `;
-  return result[0] as IncentiveClaim;
+  return result.length > 0 ? (result[0] as IncentiveClaim) : null;
 }
 
 export async function getAllIncentiveClaims(weekStart?: string): Promise<IncentiveClaim[]> {
