@@ -54,9 +54,7 @@ function isChoreCompletable(chore: ChoreScheduleWithCompletion, todayIndex: numb
     return choreIndex === todayIndex;
   }
 
-  // Flexible chores can be completed any time up to and including their scheduled day
-  // or on any day during the week (past or present)
-  return choreIndex <= todayIndex || choreIndex >= 0;
+  return true;
 }
 
 export function createSortableItems(
@@ -83,7 +81,7 @@ export function createSortableItems(
       name: chore.chore_name,
       status,
       isCompleted: chore.is_completed || chore.excused,
-      completedAt: chore.completed_on ? new Date(chore.completed_on) : undefined,
+      completedAt: chore.completed_on ? parseLocalDate(chore.completed_on) : undefined,
       dayOfWeek: chore.day_of_week,
       dayNumber: choreIndex,
       isFixed: !chore.flexible,
@@ -108,7 +106,7 @@ export function createSortableItems(
       name: task.title,
       status,
       isCompleted,
-      completedAt: task.completed_on ? new Date(task.completed_on) : undefined,
+      completedAt: task.completed_on ? parseLocalDate(task.completed_on) : undefined,
       dueDate,
       dayNumber,
       isFixed: false, // Tasks are never "fixed"
