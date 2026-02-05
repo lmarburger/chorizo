@@ -45,6 +45,15 @@ import {
   getWeeklyQualification,
   claimIncentive,
   getIncentiveClaim,
+  addFeedback,
+  getAllFeedback,
+  getIncompleteFeedback,
+  getCompletedFeedback,
+  markFeedbackComplete,
+  markFeedbackIncomplete,
+  deleteFeedback,
+  addKid,
+  deleteKid,
   type DayOfWeek,
 } from "../app/lib/db";
 
@@ -844,6 +853,136 @@ describe("Integration tests", { concurrency: false }, () => {
     qualification = await getWeeklyQualification(kidName);
     assert(!qualification.disqualified, "Should not be disqualified after excuse");
     assert(qualification.qualified, "Should be qualified after excuse");
+  });
+
+  it("Feedback CRUD", async () => {
+    await truncateAllTables();
+
+    const fb1 = await addFeedback("Kid A", "I want pizza for dinner");
+    assert(fb1.id, "Should return feedback with ID");
+    assert.equal(fb1.kid_name, "Kid A");
+    assert.equal(fb1.message, "I want pizza for dinner");
+    assert.equal(fb1.completed_at, null, "New feedback should be incomplete");
+
+    const fb2 = await addFeedback("Kid B", "Can we go to the park?");
+
+    const all = await getAllFeedback();
+    assert.equal(all.length, 2, "Should have 2 feedback items");
+
+    const incomplete = await getIncompleteFeedback();
+    assert.equal(incomplete.length, 2, "Both should be incomplete");
+
+    const completed = await getCompletedFeedback();
+    assert.equal(completed.length, 0, "None should be completed");
+
+    const marked = await markFeedbackComplete(fb1.id);
+    assert(marked, "markFeedbackComplete should return feedback");
+    assert(marked.completed_at, "Should have completed_at set");
+
+    const incompleteAfter = await getIncompleteFeedback();
+    assert.equal(incompleteAfter.length, 1, "Should have 1 incomplete");
+    assert.equal(incompleteAfter[0].id, fb2.id);
+
+    const completedAfter = await getCompletedFeedback();
+    assert.equal(completedAfter.length, 1, "Should have 1 completed");
+    assert.equal(completedAfter[0].id, fb1.id);
+
+    const unmarked = await markFeedbackIncomplete(fb1.id);
+    assert(unmarked, "markFeedbackIncomplete should return feedback");
+    assert.equal(unmarked.completed_at, null, "Should clear completed_at");
+
+    await deleteFeedback(fb1.id);
+    const afterDelete = await getAllFeedback();
+    assert.equal(afterDelete.length, 1, "Should have 1 feedback after deletion");
+    assert.equal(afterDelete[0].id, fb2.id);
+  });
+
+  it("Feedback on nonexistent ID returns null", async () => {
+    await truncateAllTables();
+
+    const result = await markFeedbackComplete(999999);
+    assert.equal(result, null, "Should return null for nonexistent feedback");
+
+    const result2 = await markFeedbackIncomplete(999999);
+    assert.equal(result2, null, "Should return null for nonexistent feedback");
+  });
+
+  it("Add kid creates welcome task", async () => {
+    await truncateAllTables();
+
+    await addKid("New Kid", getTestDate());
+
+    const tasks = await getTasksForKid("New Kid");
+    assert.equal(tasks.length, 1, "Should create one welcome task");
+    assert.equal(tasks[0].title, "Welcome to Chorizo!");
+    assert.equal(tasks[0].kid_name, "New Kid");
+  });
+
+  it("Add duplicate kid throws error", async () => {
+    await truncateAllTables();
+
+    await addKid("Existing Kid", getTestDate());
+
+    try {
+      await addKid("Existing Kid", getTestDate());
+      assert.fail("Should throw error for duplicate kid");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      assert(message.includes("already exists"), "Should throw 'already exists' error");
+    }
+  });
+
+  it("Delete kid cascades to all related data", async () => {
+    await truncateAllTables();
+
+    const kidName = "Doomed Kid";
+
+    // Create chore with schedule for this kid
+    const chore = await addChore({ name: "Cascade Chore", description: null });
+    await addChoreSchedule(chore.id, kidName, "monday" as DayOfWeek);
+
+    // Create task for this kid
+    await addTask({
+      title: "Cascade Task",
+      description: null,
+      kid_name: kidName,
+      due_date: getTodayString(),
+    });
+
+    // Create feedback from this kid
+    await addFeedback(kidName, "This will be deleted");
+
+    // Create incentive claim for this kid
+    await claimIncentive(kidName, "screen_time");
+
+    // Verify all data exists
+    const kidNames = await getUniqueKidNames();
+    assert(kidNames.includes(kidName), "Kid should exist before deletion");
+    const tasks = await getAllTasks();
+    assert(
+      tasks.some(t => t.kid_name === kidName),
+      "Tasks should exist"
+    );
+    const feedback = await getAllFeedback();
+    assert(
+      feedback.some(f => f.kid_name === kidName),
+      "Feedback should exist"
+    );
+    const claim = await getIncentiveClaim(kidName);
+    assert(claim, "Incentive claim should exist");
+
+    // Delete the kid
+    await deleteKid(kidName);
+
+    // Verify all data is gone
+    const kidNamesAfter = await getUniqueKidNames();
+    assert(!kidNamesAfter.includes(kidName), "Kid should not exist after deletion");
+    const tasksAfter = await getAllTasks();
+    assert(!tasksAfter.some(t => t.kid_name === kidName), "Tasks should be deleted");
+    const feedbackAfter = await getAllFeedback();
+    assert(!feedbackAfter.some(f => f.kid_name === kidName), "Feedback should be deleted");
+    const claimAfter = await getIncentiveClaim(kidName);
+    assert.equal(claimAfter, null, "Incentive claim should be deleted");
   });
 
   it("Flexible chores not marked late", async () => {

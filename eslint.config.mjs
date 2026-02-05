@@ -67,6 +67,7 @@ export default [
       "next-dev.d.ts",
       "tests/**",
       "scripts/*.js",
+      "scripts/*.mjs",
       "migrations/**",
     ],
   },

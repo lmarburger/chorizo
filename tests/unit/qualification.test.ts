@@ -142,4 +142,138 @@ describe("Qualification tests", () => {
     assert.strictEqual(result.disqualified, false);
     assert.strictEqual(result.inProgress, false);
   });
+
+  it("Mixed fixed + flexible chores + tasks all complete → qualified", () => {
+    const result = calculateQualification({
+      kidName: "Alex",
+      chores: [
+        createChoreRow({ schedule_id: 1, flexible: false, scheduled_date: "2025-01-06", completion_id: 1 }),
+        createChoreRow({ schedule_id: 2, flexible: false, scheduled_date: "2025-01-07", completion_id: 2 }),
+        createChoreRow({ schedule_id: 3, flexible: true, scheduled_date: "2025-01-06", completion_id: 3 }),
+        createChoreRow({ schedule_id: 4, flexible: true, scheduled_date: "2025-01-08", completion_id: 4 }),
+      ],
+      tasks: [
+        createTaskRow({ id: 1, due_date: "2025-01-07", completed_on: "2025-01-07" }),
+        createTaskRow({ id: 2, due_date: "2025-01-09", completed_on: "2025-01-09" }),
+      ],
+      today: "2025-01-10",
+      fridayStr: "2025-01-10",
+      existingClaim: null,
+    });
+    assert.strictEqual(result.qualified, true);
+    assert.strictEqual(result.disqualified, false);
+    assert.strictEqual(result.missedItems.length, 0);
+  });
+
+  it("Mixed obligations: one late fixed chore disqualifies despite everything else done", () => {
+    const result = calculateQualification({
+      kidName: "Alex",
+      chores: [
+        createChoreRow({ schedule_id: 1, flexible: false, scheduled_date: "2025-01-06", completion_id: 1 }),
+        createChoreRow({
+          schedule_id: 2,
+          flexible: false,
+          scheduled_date: "2025-01-07",
+          completion_id: 2,
+          is_late_completion: true,
+        }),
+        createChoreRow({ schedule_id: 3, flexible: true, scheduled_date: "2025-01-06", completion_id: 3 }),
+      ],
+      tasks: [createTaskRow({ id: 1, due_date: "2025-01-08", completed_on: "2025-01-08" })],
+      today: "2025-01-10",
+      fridayStr: "2025-01-10",
+      existingClaim: null,
+    });
+    assert.strictEqual(result.qualified, false);
+    assert.strictEqual(result.disqualified, true);
+    assert.strictEqual(result.missedItems.length, 1);
+    assert.strictEqual(result.missedItems[0].id, 2);
+  });
+
+  it("Task due today but incomplete → in progress (not disqualified)", () => {
+    const result = calculateQualification({
+      kidName: "Alex",
+      chores: [createChoreRow({ completion_id: 1 })],
+      tasks: [createTaskRow({ id: 1, due_date: "2025-01-10", completed_on: null })],
+      today: "2025-01-10",
+      fridayStr: "2025-01-10",
+      existingClaim: null,
+    });
+    assert.strictEqual(result.qualified, false, "Not qualified yet");
+    assert.strictEqual(result.disqualified, false, "Not disqualified because task is due today, not past");
+    assert.strictEqual(result.inProgress, true);
+  });
+
+  it("Multiple disqualifying items are all reported", () => {
+    const result = calculateQualification({
+      kidName: "Alex",
+      chores: [
+        createChoreRow({ schedule_id: 1, flexible: false, scheduled_date: "2025-01-06", completion_id: null }),
+        createChoreRow({
+          schedule_id: 2,
+          flexible: false,
+          scheduled_date: "2025-01-07",
+          completion_id: 2,
+          is_late_completion: true,
+        }),
+      ],
+      tasks: [createTaskRow({ id: 3, due_date: "2025-01-06", completed_on: null })],
+      today: "2025-01-10",
+      fridayStr: "2025-01-10",
+      existingClaim: null,
+    });
+    assert.strictEqual(result.disqualified, true);
+    assert.strictEqual(result.missedItems.length, 3, "Should report all 3 disqualifying items");
+    const ids = result.missedItems.map(m => m.id);
+    assert(ids.includes(1), "Should include missed fixed chore");
+    assert(ids.includes(2), "Should include late fixed chore");
+    assert(ids.includes(3), "Should include overdue task");
+  });
+
+  it("Flexible chore incomplete mid-week with overdue task → disqualified by task only", () => {
+    const result = calculateQualification({
+      kidName: "Alex",
+      chores: [createChoreRow({ schedule_id: 1, flexible: true, completion_id: null })],
+      tasks: [createTaskRow({ id: 1, due_date: "2025-01-06", completed_on: null })],
+      today: "2025-01-08", // Wednesday, before Friday
+      fridayStr: "2025-01-10",
+      existingClaim: null,
+    });
+    assert.strictEqual(result.disqualified, true);
+    assert.strictEqual(result.missedItems.length, 1, "Only overdue task should be missed");
+    assert.strictEqual(result.missedItems[0].type, "task");
+  });
+
+  it("Mix of excused and completed items → qualified", () => {
+    const result = calculateQualification({
+      kidName: "Alex",
+      chores: [
+        createChoreRow({ schedule_id: 1, flexible: false, scheduled_date: "2025-01-06", completion_id: 1 }),
+        createChoreRow({
+          schedule_id: 2,
+          flexible: false,
+          scheduled_date: "2025-01-07",
+          completion_id: null,
+          excused: true,
+        }),
+        createChoreRow({
+          schedule_id: 3,
+          flexible: true,
+          scheduled_date: "2025-01-08",
+          completion_id: null,
+          excused: true,
+        }),
+      ],
+      tasks: [
+        createTaskRow({ id: 1, due_date: "2025-01-06", completed_on: "2025-01-06" }),
+        createTaskRow({ id: 2, due_date: "2025-01-07", completed_on: null, excused: true }),
+      ],
+      today: "2025-01-10",
+      fridayStr: "2025-01-10",
+      existingClaim: null,
+    });
+    assert.strictEqual(result.qualified, true);
+    assert.strictEqual(result.disqualified, false);
+    assert.strictEqual(result.missedItems.length, 0);
+  });
 });

@@ -53,7 +53,7 @@ Next.js 15 · Neon Postgres · Tailwind CSS · Vercel
 
 4. Set up authentication:
    ```bash
-   node scripts/setup-password.js
+   node scripts/setup-password.mjs
    ```
    Add the output (`FAMILY_PASSWORD_HASH_B64` and `JWT_SECRET`) to `.env.local` and Vercel environment variables.
 
