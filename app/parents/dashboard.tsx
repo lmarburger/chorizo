@@ -14,18 +14,22 @@ interface KidStatus {
 export function Dashboard() {
   const [kidStatuses, setKidStatuses] = useState<KidStatus[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
 
   const fetchDashboardData = async () => {
     try {
       const response = await fetch("/api/dashboard");
+      if (!response.ok) throw new Error("Failed to fetch");
       const data = await response.json();
 
       if (data.dashboard) {
         setKidStatuses(data.dashboard);
+        setError(false);
       }
-    } catch (error) {
-      console.error("Failed to fetch dashboard data:", error);
+    } catch (err) {
+      console.error("Failed to fetch dashboard data:", err);
+      setError(true);
     } finally {
       setLoading(false);
     }
@@ -93,12 +97,17 @@ export function Dashboard() {
     return <div className="text-gray-500">Loading dashboard...</div>;
   }
 
-  if (kidStatuses.length === 0) {
+  if (kidStatuses.length === 0 && !error) {
     return <div className="text-gray-500">No kids found. Go to Settings to add kids.</div>;
   }
 
   return (
     <div className="space-y-6">
+      {error && (
+        <div className="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-700 dark:border-red-700 dark:bg-red-900/30 dark:text-red-300">
+          Failed to load dashboard. Retrying...
+        </div>
+      )}
       {kidStatuses.map(kid => (
         <div
           key={kid.name}

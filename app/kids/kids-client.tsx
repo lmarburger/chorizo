@@ -17,6 +17,7 @@ export default function KidsClient() {
   const [chores, setChores] = useState<ChoreScheduleWithCompletion[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
@@ -26,12 +27,18 @@ export default function KidsClient() {
   const fetchChores = () => {
     if (kidName) {
       fetch(`/api/kids/${encodeURIComponent(kidName)}/chores`)
-        .then(res => res.json())
+        .then(res => {
+          if (!res.ok) throw new Error("Failed to fetch");
+          return res.json();
+        })
         .then(data => {
           setChores(data.chores || []);
+          setError(false);
           setLoading(false);
         })
-        .catch(() => {
+        .catch(err => {
+          console.error("Failed to fetch chores:", err);
+          setError(true);
           setLoading(false);
         });
     }
@@ -40,22 +47,33 @@ export default function KidsClient() {
   const fetchTasks = () => {
     if (kidName) {
       fetch(`/api/kids/${encodeURIComponent(kidName)}/tasks`)
-        .then(res => res.json())
+        .then(res => {
+          if (!res.ok) throw new Error("Failed to fetch");
+          return res.json();
+        })
         .then(data => {
           setTasks(data.tasks || []);
         })
-        .catch(console.error);
+        .catch(err => {
+          console.error("Failed to fetch tasks:", err);
+          setError(true);
+        });
     }
   };
 
   const fetchQualification = () => {
     if (kidName) {
       fetch(`/api/kids/${encodeURIComponent(kidName)}`)
-        .then(res => res.json())
+        .then(res => {
+          if (!res.ok) throw new Error("Failed to fetch");
+          return res.json();
+        })
         .then(data => {
           setQualification(data.qualification || null);
         })
-        .catch(console.error);
+        .catch(err => {
+          console.error("Failed to fetch qualification:", err);
+        });
     }
   };
 
@@ -249,7 +267,13 @@ export default function KidsClient() {
           </div>
         )}
 
-        {chores.length === 0 && tasks.length === 0 ? (
+        {error && (
+          <div className="mb-4 rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-700 dark:border-red-700 dark:bg-red-900/30 dark:text-red-300">
+            Something went wrong loading your chores. Try refreshing the page.
+          </div>
+        )}
+
+        {chores.length === 0 && tasks.length === 0 && !error ? (
           <p className="py-8 text-center text-gray-600 dark:text-gray-400">
             No chores or tasks scheduled yet. I'll add some soon!
           </p>
