@@ -18,7 +18,7 @@ Your Chorizo app is now fully secured with:
 Run this command locally:
 
 ```bash
-node scripts/setup-password.js
+node scripts/setup-password.mjs
 ```
 
 This will:
