@@ -23,6 +23,7 @@ export default function KidsClient() {
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
   const [qualification, setQualification] = useState<QualificationStatus | null>(null);
   const [claimingReward, setClaimingReward] = useState(false);
+  const [mutationError, setMutationError] = useState<string | null>(null);
 
   const fetchChores = () => {
     if (kidName) {
@@ -96,6 +97,11 @@ export default function KidsClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kidName, router]);
 
+  const showMutationError = (msg: string) => {
+    setMutationError(msg);
+    setTimeout(() => setMutationError(null), 4000);
+  };
+
   const handleClaimReward = async (rewardType: RewardType) => {
     if (!kidName || claimingReward) return;
 
@@ -109,9 +115,12 @@ export default function KidsClient() {
 
       if (response.ok) {
         fetchQualification();
+      } else {
+        showMutationError("Couldn't claim reward. Try again.");
       }
     } catch (error) {
       console.error("Failed to claim reward:", error);
+      showMutationError("Couldn't claim reward. Try again.");
     } finally {
       setClaimingReward(false);
     }
@@ -134,9 +143,12 @@ export default function KidsClient() {
       if (response.ok) {
         setFeedbackMessage("");
         setShowFeedback(false);
+      } else {
+        showMutationError("Couldn't send feedback. Try again.");
       }
     } catch (error) {
       console.error("Failed to submit feedback:", error);
+      showMutationError("Couldn't send feedback. Try again.");
     } finally {
       setSubmittingFeedback(false);
     }
@@ -264,6 +276,12 @@ export default function KidsClient() {
             <p className="mt-1 text-sm text-green-700 dark:text-green-300">
               You're all done for today! Go relax or get ahead on tomorrow if you want.
             </p>
+          </div>
+        )}
+
+        {mutationError && (
+          <div className="mb-4 rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-700 dark:border-red-700 dark:bg-red-900/30 dark:text-red-300">
+            {mutationError}
           </div>
         )}
 

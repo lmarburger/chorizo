@@ -161,7 +161,7 @@ export function AddChoreForm({ onSuccess }: AddChoreFormProps = {}) {
 
       <FormButton
         type="submit"
-        disabled={schedules.length > 0 && schedules.every(s => s.days.length === 0)}
+        disabled={schedules.length === 0 || schedules.every(s => s.days.length === 0)}
         className="mt-4 w-full">
         Add Chore
       </FormButton>

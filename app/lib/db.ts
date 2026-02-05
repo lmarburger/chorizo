@@ -418,6 +418,16 @@ export async function updateTask(id: number, task: Partial<Omit<Task, "id">>): P
   return result.length > 0 ? (result[0] as Task) : null;
 }
 
+export async function getTaskById(id: number): Promise<Task | null> {
+  const sql = getDb();
+  const result = await sql`
+    SELECT id, title, description, kid_name,
+      due_date::text as due_date, completed_on::text as completed_on, excused
+    FROM tasks WHERE id = ${id}
+  `;
+  return result.length > 0 ? (result[0] as Task) : null;
+}
+
 export async function deleteTask(id: number): Promise<void> {
   const sql = getDb();
   await sql`DELETE FROM tasks WHERE id = ${id}`;
@@ -572,7 +582,7 @@ export async function excuseChore(
     INSERT INTO chore_completions (chore_schedule_id, scheduled_on, completed_on, excused)
     VALUES (${scheduleId}, ${scheduledOn}, ${completedOn}, true)
     ON CONFLICT (chore_schedule_id, scheduled_on)
-    DO UPDATE SET excused = true, completed_on = ${completedOn}
+    DO UPDATE SET excused = true
     RETURNING *, scheduled_on::text, completed_on::text
   `;
   return result.length > 0 ? (result[0] as ChoreCompletion) : null;
@@ -581,7 +591,8 @@ export async function excuseChore(
 export async function unexcuseChore(scheduleId: number, scheduledOn: string): Promise<void> {
   const sql = getDb();
   await sql`
-    DELETE FROM chore_completions
+    UPDATE chore_completions
+    SET excused = false
     WHERE chore_schedule_id = ${scheduleId}
       AND scheduled_on = ${scheduledOn}
       AND excused = true

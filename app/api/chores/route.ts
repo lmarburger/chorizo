@@ -20,31 +20,32 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid chore name" }, { status: 400 });
     }
 
-    // Create the chore
-    const chore = await addChore({
-      name: name.trim(),
-      description: description || null,
-      flexible: flexible !== false, // Default to true if not specified
-    });
+    if (!schedules || !Array.isArray(schedules) || schedules.length === 0) {
+      return NextResponse.json({ error: "At least one schedule is required" }, { status: 400 });
+    }
 
     const validDays = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
 
-    if (schedules && Array.isArray(schedules) && schedules.length > 0) {
-      for (const s of schedules) {
-        if (!s.kid_name || typeof s.kid_name !== "string") {
-          return NextResponse.json({ error: "Invalid kid_name in schedule" }, { status: 400 });
-        }
-        if (!validDays.includes(s.day_of_week)) {
-          return NextResponse.json({ error: `Invalid day_of_week: ${s.day_of_week}` }, { status: 400 });
-        }
+    for (const s of schedules) {
+      if (!s.kid_name || typeof s.kid_name !== "string") {
+        return NextResponse.json({ error: "Invalid kid_name in schedule" }, { status: 400 });
       }
-
-      const formattedSchedules = schedules.map(s => ({
-        kid_name: s.kid_name,
-        day_of_week: s.day_of_week as DayOfWeek,
-      }));
-      await updateChoreSchedules(chore.id, formattedSchedules);
+      if (!validDays.includes(s.day_of_week)) {
+        return NextResponse.json({ error: `Invalid day_of_week: ${s.day_of_week}` }, { status: 400 });
+      }
     }
+
+    const chore = await addChore({
+      name: name.trim(),
+      description: description || null,
+      flexible: flexible !== false,
+    });
+
+    const formattedSchedules = schedules.map(s => ({
+      kid_name: s.kid_name,
+      day_of_week: s.day_of_week as DayOfWeek,
+    }));
+    await updateChoreSchedules(chore.id, formattedSchedules);
 
     return NextResponse.json({ chore });
   } catch (error) {

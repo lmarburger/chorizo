@@ -16,6 +16,12 @@ export function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
+  const [mutationError, setMutationError] = useState<string | null>(null);
+
+  const showMutationError = (msg: string) => {
+    setMutationError(msg);
+    setTimeout(() => setMutationError(null), 4000);
+  };
 
   const fetchDashboardData = async () => {
     try {
@@ -46,9 +52,12 @@ export function Dashboard() {
       if (response.ok) {
         setEditingTaskId(null);
         fetchDashboardData();
+      } else {
+        showMutationError("Couldn't update task. Try again.");
       }
     } catch (error) {
       console.error("Failed to update task:", error);
+      showMutationError("Couldn't update task. Try again.");
     }
   };
 
@@ -63,9 +72,12 @@ export function Dashboard() {
       if (response.ok) {
         setEditingTaskId(null);
         fetchDashboardData();
+      } else {
+        showMutationError("Couldn't delete task. Try again.");
       }
     } catch (error) {
       console.error("Failed to delete task:", error);
+      showMutationError("Couldn't delete task. Try again.");
     }
   };
 
@@ -79,9 +91,12 @@ export function Dashboard() {
 
       if (response.ok) {
         fetchDashboardData();
+      } else {
+        showMutationError("Couldn't excuse item. Try again.");
       }
     } catch (error) {
       console.error("Failed to excuse item:", error);
+      showMutationError("Couldn't excuse item. Try again.");
     }
   };
 
@@ -103,6 +118,11 @@ export function Dashboard() {
 
   return (
     <div className="space-y-6">
+      {mutationError && (
+        <div className="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-700 dark:border-red-700 dark:bg-red-900/30 dark:text-red-300">
+          {mutationError}
+        </div>
+      )}
       {error && (
         <div className="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-700 dark:border-red-700 dark:bg-red-900/30 dark:text-red-300">
           Failed to load dashboard. Retrying...

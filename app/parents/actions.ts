@@ -10,19 +10,19 @@ export async function addChoreWithSchedulesAction(formData: FormData) {
   const flexible = flexibleStr !== "false"; // Default to true
   const schedulesJson = formData.getAll("schedules") as string[];
 
-  // Create the chore
+  const schedules: { kid_name: string; day_of_week: DayOfWeek }[] = schedulesJson.map(json => JSON.parse(json));
+
+  if (schedules.length === 0) {
+    throw new Error("At least one schedule is required");
+  }
+
   const chore = await addChore({
     name,
     description: description || null,
     flexible,
   });
 
-  // Parse and add schedules
-  const schedules: { kid_name: string; day_of_week: DayOfWeek }[] = schedulesJson.map(json => JSON.parse(json));
-
-  if (schedules.length > 0) {
-    await updateChoreSchedules(chore.id, schedules);
-  }
+  await updateChoreSchedules(chore.id, schedules);
 
   revalidatePath("/parents");
 }
