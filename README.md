@@ -14,7 +14,7 @@ A mobile-first family chore tracker. Kids mark off daily tasks, parents manage s
 
 ## Tech Stack
 
-Next.js 15 · Neon Postgres · Tailwind CSS · Vercel
+Next.js 16 · Neon Postgres · Tailwind CSS · Vercel
 
 ## Quick Start
 

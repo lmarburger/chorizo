@@ -9,19 +9,23 @@ Chorizo is a family chore tracking web application designed primarily for mobile
 1. **Database Schema**
    - `chores` table: Stores unique chore definitions (name, description, flexible flag)
    - `chore_schedules` table: Maps chores to kids and days (one chore can have multiple schedules)
-   - `chore_completions` table: Tracks when chores are marked complete with timestamps, includes excused flag
-   - `tasks` table: One-off tasks with due dates (title, description, kid_name, due_date, completed_at, excused_at)
+   - `chore_completions` table: Tracks completions (chore_schedule_id, scheduled_on, completed_on, notes, excused)
+   - `tasks` table: One-off tasks with due dates (title, description, kid_name, due_date, completed_on, excused)
    - `feedback` table: Kid feedback/suggestions (kid_name, message, completed_at, created_at)
-   - `incentive_claims` table: Tracks weekly reward claims (kid_name, week_start_date, reward_type, claimed_at)
+   - `incentive_claims` table: Tracks weekly reward claims (kid_name, week_start_date, reward_type, claimed_at, dismissed_at)
    - Week runs Monday through Sunday
 
-2. **User Selection System** (No Login Required)
-   - Home page shows buttons for each kid and grey "Parents" button
+2. **Authentication & User Selection**
+   - Family password required on first visit (single shared password, not per-user accounts)
+   - Login page (`/login`) with rate limiting (5 attempts, 15-minute lockout)
+   - JWT-based session (30-day expiry, httpOnly cookie)
+   - `proxy.ts` contains auth guard logic (not yet wired as Next.js middleware)
+   - After authentication, home page shows buttons for each kid and grey "Parents" button
    - "Who's this?" prompt using personal voice
    - Device-based persistence using localStorage
    - Automatic redirect to last selected view
    - Back arrow icon for user switching (no text)
-   - No passwords needed - designed for family devices
+   - Setup: Run `node scripts/setup-password.mjs` to generate `FAMILY_PASSWORD_HASH_B64` and `JWT_SECRET`
 
 3. **Parent View** (`/parents`)
    - **Header:**
@@ -62,7 +66,12 @@ Chorizo is a family chore tracking web application designed primarily for mobile
      - Icon buttons throughout (X for remove, trash for delete, pencil for edit)
      - "Add Chore" heading also inside form box
 
-4. **Kid View** (`/kids?name=KidName`)
+4. **Settings** (`/settings`)
+   - Accessible via gear icon on parent dashboard
+   - **Manage Kids**: Add new kids (creates welcome task), remove kids (cascades all data with confirmation)
+   - Shows chore/task counts per kid
+
+5. **Kid View** (`/kids?name=KidName`)
    - **Header:**
      - Shows just kid's name (e.g., "Penny" not "Penny's Chores")
      - Back arrow and feedback icons
@@ -103,7 +112,7 @@ Chorizo is a family chore tracking web application designed primarily for mobile
      - Empty state: "No chores or tasks scheduled yet. I'll add some soon!"
      - Can complete tasks early (before due date)
 
-5. **Testing**
+6. **Testing**
    - Comprehensive integration tests for chores, tasks, and incentives
    - Tests exercise actual application functions from `app/lib/db.ts`, not raw SQL
    - Each test runs in isolation with a fresh database state (no test interference)
@@ -113,11 +122,11 @@ Chorizo is a family chore tracking web application designed primarily for mobile
    - All 114 tests pass (80 unit tests + 34 integration tests)
    - Test files in `tests/` directory:
      - `tests/integration.test.ts` - Database integration tests
-     - `tests/unit/*.test.ts` - Unit tests (db, qualification, sorting, date-utils)
+     - `tests/unit/*.test.ts` - Unit tests (utils, qualification, sorting, timezone, date-utils)
      - `tests/helpers.ts` - Shared test utilities
    - Database automatically uses TEST_DATABASE_URL when available for test isolation
 
-6. **Weekly Incentive System**
+7. **Weekly Incentive System**
    - Kids earn 1 hour of screen time (Sat/Sun) OR $5 by completing all their weekly obligations
    - **Fixed vs Flexible Chores:**
      - Fixed chores (🔒): Must be done on the scheduled day exactly
@@ -150,19 +159,23 @@ Chorizo is a family chore tracking web application designed primarily for mobile
      - Fixed chores show 🔒 indicator in chore list and forms
    - **API Endpoints:**
      - `GET /api/kids/[name]` - Returns qualification status for kid
+     - `POST /api/kids` - Add a new kid (creates welcome task)
+     - `DELETE /api/kids/[name]` - Delete a kid and cascade all data
      - `POST/DELETE /api/excuse` - Excuse or un-excuse chores/tasks
      - `POST /api/incentive-claims` - Claim a reward (validates qualification server-side)
      - `POST /api/incentive-claims/[id]/dismiss` - Parent dismisses claim notification
+     - `POST /api/auth/login` - Login with family password (rate limited)
+     - `POST /api/auth/logout` - Clear auth session
 
 ### 🚧 Planned Features
 - Screen time reporting
 - Instrument practice tracking
-- Authentication (separate kid/parent accounts)
+- Per-user accounts (currently single shared family password)
 - Weekly summary/reporting
 - Push notifications for reminders
 
 ## Technical Stack
-- **Framework**: Next.js 15.5 with App Router and Turbopack
+- **Framework**: Next.js 16 with App Router and Turbopack
 - **Database**: Neon Postgres (serverless)
 - **Styling**: Tailwind CSS v4
 - **Deployment**: Vercel
@@ -277,6 +290,7 @@ The project has hooks configured for code quality:
 
 ## Database Management
 - Database URL is stored in `.env.local` (pulled from Vercel)
+- Auth env vars in `.env.local`: `FAMILY_PASSWORD_HASH_B64`, `JWT_SECRET` (generated by `scripts/setup-password.mjs`)
 - Test database URL in `.env.test` as `TEST_DATABASE_URL`
 - `app/lib/db.ts` automatically uses TEST_DATABASE_URL when available (for test isolation)
 - Currently using same database for dev and prod (will separate later)
@@ -290,17 +304,24 @@ The project has hooks configured for code quality:
 
 ## Project Structure
 ```
+proxy.ts               # Auth guard logic (not yet wired as middleware.ts)
 app/
 ├── page.tsx           # Home page with kid/parent selection
 ├── layout.tsx         # Root layout
+├── db.ts              # DB connection check utility
 ├── api/               # API endpoints
+│   ├── auth/          # Login/logout endpoints
 │   ├── chores/        # Chores endpoints
-│   ├── kids/          # Kids data and kid-specific endpoints
+│   ├── kids/          # Kids CRUD and kid-specific endpoints
 │   ├── tasks/         # Tasks CRUD endpoints
 │   ├── feedback/      # Feedback CRUD endpoints
 │   ├── excuse/        # Excuse chores/tasks endpoint
 │   ├── incentive-claims/ # Incentive claim endpoints
 │   └── dashboard/     # Parent dashboard data
+├── login/             # Login page
+│   └── page.tsx
+├── settings/          # Settings page (kid management)
+│   └── page.tsx
 ├── parents/           # Parent view
 │   ├── page.tsx       # Parent dashboard
 │   ├── dashboard.tsx  # Kids status overview with qualification
@@ -318,28 +339,48 @@ app/
 │   ├── actions.ts
 │   ├── chore-card.tsx
 │   └── task-card.tsx
+├── components/        # Shared UI components
+│   ├── base-item-card.tsx    # Base card for chores/tasks
+│   ├── dev-date-picker.tsx   # Dev-only date override picker
+│   ├── form-components.tsx   # Reusable form elements
+│   └── schedule-manager.tsx  # Schedule editing helper
+├── hooks/             # Custom React hooks
+│   ├── use-kid-names.ts      # Fetch and cache kid names
+│   └── use-user-session.ts   # User session management
 └── lib/
-    ├── db.ts          # Database queries and types (chores, tasks, incentives)
-    ├── sorting.ts     # Unified sorting logic with fixed/flexible support
-    └── timezone.ts    # Pure timezone functions (client/server safe)
+    ├── api-utils.ts       # API response helpers and validation
+    ├── auth.ts            # Password hashing, JWT, cookie management
+    ├── date-utils.ts      # Date formatting (YYYY-MM-DD conversions)
+    ├── db.ts              # Database queries and types (chores, tasks, incentives)
+    ├── qualification.ts   # Pure incentive qualification logic
+    ├── sorting.ts         # Unified sorting logic with fixed/flexible support
+    ├── time.ts            # Client-side current date (respects dev override cookie)
+    ├── time-server.ts     # Server-side current date (respects TEST_DATE, dev cookie)
+    ├── timezone.ts        # Pure timezone functions (client/server safe)
+    ├── timezone-config.ts # TIMEZONE constant (America/New_York default)
+    ├── types.ts           # Shared TypeScript interfaces
+    └── utils.ts           # General utilities (day constants, date helpers)
 tests/
 ├── helpers.ts           # Shared test utilities
 ├── integration.test.ts  # Database integration tests
 └── unit/                # Unit tests (one file per source module)
+    ├── utils.test.ts        # General utility tests
     ├── timezone.test.ts     # Timezone + week boundary tests
     ├── qualification.test.ts # Qualification logic tests
     ├── sorting.test.ts      # Sorting edge case tests
     └── date-utils.test.ts   # Date utility tests
 migrations/
 ├── 1734100000000_initial-schema.sql  # Baseline schema
-└── 1734100001000_add-incentives.sql  # Incentive system additions
+├── 1734100001000_add-incentives.sql  # Incentive system additions
+├── 1734100002000_fix-completed-at-timezone.sql  # Fix completion timezone handling
+└── 1734100003000_simplify-schema.sql # Rename columns, simplify excused to boolean
 ```
 
 ## Design Principles
 1. **Mobile-first**: All UI optimized for iPhone screens
 2. **Simple navigation**: Minimal clicks to complete tasks
 3. **Visual feedback**: Clear indicators for chore status
-4. **No authentication yet**: Single global user for MVP
+4. **Family-level auth**: Single shared password protects the app; no per-user accounts
 
 ## Design Philosophy
 
@@ -371,7 +412,7 @@ To seed sample data manually, you can run the INSERT statements from schema.sql.
   - **Practice piano**: Both kids (Mon-Fri) - flexible
 
 ## Known Issues/TODOs
-- Add authentication system
+- Wire `proxy.ts` as Next.js middleware for enforced auth on all routes
 - Implement screen time tracking
 - Add instrument practice logging
 - Create weekly reports/summaries
@@ -388,6 +429,7 @@ To seed sample data manually, you can run the INSERT statements from schema.sql.
 ### Test Structure
 - **Directory**: `tests/`
 - **Unit tests**: `tests/unit/*.test.ts` - Pure functions, no I/O, runs fast
+  - `utils.test.ts` - General utility functions
   - `timezone.test.ts` - Timezone awareness + week boundary calculations
   - `qualification.test.ts` - Incentive qualification logic
   - `sorting.test.ts` - Sorting edge cases (Sunday viewing, late evening)
@@ -399,7 +441,7 @@ To seed sample data manually, you can run the INSERT statements from schema.sql.
 - **Test Database**: Separate Neon database configured via TEST_DATABASE_URL in `.env.test`
 - **Approach**: Tests actual application functions from `app/lib/db.ts`, not raw SQL
 - **Isolation**: Each test run drops all tables and runs migrations fresh
-- **Coverage**: 27 integration tests covering chores, tasks, sorting, and incentive system
+- **Coverage**: 34 integration tests covering chores, tasks, sorting, and incentive system
 - **Setup**: Add test database URL to `.env.test` as TEST_DATABASE_URL
 - **Concurrency**: Integration tests run sequentially (`--test-concurrency=1`) to avoid race conditions
 
