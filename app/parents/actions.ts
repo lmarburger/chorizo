@@ -41,12 +41,15 @@ export async function updateChoreWithSchedulesAction(formData: FormData) {
   const flexible = flexibleStr !== "false"; // Default to true
   const schedulesJson = formData.getAll("schedules") as string[];
 
-  // Update the chore
-  await updateChore(choreId, {
+  const updated = await updateChore(choreId, {
     name,
     description: description || null,
     flexible,
   });
+
+  if (!updated) {
+    throw new Error(`Chore not found: ${choreId}`);
+  }
 
   // Parse and update schedules
   const schedules: { kid_name: string; day_of_week: DayOfWeek }[] = schedulesJson.map(json => JSON.parse(json));

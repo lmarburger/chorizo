@@ -12,6 +12,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     }
 
     const claim = await dismissClaim(claimId);
+    if (!claim) {
+      return NextResponse.json({ error: "Claim not found" }, { status: 404 });
+    }
     return NextResponse.json({ success: true, claim });
   } catch (error) {
     console.error("Failed to dismiss claim:", error);
