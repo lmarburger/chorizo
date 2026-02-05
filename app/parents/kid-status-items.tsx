@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { createSortableItems, sortItems, SortableItem } from "../lib/sorting";
+import { createSortableItems, sortItems, isItemDisqualifying, SortableItem } from "../lib/sorting";
 import { TaskEditForm } from "./task-edit-form";
 import type { ChoreScheduleWithCompletion, Task } from "../lib/db";
 
@@ -14,16 +14,6 @@ interface KidStatusItemsProps {
   onDeleteTask: (taskId: number) => void;
   onCancelEdit: () => void;
   onExcuse?: (type: "chore" | "task", id: number, date?: string) => void;
-}
-
-function isItemDisqualifying(item: SortableItem): boolean {
-  // Late completion that's not excused
-  if (item.isLateCompletion && !item.isExcused) return true;
-  // Incomplete fixed chore that's overdue
-  if (item.isFixed && item.status === "overdue" && !item.isCompleted) return true;
-  // Incomplete task that's overdue
-  if (item.type === "task" && item.status === "overdue" && !item.isCompleted) return true;
-  return false;
 }
 
 function getItemColorClasses(item: SortableItem): string {

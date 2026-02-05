@@ -120,6 +120,13 @@ export function createSortableItems(
   return items;
 }
 
+export function isItemDisqualifying(item: SortableItem): boolean {
+  if (item.isLateCompletion && !item.isExcused) return true;
+  if (item.isFixed && item.status === "overdue" && !item.isCompleted) return true;
+  if (item.type === "task" && item.status === "overdue" && !item.isCompleted) return true;
+  return false;
+}
+
 export function sortItems(items: SortableItem[]): SortableItem[] {
   return [...items].sort((a, b) => {
     // First, separate completed from incomplete

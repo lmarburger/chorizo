@@ -27,8 +27,18 @@ export async function POST(request: Request) {
       flexible: flexible !== false, // Default to true if not specified
     });
 
-    // Add schedules if provided
+    const validDays = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+
     if (schedules && Array.isArray(schedules) && schedules.length > 0) {
+      for (const s of schedules) {
+        if (!s.kid_name || typeof s.kid_name !== "string") {
+          return NextResponse.json({ error: "Invalid kid_name in schedule" }, { status: 400 });
+        }
+        if (!validDays.includes(s.day_of_week)) {
+          return NextResponse.json({ error: `Invalid day_of_week: ${s.day_of_week}` }, { status: 400 });
+        }
+      }
+
       const formattedSchedules = schedules.map(s => ({
         kid_name: s.kid_name,
         day_of_week: s.day_of_week as DayOfWeek,
