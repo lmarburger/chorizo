@@ -89,52 +89,62 @@ describe("getDaysUntilDue", () => {
 
 describe("isToday", () => {
   it("returns true for today's date string", () => {
-    // Use a known date and format it the same way the app does
     const now = new Date("2024-12-11T17:00:00Z");
-    const todayStr = formatDateString(now);
-    // Mock the client date by checking formatDateString output
-    assert.strictEqual(todayStr, "2024-12-11");
+    assert.strictEqual(isToday("2024-12-11", now), true);
   });
 
   it("returns false for yesterday's date string", () => {
-    // This test verifies the function works with date strings
-    // We test the underlying logic by comparing strings
-    const today = "2024-12-11";
-    const yesterday = "2024-12-10";
-    assert.notStrictEqual(today, yesterday);
+    const now = new Date("2024-12-11T17:00:00Z");
+    assert.strictEqual(isToday("2024-12-10", now), false);
   });
 
   it("returns false for tomorrow's date string", () => {
-    const today = "2024-12-11";
-    const tomorrow = "2024-12-12";
-    assert.notStrictEqual(today, tomorrow);
+    const now = new Date("2024-12-11T17:00:00Z");
+    assert.strictEqual(isToday("2024-12-12", now), false);
+  });
+
+  it("handles late evening EST correctly", () => {
+    // 11:59pm EST Wed Dec 11 = Thu Dec 12 4:59am UTC
+    const lateWed = new Date("2024-12-12T04:59:00Z");
+    assert.strictEqual(isToday("2024-12-11", lateWed), true);
+    assert.strictEqual(isToday("2024-12-12", lateWed), false);
+  });
+
+  it("handles ISO datetime strings", () => {
+    const now = new Date("2024-12-11T17:00:00Z");
+    assert.strictEqual(isToday("2024-12-11T00:00:00Z", now), true);
   });
 });
 
 describe("isPastDate", () => {
   it("returns false for today", () => {
     const now = new Date("2024-12-11T17:00:00Z");
-    const todayStr = formatDateString(now);
-    // isPastDate compares against getClientCurrentDate which we can't easily mock
-    // So we test the underlying parseLocalDate behavior
-    const parsed = parseLocalDate(todayStr);
-    const todayStart = new Date(now);
-    todayStart.setHours(0, 0, 0, 0);
-    // The parsed date should not be before today's start
-    // This validates the fix: parseLocalDate("2024-12-11") should be Dec 11, not Dec 10
-    assert.strictEqual(formatDateString(parsed), todayStr);
+    assert.strictEqual(isPastDate("2024-12-11", now), false);
   });
 
   it("returns true for yesterday", () => {
-    const yesterday = parseLocalDate("2024-12-10");
-    const today = parseLocalDate("2024-12-11");
-    assert.ok(yesterday < today, "Yesterday should be before today");
+    const now = new Date("2024-12-11T17:00:00Z");
+    assert.strictEqual(isPastDate("2024-12-10", now), true);
   });
 
   it("returns false for tomorrow", () => {
-    const tomorrow = parseLocalDate("2024-12-12");
-    const today = parseLocalDate("2024-12-11");
-    assert.ok(tomorrow > today, "Tomorrow should be after today");
+    const now = new Date("2024-12-11T17:00:00Z");
+    assert.strictEqual(isPastDate("2024-12-12", now), false);
+  });
+
+  it("handles late evening EST correctly", () => {
+    // 11:59pm EST Wed Dec 11 = Thu Dec 12 4:59am UTC
+    const lateWed = new Date("2024-12-12T04:59:00Z");
+    assert.strictEqual(isPastDate("2024-12-11", lateWed), false, "Today is not past");
+    assert.strictEqual(isPastDate("2024-12-10", lateWed), true, "Yesterday is past");
+    assert.strictEqual(isPastDate("2024-12-12", lateWed), false, "Tomorrow is not past");
+  });
+
+  it("handles near-midnight boundary correctly", () => {
+    // 12:01am EST Thu Dec 12 = Thu Dec 12 5:01am UTC
+    const earlyThu = new Date("2024-12-12T05:01:00Z");
+    assert.strictEqual(isPastDate("2024-12-11", earlyThu), true, "Yesterday is past");
+    assert.strictEqual(isPastDate("2024-12-12", earlyThu), false, "Today is not past");
   });
 });
 

@@ -4,6 +4,8 @@
 
 import { getClientCurrentDate } from "./time";
 import { formatDateString } from "./date-utils";
+import { TIMEZONE } from "./timezone-config";
+import { getDayOfWeekInTimezone } from "./timezone";
 
 /**
  * Format relative time from a date
@@ -71,7 +73,7 @@ export const DAY_LABELS_FULL: Record<DayOfWeek, string> = {
  * Get the current day of week as lowercase string
  */
 export function getCurrentDayOfWeek(): DayOfWeek {
-  const dayIndex = getClientCurrentDate().getDay();
+  const dayIndex = getDayOfWeekInTimezone(getClientCurrentDate());
   // Convert Sunday (0) to 6, and shift Monday (1) to 0
   const adjustedIndex = dayIndex === 0 ? 6 : dayIndex - 1;
   return DAYS_OF_WEEK[adjustedIndex];
@@ -123,6 +125,7 @@ export function formatDateDisplay(date: string | Date): string {
     month: "short",
     day: "numeric",
     year: "numeric",
+    timeZone: TIMEZONE,
   });
 }
 
@@ -143,7 +146,7 @@ export function getDayAbbreviation(date: string | Date): string {
   } else {
     dateObj = date;
   }
-  return dateObj.toLocaleDateString("en-US", { weekday: "short" });
+  return dateObj.toLocaleDateString("en-US", { weekday: "short", timeZone: TIMEZONE });
 }
 
 /**
@@ -178,8 +181,8 @@ export function getTomorrowDateString(): string {
 /**
  * Check if a date string represents today
  */
-export function isToday(dateString: string): boolean {
-  const today = formatDateString(getClientCurrentDate());
+export function isToday(dateString: string, now: Date = getClientCurrentDate()): boolean {
+  const today = formatDateString(now);
   const inputDate = formatDateForInput(dateString);
   return today === inputDate;
 }
@@ -187,9 +190,8 @@ export function isToday(dateString: string): boolean {
 /**
  * Check if a date string is in the past (before today)
  */
-export function isPastDate(dateString: string): boolean {
-  const today = getClientCurrentDate();
-  today.setHours(0, 0, 0, 0);
-  const inputDate = parseLocalDate(formatDateForInput(dateString));
+export function isPastDate(dateString: string, now: Date = getClientCurrentDate()): boolean {
+  const today = formatDateString(now);
+  const inputDate = formatDateForInput(dateString);
   return inputDate < today;
 }
